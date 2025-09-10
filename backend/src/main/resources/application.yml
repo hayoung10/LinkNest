@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: linknest-backend
+  profiles:
+    group:
+      dev:
+        - dev-config
+      prod:
+        - prod-config
+    include:
+      - secret
+      - commons
+      - nodb
+
+--- #commons ?? ??
+server:
+  port: 8080
+spring:
+  config:
+    activate:
+      on-profile: commons
+
+--- #dev-config
+spring:
+  config:
+    activate:
+      on-profile: dev-config
+
+logging:
+  level:
+    root: info
+    org.springframework.web: info
+      org.springframework.security: info
+      org.hibernate.SQL: warn
+      org.hibernate.type: warn
+      com.example: debug
+
+--- #prod-config
+spring:
+  config:
+    activate:
+      on-profile: prod-config
+
+logging:
+  level:
+    root: warn
+    org.springframework.web: warn
+    org.springframework.security: warn
+    org.hibernate.SQL: warn
+    org.hibernate.type: warn
+    com.example: info
