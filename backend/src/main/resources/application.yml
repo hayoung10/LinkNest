@@ -3,14 +3,8 @@ spring:
     name: linknest-backend
   profiles:
     group:
-      dev:
-        - dev-config
-      prod:
-        - prod-config
-    include:
-      - secret
-      - commons
-      - nodb
+      dev: [dev-config, commons, secret]
+      prod: [prod-config, commons, secret]
 
 --- #commons 공통 설정
 server:
@@ -19,12 +13,23 @@ spring:
   config:
     activate:
       on-profile: commons
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
 
 --- #dev-config
 spring:
   config:
     activate:
       on-profile: dev-config
+  datasource:
+    url: jdbc:mysql://localhost:3310/linknest?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
 
 logging:
   level:

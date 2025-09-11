@@ -7,6 +7,9 @@ Thumbs.db
 .idea/
 .vscode/
 
+# 환경 변수 파일
+.env
+
 # 로그 & 크래시 덤프
 *.log
 hs_err_pid*
