@@ -16,7 +16,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/health", "/api/db/ping").permitAll()
+                        .requestMatchers("/api/health", "/api/db/ping", "/api/redis/ping").permitAll()
                         .anyRequest().permitAll()
                 )
                 .formLogin(login -> login.disable())

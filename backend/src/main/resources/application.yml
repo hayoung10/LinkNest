@@ -30,6 +30,10 @@ spring:
       on-profile: dev-config
   datasource:
     url: jdbc:mysql://localhost:3310/linknest?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+  data:
+    redis:
+      host: localhost
+      port: 6380
 
 logging:
   level:

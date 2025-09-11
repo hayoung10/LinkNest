@@ -1,4 +1,13 @@
 services:
+  redis:
+    image: redis:7.2
+    container_name: linknest-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data:/data
+    restart: always
+
   mysql:
     image: mysql:8.0
     container_name: linknest-mysql
@@ -15,3 +24,4 @@ services:
 
 volumes:
   mysql-data:
+  redis-data:
