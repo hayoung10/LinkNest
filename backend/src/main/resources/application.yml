@@ -12,7 +12,7 @@ spring:
       - commons
       - nodb
 
---- #commons ?? ??
+--- #commons 공통 설정
 server:
   port: 8080
 spring:
@@ -30,10 +30,10 @@ logging:
   level:
     root: info
     org.springframework.web: info
-      org.springframework.security: info
-      org.hibernate.SQL: warn
-      org.hibernate.type: warn
-      com.example: debug
+    org.springframework.security: info
+    org.hibernate.SQL: warn
+    org.hibernate.type: warn
+    com.example: debug
 
 --- #prod-config
 spring:
