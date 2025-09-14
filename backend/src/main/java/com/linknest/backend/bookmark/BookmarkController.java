@@ -1,6 +1,8 @@
 package com.linknest.backend.bookmark;
 
-import com.linknest.backend.bookmark.dto.*;
+import com.linknest.backend.bookmark.dto.BookmarkCreateReq;
+import com.linknest.backend.bookmark.dto.BookmarkRes;
+import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

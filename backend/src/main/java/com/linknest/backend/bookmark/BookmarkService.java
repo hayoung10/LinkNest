@@ -1,6 +1,8 @@
 package com.linknest.backend.bookmark;
 
-import com.linknest.backend.bookmark.dto.*;
+import com.linknest.backend.bookmark.dto.BookmarkCreateReq;
+import com.linknest.backend.bookmark.dto.BookmarkRes;
+import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +22,7 @@ public class BookmarkService {
     }
 
     public BookmarkRes get(Long id) {
-        Bookmark bookmark = findVerifiedBookmark(id);
-
-        return mapper.toRes(bookmark);
+        return mapper.toRes(findVerifiedBookmark(id));
     }
 
     @Transactional
@@ -36,7 +36,6 @@ public class BookmarkService {
     @Transactional
     public void delete(Long id) {
         Bookmark bookmark = findVerifiedBookmark(id);
-
         repository.delete(bookmark);
     }
 

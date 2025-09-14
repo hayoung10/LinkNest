@@ -2,7 +2,6 @@ package com.linknest.backend.bookmark;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -18,15 +17,12 @@ public class Bookmark {
     private Long id;
 
     @NotBlank
-    @Size(min = 2, max = 2048)
     @Column(nullable = false, length = 2048)
     private String url;
 
-    @Size(max = 255)
     @Column(length = 255)
     private String title;
 
-    @Size(max = 1000)
     @Column(length = 1000)
     private String description;
 
