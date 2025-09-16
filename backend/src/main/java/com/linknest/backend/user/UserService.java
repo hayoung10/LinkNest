@@ -1,5 +1,7 @@
 package com.linknest.backend.user;
 
+import com.linknest.backend.common.exception.BusinessException;
+import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.user.dto.UserCreateReq;
 import com.linknest.backend.user.dto.UserRes;
 import com.linknest.backend.user.dto.UserUpdateReq;
@@ -17,7 +19,7 @@ public class UserService {
     @Transactional
     public UserRes create(UserCreateReq req) {
         if(repository.existsByEmail(req.email())) {
-            throw new IllegalArgumentException("User exists: " + req.email());
+            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         User user = mapper.toEntity(req);
@@ -46,6 +48,6 @@ public class UserService {
 
     private User findVerifiedUser(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 }

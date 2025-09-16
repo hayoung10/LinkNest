@@ -3,6 +3,8 @@ package com.linknest.backend.bookmark;
 import com.linknest.backend.bookmark.dto.BookmarkCreateReq;
 import com.linknest.backend.bookmark.dto.BookmarkRes;
 import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
+import com.linknest.backend.common.exception.BusinessException;
+import com.linknest.backend.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +43,6 @@ public class BookmarkService {
 
     private Bookmark findVerifiedBookmark(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Bookmark not found :" + id));
+                .orElseThrow(() -> new BusinessException(ErrorCode.BOOKMARK_NOT_FOUND));
     }
 }
