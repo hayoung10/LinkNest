@@ -1,5 +1,7 @@
 package com.linknest.backend.bookmark;
 
+import com.linknest.backend.collection.Collection;
+import com.linknest.backend.user.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
@@ -9,7 +11,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
-@Entity @Table(name = "bookmarks")
+@Entity @Table(name = "bookmarks",
+        indexes = {
+                @Index(name = "idx_bookmark_user", columnList = "user_id"),
+                @Index(name = "idx_bookmark_collection", columnList = "collection_id")
+        })
 @EntityListeners(AuditingEntityListener.class)
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Bookmark {
@@ -26,6 +32,14 @@ public class Bookmark {
     @Column(length = 1000)
     private String description;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "collection_id", nullable = false)
+    private Collection collection;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -33,4 +47,8 @@ public class Bookmark {
     @LastModifiedDate
     @Column(nullable = false)
     private Instant updatedAt;
+
+    public void moveTo(Collection target) {
+        this.collection = target;
+    }
 }
