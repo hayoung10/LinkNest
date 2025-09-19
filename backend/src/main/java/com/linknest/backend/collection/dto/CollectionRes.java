@@ -6,7 +6,9 @@ public record CollectionRes(
         Long id,
         String name,
         String icon,
-
+        Long parentId,
+        int sortOrder,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        long bookmarkCount
 ) {}

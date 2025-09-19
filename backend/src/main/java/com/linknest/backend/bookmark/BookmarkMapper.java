@@ -3,10 +3,7 @@ package com.linknest.backend.bookmark;
 import com.linknest.backend.bookmark.dto.BookmarkCreateReq;
 import com.linknest.backend.bookmark.dto.BookmarkRes;
 import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
-import org.mapstruct.BeanMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface BookmarkMapper {
@@ -18,5 +15,6 @@ public interface BookmarkMapper {
     void updateFromDto(BookmarkUpdateReq updateReq, @MappingTarget Bookmark target);
 
     // Entity -> Res
+    @Mapping(target = "collectionId", source = "collection.id")
     BookmarkRes toRes(Bookmark bookmark);
 }

@@ -11,5 +11,7 @@ public record UserRes(
         String profileImageUrl,
         Role role,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        long bookmarkCount,
+        long collectionCount
 ) {}

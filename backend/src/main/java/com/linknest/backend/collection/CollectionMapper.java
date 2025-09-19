@@ -3,10 +3,7 @@ package com.linknest.backend.collection;
 import com.linknest.backend.collection.dto.CollectionCreateReq;
 import com.linknest.backend.collection.dto.CollectionRes;
 import com.linknest.backend.collection.dto.CollectionUpdateReq;
-import org.mapstruct.BeanMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface CollectionMapper {
@@ -18,5 +15,11 @@ public interface CollectionMapper {
     void updateFromDto(CollectionUpdateReq updateReq, @MappingTarget Collection collection);
 
     // Entity -> Res
+    @Mapping(target = "bookmarkCount", constant = "OL")
+    @Mapping(target = "parentId", source = "parent.id")
     CollectionRes toRes(Collection collection);
+
+    @InheritConfiguration(name = "toRes")
+    @Mapping(target = "bookmarkCount", expression = "java(count)")
+    CollectionRes toResWithCount(Collection c, long count);
 }

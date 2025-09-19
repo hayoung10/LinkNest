@@ -8,5 +8,7 @@ public record CollectionCreateReq(
         @Size(min = 1, max = 255)
         String name,
 
-        String icon
+        String icon,
+
+        Long parentId
 ) {}
