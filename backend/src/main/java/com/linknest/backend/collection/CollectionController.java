@@ -1,8 +1,6 @@
 package com.linknest.backend.collection;
 
-import com.linknest.backend.collection.dto.CollectionCreateReq;
-import com.linknest.backend.collection.dto.CollectionRes;
-import com.linknest.backend.collection.dto.CollectionUpdateReq;
+import com.linknest.backend.collection.dto.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 import static com.linknest.backend.common.constants.AppConstants.API_PREFIX;
 
@@ -21,8 +20,9 @@ public class CollectionController {
     private final CollectionService service;
 
     @PostMapping
-    public ResponseEntity<CollectionRes> create(@RequestBody @Valid CollectionCreateReq req) {
-        CollectionRes res = service.create(req);
+    public ResponseEntity<CollectionRes> create(@RequestParam Long userId,
+                                                @RequestBody @Valid CollectionCreateReq req) {
+        CollectionRes res = service.create(userId, req);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
@@ -34,21 +34,47 @@ public class CollectionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CollectionRes> get(@PathVariable @Min(1) Long id) {
-        CollectionRes res = service.get(id);
+    public ResponseEntity<CollectionRes> get(@RequestParam Long userId,
+                                             @PathVariable @Min(1) Long id) {
+        CollectionRes res = service.get(userId, id);
         return ResponseEntity.ok(res);
     }
 
-    @PatchMapping("{/id}")
-    public ResponseEntity<CollectionRes> update(@PathVariable @Min(1) Long id,
+    @PatchMapping("{/{id}")
+    public ResponseEntity<CollectionRes> update(@RequestParam Long userId,
+                                                @PathVariable @Min(1) Long id,
                                                 @RequestBody @Valid CollectionUpdateReq req) {
-        CollectionRes res = service.update(id, req);
+        CollectionRes res = service.update(userId, id, req);
         return ResponseEntity.ok(res);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable @Min(1) Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete(@RequestParam Long userId,
+                                       @PathVariable @Min(1) Long id) {
+        service.delete(userId, id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<CollectionRes>> listChildren(@RequestParam Long userId,
+                                                            @RequestParam(required = false) Long parentId) {
+        List<CollectionRes> res = service.listChildren(userId, parentId);
+        return ResponseEntity.ok(res);
+    }
+
+    @PatchMapping("/{id}/move")
+    public ResponseEntity<Void> move(@RequestParam Long userId,
+                                     @PathVariable @Min(1) Long id,
+                                     @RequestBody @Valid CollectionMoveReq req) {
+        service.move(userId, id, req.targetParentId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/order")
+    public ResponseEntity<Void> reorder(@RequestParam Long userId,
+                                        @PathVariable @Min(1) Long id,
+                                        @RequestBody @Valid CollectionReorderReq req) {
+        service.reorder(userId, id, req.newOrder());
         return ResponseEntity.noContent().build();
     }
 }

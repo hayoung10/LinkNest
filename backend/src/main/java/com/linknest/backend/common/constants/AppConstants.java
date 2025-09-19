@@ -8,7 +8,7 @@ public final class AppConstants {
     public static final String HEADER_STRING = "Authorization";
 
     // API
-    public static final String API_PREFIX = "/api";
+    public static final String API_PREFIX = "/api/v1";
 
     // Pagination
     public static final int DEFAULT_PAGE_SIZE = 10;
