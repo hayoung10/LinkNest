@@ -1,5 +1,6 @@
-import http, { unwrap } from "@/api/http";
 import { defineStore } from "pinia";
+import http, { unwrap } from "@/api/http";
+import type { User } from "@/types/common";
 
 type OAuthProvider = "google" | "kakao" | "naver";
 

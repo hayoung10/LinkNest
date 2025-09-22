@@ -13,3 +13,9 @@ export type ApiError = {
   path?: string;
   timestamp?: string;
 };
+
+export interface User {
+  id: number;
+  name: string;
+  // 백엔드 User 엔티티와 맞춰서 필드 확장 예정
+}
