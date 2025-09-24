@@ -1,4 +1,4 @@
-package com.linknest.backend.exception.security;
+package com.linknest.backend.security.handler;
 
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.common.utils.ErrorResponder;

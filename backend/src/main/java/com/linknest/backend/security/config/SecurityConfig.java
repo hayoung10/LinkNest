@@ -1,7 +1,7 @@
-package com.linknest.backend.common.config;
+package com.linknest.backend.security.config;
 
-import com.linknest.backend.exception.security.UserAccessDeniedHandler;
-import com.linknest.backend.exception.security.UserAuthenticationEntryPoint;
+import com.linknest.backend.security.handler.UserAccessDeniedHandler;
+import com.linknest.backend.security.handler.UserAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
