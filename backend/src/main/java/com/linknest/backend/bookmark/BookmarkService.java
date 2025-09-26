@@ -61,7 +61,7 @@ public class BookmarkService {
         requireOwnedCollection(userId, collectionId);
 
         List<Bookmark> list =
-                bookmarkRepository.indAllByUserIdAndCollectionIdOrderByCreatedAtDesc(userId, collectionId);
+                bookmarkRepository.findAllByUserIdAndCollectionIdOrderByCreatedAtDesc(userId, collectionId);
 
         return list.stream().map(mapper::toRes).toList();
     }
