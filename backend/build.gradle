@@ -40,7 +40,7 @@ dependencies {
 
 	//    -------------------------------------------------------------------------------------------- Security
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-	testImplementation 'org.springframework.security:spring-security-test'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
 	//    -------------------------------------------------------------------------------------------- MySQL
 	runtimeOnly 'com.mysql:mysql-connector-j'
@@ -50,6 +50,7 @@ dependencies {
 
 	//    -------------------------------------------------------------------------------------------- Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
 }
 
 tasks.named('test') {
