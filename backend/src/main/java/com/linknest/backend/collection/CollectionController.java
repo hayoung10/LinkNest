@@ -40,7 +40,7 @@ public class CollectionController {
         return ResponseEntity.ok(res);
     }
 
-    @PatchMapping("{/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<CollectionRes> update(@RequestParam Long userId,
                                                 @PathVariable @Min(1) Long id,
                                                 @RequestBody @Valid CollectionUpdateReq req) {

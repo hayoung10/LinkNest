@@ -15,7 +15,7 @@ public interface CollectionMapper {
     void updateFromDto(CollectionUpdateReq updateReq, @MappingTarget Collection collection);
 
     // Entity -> Res
-    @Mapping(target = "bookmarkCount", constant = "OL")
+    @Mapping(target = "bookmarkCount", constant = "0L")
     @Mapping(target = "parentId", source = "parent.id")
     CollectionRes toRes(Collection collection);
 

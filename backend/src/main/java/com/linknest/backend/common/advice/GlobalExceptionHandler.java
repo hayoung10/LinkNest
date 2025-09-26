@@ -42,7 +42,7 @@ public class GlobalExceptionHandler {
         ErrorResponse body = ErrorResponse.of(
                 ErrorCode.INVALID_INPUT_VALUE.getStatus().value(),
                 ErrorCode.INVALID_INPUT_VALUE.name(),
-                ErrorCode.INVALID_INPUT_VALUE.getDefaultMessage(),
+                ErrorCode.INVALID_INPUT_VALUE.getMessage(),
                 request.getRequestURI(),
                 List.of(error)
         );
@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
         ErrorResponse body = ErrorResponse.of(
                 ErrorCode.INVALID_INPUT_VALUE.getStatus().value(),
                 ErrorCode.INVALID_INPUT_VALUE.name(),
-                ErrorCode.INVALID_INPUT_VALUE.getDefaultMessage(),
+                ErrorCode.INVALID_INPUT_VALUE.getMessage(),
                 request.getRequestURI(),
                 List.of(error)
         );
@@ -98,7 +98,7 @@ public class GlobalExceptionHandler {
         ErrorResponse body = ErrorResponse.of(
                 ErrorCode.INTERNAL_ERROR.getStatus().value(),
                 ErrorCode.INTERNAL_ERROR.name(),
-                ErrorCode.INTERNAL_ERROR.getDefaultMessage(),
+                ErrorCode.INTERNAL_ERROR.getMessage(),
                 request.getRequestURI()
         );
         return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.getStatus()).body(body);
@@ -118,7 +118,7 @@ public class GlobalExceptionHandler {
         ErrorResponse body = ErrorResponse.of(
                 code.getStatus().value(),
                 code.name(),
-                code.getDefaultMessage(),
+                code.getMessage(),
                 request.getRequestURI(),
                 errors
         );
@@ -132,7 +132,7 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ErrorResponse> buildSimple(ErrorCode code, HttpServletRequest request) {
         ErrorResponse body = ErrorResponse.of(
-                code.getStatus().value(), code.name(), code.getDefaultMessage(), request.getRequestURI()
+                code.getStatus().value(), code.name(), code.getMessage(), request.getRequestURI()
         );
         return ResponseEntity.status(code.getStatus()).body(body);
     }
