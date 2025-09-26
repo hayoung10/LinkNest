@@ -2,6 +2,7 @@ package com.linknest.backend.user;
 
 import com.linknest.backend.bookmark.Bookmark;
 import com.linknest.backend.collection.Collection;
+import com.linknest.backend.user.domain.AuthProvider;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
@@ -30,6 +31,12 @@ public class User {
 
     @Column(length = 512)
     private String profileImageUrl;
+
+    // OAuth2 필드
+    @Enumerated(EnumType.STRING)
+    private AuthProvider provider;
+
+    private String providerId;
 
     @Enumerated(EnumType.STRING)
     private Role role; // ROLE_USER, ROLE_ADMIN
