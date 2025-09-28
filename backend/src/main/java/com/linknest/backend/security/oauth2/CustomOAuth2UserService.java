@@ -12,11 +12,13 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
 
@@ -31,7 +33,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
         Map<String, Object> attributes = new HashMap<>(oAuth2User.getAttributes());
 
-        // provider별 응답(attributes)을 UserInfo로 변환
         OAuth2UserInfo info = toUserInfo(registrationId, attributes);
 
         // TODO: 이메일 검증 기능 구현 후 주석 해제
@@ -42,14 +43,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 //            );
 //        }
 
+        String providerId = getValidProviderId(info, oAuth2User);
+
         // 기존 User가 존재하면 갱신, 없으면 새로 생성
-        User user = findOrCreateUser(info);
+        User user = findOrCreateUser(info, providerId);
         Collection<GrantedAuthority> authorities =
                 List.of(new SimpleGrantedAuthority(user.getRole().name()));
 
         // 핸들러에서 사용하는 부가 속성
         attributes.put("provider", info.getProvider().name());
-        attributes.put("providerId", info.getProviderId());
+        attributes.put("providerId", providerId);
         attributes.put("userId", user.getId());
 
         return new DefaultOAuth2User(authorities, attributes, nameAttributeKey);
@@ -65,20 +68,23 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         };
     }
 
-    private User findOrCreateUser(OAuth2UserInfo info) {
-        Optional<User> optionalUser = userRepository.findByProviderAndProviderId(
-                info.getProvider(), info.getProviderId());
-        if(optionalUser.isPresent()) {
-            return optionalUser.get();
+    private String getValidProviderId(OAuth2UserInfo info, OAuth2User oAuth2User) {
+        String id = info.getProviderId();
+        if(id == null || id.isBlank()) id = oAuth2User.getName();
+        if(id == null || id.isBlank()) {
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("missing_provider_id"),
+                    "ProviderId missing (info.providerId and OAuth2User.getName() both blank)"
+            );
         }
+        return id;
+    }
 
-        User user = User.builder()
-                .email(info.getEmail())
-                .name(info.getName())
-                .profileImageUrl(info.getPicture())
-                .provider(info.getProvider())
-                .providerId(info.getProviderId())
-                .build();
-        return user;
+    private User findOrCreateUser(OAuth2UserInfo info, String providerId) {
+        return userRepository.findByProviderAndProviderId(info.getProvider(), providerId)
+                .orElseGet(() -> userRepository.save(
+                        User.oauthSignup(info.getEmail(), info.getName(), info.getPicture(),
+                                info.getProvider(), providerId)
+                ));
     }
 }
