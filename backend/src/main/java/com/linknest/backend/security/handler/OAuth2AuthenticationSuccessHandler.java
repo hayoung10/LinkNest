@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -18,8 +19,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-    private static final ObjectMapper om = new ObjectMapper();
+    private final ObjectMapper om;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -30,8 +32,8 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         Map<String, Object> attributes = principal.getAttributes();
 
         String provider = authToken.getAuthorizedClientRegistrationId();
-        String providerId = String.valueOf(attributes.get("providerId"));
-        Long userId = Long.parseLong(String.valueOf(attributes.get("userId")));
+        String providerId = (String) attributes.get("providerId");
+        Long userId = (Long) attributes.get("userId");
 
         // TODO: AccessToken/RefreshToken 발급 및 응답(헤더/쿠키) 처리
 
