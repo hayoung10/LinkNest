@@ -15,7 +15,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity @Table(name = "users")
+@Entity
+@Table(name = "users",
+        uniqueConstraints = @UniqueConstraint(columnNames = { "provider", "provider_id" }),
+        indexes = @Index(name = "idx_provider_pid", columnList = "provider, provider_id")
+)
 @EntityListeners(AuditingEntityListener.class)
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class User {
@@ -34,8 +38,10 @@ public class User {
 
     // OAuth2 필드
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private AuthProvider provider;
 
+    @Column(name = "provider_id", nullable = false)
     private String providerId;
 
     @Enumerated(EnumType.STRING)
@@ -54,6 +60,18 @@ public class User {
     @LastModifiedDate
     @Column(nullable = false)
     private Instant updatedAt;
+
+    public static User oauthSignup(String email, String name, String picture,
+                                   AuthProvider provider, String providerId) {
+        return User.builder()
+                .email(email)
+                .name(name)
+                .profileImageUrl(picture)
+                .provider(provider)
+                .providerId(providerId)
+                .role(Role.ROLE_USER)
+                .build();
+    }
 
     public void addBookmark(Bookmark b) {
         bookmarks.add(b);
