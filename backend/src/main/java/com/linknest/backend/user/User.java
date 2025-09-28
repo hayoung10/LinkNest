@@ -45,6 +45,7 @@ public class User {
     private String providerId;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role; // ROLE_USER, ROLE_ADMIN
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
