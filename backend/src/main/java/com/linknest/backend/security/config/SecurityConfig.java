@@ -5,6 +5,7 @@ import com.linknest.backend.security.handler.OAuth2AuthenticationSuccessHandler;
 import com.linknest.backend.security.handler.UserAccessDeniedHandler;
 import com.linknest.backend.security.handler.UserAuthenticationEntryPoint;
 import com.linknest.backend.security.oauth2.CustomOAuth2UserService;
+import com.linknest.backend.security.oauth2.CustomOidcUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     private final UserAuthenticationEntryPoint userAuthenticationEntryPoint;
     private final UserAccessDeniedHandler userAccessDeniedHandler;
+    private final CustomOidcUserService customOidcUserService;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2FailureHandler;
@@ -44,7 +46,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
-                        .userInfoEndpoint(user -> user.userService(customOAuth2UserService))
+                        .userInfoEndpoint(user -> user
+                                .oidcUserService(customOidcUserService)
+                                .userService(customOAuth2UserService)
+                        )
                         .successHandler(oAuth2SuccessHandler)
                         .failureHandler(oAuth2FailureHandler)
                 );
