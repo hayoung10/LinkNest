@@ -29,6 +29,28 @@ public class GlobalExceptionHandler {
         return buildValidationResponse(e.getBindingResult(), request, ErrorCode.INVALID_INPUT_VALUE);
     }
 
+    // @RequestParam, @PathVariable 등 제약 조건 위반
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(jakarta.validation.ConstraintViolationException e,
+                                                                   HttpServletRequest request) {
+        log.warn("Constraint violation: {}", e.getMessage());
+        List<ErrorResponse.FieldError> errors = e.getConstraintViolations().stream()
+                .map(v -> new ErrorResponse.FieldError(
+                        v.getPropertyPath() == null ? "" : v.getPropertyPath().toString(),
+                        java.util.Objects.toString(v.getInvalidValue(), ""),
+                        v.getMessage()
+                ))
+                .toList();
+        ErrorResponse body = ErrorResponse.of(
+                ErrorCode.INVALID_INPUT_VALUE.getStatus().value(),
+                ErrorCode.INVALID_INPUT_VALUE.name(),
+                ErrorCode.INVALID_INPUT_VALUE.getMessage(),
+                request.getRequestURI(),
+                errors
+        );
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus()).body(body);
+    }
+
     // 쿼리파라미터/경로변수 타임 불일치
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e,
