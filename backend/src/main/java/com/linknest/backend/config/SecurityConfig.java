@@ -1,4 +1,4 @@
-package com.linknest.backend.security.config;
+package com.linknest.backend.config;
 
 import com.linknest.backend.security.handler.OAuth2AuthenticationFailureHandler;
 import com.linknest.backend.security.handler.OAuth2AuthenticationSuccessHandler;
