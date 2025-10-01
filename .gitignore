@@ -33,6 +33,9 @@ backend/out/
 # 환경 설정
 backend/src/main/resources/application-secret.yml
 
+# Redis RDB dump
+dump.rdb
+
 # IntelliJ
 backend/.idea/
 

@@ -46,6 +46,7 @@ spring:
     redis:
       host: localhost
       port: 6380
+      timeout: 5000
 
 logging:
   level:
