@@ -1,12 +1,16 @@
 package com.linknest.backend.config;
 
+import com.linknest.backend.config.props.JwtProperties;
 import com.linknest.backend.security.handler.OAuth2AuthenticationFailureHandler;
 import com.linknest.backend.security.handler.OAuth2AuthenticationSuccessHandler;
 import com.linknest.backend.security.handler.UserAccessDeniedHandler;
 import com.linknest.backend.security.handler.UserAuthenticationEntryPoint;
 import com.linknest.backend.security.oauth2.CustomOAuth2UserService;
 import com.linknest.backend.security.oauth2.CustomOidcUserService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,6 +23,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@EnableConfigurationProperties(JwtProperties.class)
 public class SecurityConfig {
     private final UserAuthenticationEntryPoint userAuthenticationEntryPoint;
     private final UserAccessDeniedHandler userAccessDeniedHandler;
