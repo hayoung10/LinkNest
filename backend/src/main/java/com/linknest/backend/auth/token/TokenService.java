@@ -12,10 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -32,11 +29,11 @@ public class TokenService {
     }
 
     // ---------- 발급 ----------
-    public Map<String, String> issueTokens(Long userId, String username) { // AT/RT 발급
+    public Map<String, String> issueTokens(Long userId, String username, List<String> roles) { // AT/RT 발급
         String jti = UUID.randomUUID().toString();
         String familyId = UUID.randomUUID().toString();
 
-        String accessToken = jwtTokenizer.createAccessToken(userId, username);
+        String accessToken = jwtTokenizer.createAccessToken(userId, username, roles);
         String refreshToken = jwtTokenizer.createRefreshToken(userId, familyId, jti);
 
         Duration ttl = Duration.ofDays(jwtProperties.getRefreshExpDays());
@@ -66,13 +63,14 @@ public class TokenService {
         User user = userRepository.findById(rtClaims.userId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         String username = user.getName();
+        List<String> roles = List.of(user.getRole().name());
 
         // 기존 RT 폐기
         refreshTokenRepository.delete(rtKey(rtClaims.jti()));
 
         // 새 AT/RT 발급
         String newJti = UUID.randomUUID().toString();
-        String newAccessToken = jwtTokenizer.createAccessToken(rtClaims.userId(), username);
+        String newAccessToken = jwtTokenizer.createAccessToken(rtClaims.userId(), username, roles);
         String newRefreshToken = jwtTokenizer.createRefreshToken(rtClaims.userId(), rtClaims.familyId(), newJti);
 
         Duration ttl = Duration.ofDays(jwtProperties.getRefreshExpDays());

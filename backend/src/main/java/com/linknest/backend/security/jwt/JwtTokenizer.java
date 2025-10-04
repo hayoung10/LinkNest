@@ -35,7 +35,7 @@ public class JwtTokenizer {
         return jws.getBody();
     }
 
-    public String createAccessToken(Long userId, String username) {
+    public String createAccessToken(Long userId, String username, List<String> roles) {
         Instant now = Instant.now();
         Instant exp = now.plusSeconds(properties.getAccessExpMinutes() * 60L);
 
@@ -44,6 +44,7 @@ public class JwtTokenizer {
                 .setAudience(properties.getAudience())
                 .setSubject(String.valueOf(userId))
                 .claim("username", username)
+                .claim("roles", roles)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(exp))
                 .signWith(key())
