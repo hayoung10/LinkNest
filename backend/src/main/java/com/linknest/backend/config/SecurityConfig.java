@@ -1,12 +1,18 @@
-package com.linknest.backend.security.config;
+package com.linknest.backend.config;
 
+import com.linknest.backend.config.props.JwtProperties;
 import com.linknest.backend.security.handler.OAuth2AuthenticationFailureHandler;
 import com.linknest.backend.security.handler.OAuth2AuthenticationSuccessHandler;
 import com.linknest.backend.security.handler.UserAccessDeniedHandler;
 import com.linknest.backend.security.handler.UserAuthenticationEntryPoint;
+import com.linknest.backend.security.jwt.JwtTokenizer;
+import com.linknest.backend.security.jwt.JwtVerificationFilter;
 import com.linknest.backend.security.oauth2.CustomOAuth2UserService;
 import com.linknest.backend.security.oauth2.CustomOidcUserService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,10 +21,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@EnableConfigurationProperties(JwtProperties.class)
 public class SecurityConfig {
     private final UserAuthenticationEntryPoint userAuthenticationEntryPoint;
     private final UserAccessDeniedHandler userAccessDeniedHandler;
@@ -26,6 +34,8 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
     private final OAuth2AuthenticationFailureHandler oAuth2FailureHandler;
+    private final JwtTokenizer jwtTokenizer;
+    private final JwtProperties jwtProperties;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -53,6 +63,12 @@ public class SecurityConfig {
                         .successHandler(oAuth2SuccessHandler)
                         .failureHandler(oAuth2FailureHandler)
                 );
+
+        http.addFilterBefore(
+                new JwtVerificationFilter(jwtTokenizer, jwtProperties),
+                UsernamePasswordAuthenticationFilter.class
+        );
+
         return http.build();
     }
 }
