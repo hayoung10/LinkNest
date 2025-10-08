@@ -9,7 +9,7 @@ import { useAuthStore } from "@/stores/auth";
 
 // Axios instance (공통 설정)
 const http: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_APP_BASE_URL,
   withCredentials: true,
   timeout: 10000,
 });
@@ -25,25 +25,25 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 // 응답 인터셉터: 401 -> Refresh Token 재발급
-let isRefreshing = false; // 동시 중복 refresh 요청 방지 플래그
-
 http.interceptors.response.use(
   (res) => res,
   async (error: AxiosError<ApiError>) => {
     const auth = useAuthStore();
     const original = error.config as AxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status === 401 && !original._retry) {
-      if (isRefreshing) throw error;
+    // /auth/refresh 요청이 401로 실패할 때, 무한 재시도 방지
+    const isRefreshCall =
+      typeof original?.url === "string" &&
+      original.url.includes("/api/v1/auth/refresh");
+
+    if (error.response?.status === 401 && !original._retry && !isRefreshCall) {
       original._retry = true;
-      isRefreshing = true;
       try {
         await auth.refresh();
-        isRefreshing = false;
         return http(original); // 원래 요청 재시도
       } catch (e) {
-        isRefreshing = false;
         await auth.logout(true);
+        throw e;
       }
     }
     throw error;

@@ -2,7 +2,7 @@
 
 // Vite 환경변수 타입 선언
 interface ImportMetaEnv {
-  readonly VITE_API_BASE_URL: string;
+  readonly VITE_APP_BASE_URL: string;
 }
 
 interface ImportMeta {
