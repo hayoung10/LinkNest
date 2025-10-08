@@ -9,7 +9,7 @@ import { useAuthStore } from "@/stores/auth";
 
 // Axios instance (공통 설정)
 const http: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_APP_BASE_URL,
   withCredentials: true,
   timeout: 10000,
 });
