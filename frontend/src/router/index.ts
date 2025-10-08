@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
 
+  // 게스트 전용
   {
     path: "/login",
     name: "login",
@@ -30,7 +31,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/signup",
     name: "signup",
-    component: () => import("@/views/SingupView.vue"),
+    component: () => import("@/views/SignupView.vue"),
     meta: { guestOnly: true },
   },
 
@@ -39,7 +40,6 @@ const routes: RouteRecordRaw[] = [
     path: "/redirect",
     name: "redirect",
     component: () => import("@/views/Redirect.vue"),
-    meta: { guestOnly: true },
   },
 
   // 404
@@ -47,7 +47,6 @@ const routes: RouteRecordRaw[] = [
     path: "/:pathMatch(.*)*",
     name: "notfound",
     component: () => import("@/views/NotFound.vue"),
-    meta: { guestOnly: true },
   },
 ];
 
