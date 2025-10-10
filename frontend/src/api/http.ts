@@ -42,7 +42,7 @@ http.interceptors.response.use(
         await auth.refresh();
         return http(original); // 원래 요청 재시도
       } catch (e) {
-        await auth.logout(true);
+        await auth.logout();
         throw e;
       }
     }
