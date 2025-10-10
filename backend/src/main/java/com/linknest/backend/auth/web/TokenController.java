@@ -39,15 +39,19 @@ public class TokenController {
         String newAt = tokens.get("accessToken");
         String newRt = tokens.get("refreshToken");
 
-        // AT -> 헤더
-        response.setHeader(jwtProperties.getHeader(), jwtProperties.getPrefix() + " " + newAt);
+        // AT -> JSON
+        Map<String, Object> body = Map.of(
+                "accessToken", newAt,
+                "tokenType", "Bearer",
+                "expiresIn", jwtProperties.getAccessExpMinutes() * 60
+        );
 
         // RT -> 쿠키
         int maxAge = (int) Duration.ofDays(jwtProperties.getRefreshExpDays()).toSeconds();
         ResponseCookie cookie = CookieUtils.createCookie(RT_COOKIE, newRt, maxAge);
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(body);
     }
 
     @PostMapping("/logout")
