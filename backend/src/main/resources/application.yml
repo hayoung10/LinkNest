@@ -48,6 +48,10 @@ spring:
       port: 6380
       timeout: 5000
 
+app:
+  frontend:
+    oauth2-success-redirect: "http://localhost:5173/redirect"
+
 logging:
   level:
     root: info
