@@ -7,11 +7,10 @@ import com.linknest.backend.security.handler.UserAccessDeniedHandler;
 import com.linknest.backend.security.handler.UserAuthenticationEntryPoint;
 import com.linknest.backend.security.jwt.JwtTokenizer;
 import com.linknest.backend.security.jwt.JwtVerificationFilter;
+import com.linknest.backend.security.oauth2.CustomAuthorizationRequestResolver;
 import com.linknest.backend.security.oauth2.CustomOAuth2UserService;
 import com.linknest.backend.security.oauth2.CustomOidcUserService;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +29,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final UserAuthenticationEntryPoint userAuthenticationEntryPoint;
     private final UserAccessDeniedHandler userAccessDeniedHandler;
+    private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
     private final CustomOidcUserService customOidcUserService;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
@@ -52,13 +52,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/api/v1/users/**", "/api/v1/bookmarks/**", "/api/v1/collections/**").permitAll()
+                        .requestMatchers("/api/v1/users/**", "/api/v1/bookmarks/**", "/api/v1/collections/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
+                        .authorizationEndpoint(a -> a
+                                .authorizationRequestResolver(customAuthorizationRequestResolver))
                         .userInfoEndpoint(user -> user
-                                .oidcUserService(customOidcUserService)
                                 .userService(customOAuth2UserService)
+                                .oidcUserService(customOidcUserService)
                         )
                         .successHandler(oAuth2SuccessHandler)
                         .failureHandler(oAuth2FailureHandler)

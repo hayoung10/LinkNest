@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -34,9 +35,10 @@ public class UserController {
         return ResponseEntity.created(location).body(res);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<UserRes> get(@PathVariable @Min(1) Long id) {
-        UserRes res = service.get(id);
+    @GetMapping("/me")
+    public ResponseEntity<UserRes> me(@AuthenticationPrincipal(expression = "name") String subject) {
+        Long userId = Long.valueOf(subject);
+        UserRes res = service.get(userId);
         return ResponseEntity.ok(res);
     }
 
