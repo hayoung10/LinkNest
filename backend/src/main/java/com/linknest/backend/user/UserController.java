@@ -1,57 +1,37 @@
 package com.linknest.backend.user;
 
-import com.linknest.backend.user.dto.UserCreateReq;
 import com.linknest.backend.user.dto.UserRes;
 import com.linknest.backend.user.dto.UserUpdateReq;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import java.net.URI;
 
 import static com.linknest.backend.common.constants.AppConstants.API_PREFIX;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(API_PREFIX + "/users")
+@RequestMapping(API_PREFIX + "/users/me")
 public class UserController {
     private final UserService service;
 
-    @PostMapping
-    public ResponseEntity<UserRes> create(@RequestBody @Valid UserCreateReq req) {
-        UserRes res = service.create(req);
-
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(res.id())
-                .toUri();
-
-        return ResponseEntity.created(location).body(res);
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<UserRes> me(@AuthenticationPrincipal(expression = "name") String subject) {
-        Long userId = Long.valueOf(subject);
+    @GetMapping
+    public ResponseEntity<UserRes> me(@AuthenticationPrincipal(expression = "id") Long userId) {
         UserRes res = service.get(userId);
         return ResponseEntity.ok(res);
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<UserRes> update(@PathVariable @Min(1) Long id,
+    @PatchMapping
+    public ResponseEntity<UserRes> update(@AuthenticationPrincipal(expression = "id") Long userId,
                                           @RequestBody @Valid UserUpdateReq req) {
-        UserRes res = service.update(id, req);
+        UserRes res = service.update(userId, req);
         return ResponseEntity.ok(res);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable @Min(1) Long id) {
-        service.delete(id);
+    @DeleteMapping
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal(expression = "id") Long userId) {
+        service.delete(userId);
         return ResponseEntity.noContent().build();
     }
 }

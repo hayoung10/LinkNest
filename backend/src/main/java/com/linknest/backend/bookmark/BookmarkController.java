@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -23,7 +24,7 @@ public class BookmarkController {
     private final BookmarkService service;
 
     @PostMapping
-    public ResponseEntity<BookmarkRes> create(@RequestParam Long userId,
+    public ResponseEntity<BookmarkRes> create(@AuthenticationPrincipal(expression = "id") Long userId,
                                               @RequestBody @Valid BookmarkCreateReq req) {
         BookmarkRes res = service.create(userId, req);
 
@@ -37,14 +38,14 @@ public class BookmarkController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookmarkRes> get(@RequestParam Long userId,
+    public ResponseEntity<BookmarkRes> get(@AuthenticationPrincipal(expression = "id") Long userId,
                                            @PathVariable @Min(1) Long id) {
         BookmarkRes res = service.get(userId, id);
         return ResponseEntity.ok(res);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<BookmarkRes> update(@RequestParam Long userId,
+    public ResponseEntity<BookmarkRes> update(@AuthenticationPrincipal(expression = "id") Long userId,
                                               @PathVariable @Min(1) Long id,
                               @RequestBody @Valid BookmarkUpdateReq req) {
         BookmarkRes res = service.update(userId, id, req);
@@ -52,21 +53,21 @@ public class BookmarkController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@RequestParam Long userId,
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal(expression = "id") Long userId,
                                        @PathVariable @Min(1) Long id) {
         service.delete(userId, id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public ResponseEntity<List<BookmarkRes>> listBookmarks(@RequestParam Long userId,
+    public ResponseEntity<List<BookmarkRes>> listBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
                                                            @RequestParam(required = false) Long collectionId) {
         List<BookmarkRes> res = service.listByCollection(userId, collectionId);
         return ResponseEntity.ok(res);
     }
 
     @PatchMapping("/{id}/move")
-    public ResponseEntity<Void> move(@RequestParam Long userId,
+    public ResponseEntity<Void> move(@AuthenticationPrincipal(expression = "id") Long userId,
                                      @PathVariable @Min(1) Long id,
                                      @RequestBody @Valid BookmarkMoveReq req) {
         service.move(userId, id, req.targetCollectionId());
