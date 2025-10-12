@@ -1,6 +1,7 @@
 package com.linknest.backend.security.jwt;
 
 import com.linknest.backend.config.props.JwtProperties;
+import com.linknest.backend.security.auth.PrincipalUser;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,17 +54,18 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
                 List<SimpleGrantedAuthority> authorities =
                         atClaims.roles().stream()
                                 .filter(Objects::nonNull)
+                                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
                                 .map(SimpleGrantedAuthority::new)
                                 .toList();
 
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                                atClaims.userId(),
-                                null,
-                                authorities
-                        );
+                PrincipalUser principal = new PrincipalUser(
+                        atClaims.userId(),
+                        atClaims.username(),
+                        atClaims.roles()
+                );
 
-                // 요청 메타 데이터 부착
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(principal, null, authorities);
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
