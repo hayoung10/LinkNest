@@ -2,7 +2,6 @@ package com.linknest.backend.user;
 
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
-import com.linknest.backend.user.dto.UserCreateReq;
 import com.linknest.backend.user.dto.UserRes;
 import com.linknest.backend.user.dto.UserUpdateReq;
 import lombok.RequiredArgsConstructor;
@@ -15,18 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     private final UserRepository repository;
     private final UserMapper mapper;
-
-    @Transactional
-    public UserRes create(UserCreateReq req) {
-        if(repository.existsByEmail(req.email())) {
-            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
-        }
-
-        User user = mapper.toEntity(req);
-        user.setRole(User.Role.ROLE_USER);
-
-        return mapper.toRes(repository.save(user));
-    }
 
     public UserRes get(Long id) {
         return mapper.toRes(findVerifiedUser(id));

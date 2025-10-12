@@ -27,12 +27,12 @@ spring:
 
 app:
   jwt:
-    issuer: "linknest"
-    audience: "linknest-client"
+    issuer: linknest
+    audience: linknest-client
     access-exp-minutes: 15
     refresh-exp-days: 7
-    header: "Authorization"
-    prefix: "Bearer "
+    header: Authorization
+    prefix: Bearer
     clock-skew-seconds: 60
 
 --- #dev-config
@@ -56,7 +56,7 @@ logging:
   level:
     root: info
     org.springframework.web: info
-    org.springframework.security: info
+    org.springframework.security: debug
     org.hibernate.SQL: warn
     org.hibernate.type: warn
     com.example: debug

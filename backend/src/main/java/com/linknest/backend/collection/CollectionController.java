@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -20,7 +21,7 @@ public class CollectionController {
     private final CollectionService service;
 
     @PostMapping
-    public ResponseEntity<CollectionRes> create(@RequestParam Long userId,
+    public ResponseEntity<CollectionRes> create(@AuthenticationPrincipal(expression = "id") Long userId,
                                                 @RequestBody @Valid CollectionCreateReq req) {
         CollectionRes res = service.create(userId, req);
 
@@ -34,14 +35,14 @@ public class CollectionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CollectionRes> get(@RequestParam Long userId,
+    public ResponseEntity<CollectionRes> get(@AuthenticationPrincipal(expression = "id") Long userId,
                                              @PathVariable @Min(1) Long id) {
         CollectionRes res = service.get(userId, id);
         return ResponseEntity.ok(res);
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<CollectionRes> update(@RequestParam Long userId,
+    public ResponseEntity<CollectionRes> update(@AuthenticationPrincipal(expression = "id") Long userId,
                                                 @PathVariable @Min(1) Long id,
                                                 @RequestBody @Valid CollectionUpdateReq req) {
         CollectionRes res = service.update(userId, id, req);
@@ -49,21 +50,21 @@ public class CollectionController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@RequestParam Long userId,
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal(expression = "id") Long userId,
                                        @PathVariable @Min(1) Long id) {
         service.delete(userId, id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public ResponseEntity<List<CollectionRes>> listChildren(@RequestParam Long userId,
+    public ResponseEntity<List<CollectionRes>> listChildren(@AuthenticationPrincipal(expression = "id") Long userId,
                                                             @RequestParam(required = false) Long parentId) {
         List<CollectionRes> res = service.listChildren(userId, parentId);
         return ResponseEntity.ok(res);
     }
 
     @PatchMapping("/{id}/move")
-    public ResponseEntity<Void> move(@RequestParam Long userId,
+    public ResponseEntity<Void> move(@AuthenticationPrincipal(expression = "id") Long userId,
                                      @PathVariable @Min(1) Long id,
                                      @RequestBody @Valid CollectionMoveReq req) {
         service.move(userId, id, req.targetParentId());
@@ -71,7 +72,7 @@ public class CollectionController {
     }
 
     @PatchMapping("/{id}/order")
-    public ResponseEntity<Void> reorder(@RequestParam Long userId,
+    public ResponseEntity<Void> reorder(@AuthenticationPrincipal(expression = "id") Long userId,
                                         @PathVariable @Min(1) Long id,
                                         @RequestBody @Valid CollectionReorderReq req) {
         service.reorder(userId, id, req.newOrder());
