@@ -1,8 +1,5 @@
 <template>
-  <main
-    class="min-h-screen flex items-center justify-center"
-    style="background: #eef2ff"
-  >
+  <main class="min-h-screen flex items-center justify-center bg-indigo-50">
     <section class="w-full px-4">
       <LoginCard title="로그인" description="소셜 계정으로 로그인하세요.">
         <LoginSocialButtons
@@ -10,7 +7,7 @@
           @kakao="login('kakao')"
           @naver="login('naver')"
         />
-        <p class="agree">
+        <p class="mt-5 text-center text-sm text-gray-500">
           로그인하면 이용약관 및 개인정보처리방침에 동의하게 됩니다
         </p>
       </LoginCard>
@@ -48,12 +45,3 @@ function login(provider: Provider) {
   auth.startOAuth(provider);
 }
 </script>
-
-<style scoped>
-.agree {
-  margin-top: 18px;
-  text-align: center;
-  font-size: 0.9rem;
-  color: #6b7280;
-}
-</style>
