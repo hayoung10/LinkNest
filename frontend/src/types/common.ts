@@ -14,8 +14,39 @@ export type ApiError = {
   timestamp?: string;
 };
 
+export type Role = "ROLE_USER" | "ROLE_ADMIN";
+
 export interface User {
   id: number;
   name: string;
-  // 백엔드 User 엔티티와 맞춰서 필드 확장 예정
+  profileImageUrl: string | null;
+  role: Role;
+  createdAt: string;
+  updatedAt: string;
+  bookmarkCount: number;
+  collectionCount: number;
+}
+
+/** 화면/스토어에서 사용 */
+export interface Bookmark {
+  id: number;
+  collectionId: number;
+  url: string;
+  title: string;
+  description: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Collection {
+  id: number;
+  name: string;
+  icon?: string | null;
+  parentId?: number | null;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  bookmarkCount?: number;
+
+  bookmarks?: Bookmark[];
 }
