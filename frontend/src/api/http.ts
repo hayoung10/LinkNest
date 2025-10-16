@@ -20,7 +20,7 @@ const BASE_API = joinURL(BASE_URL, API_PREFIX);
 
 // Axios instance (공통 설정)
 const http: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_APP_BASE_URL,
+  baseURL: BASE_API,
   withCredentials: true,
   timeout: 10000,
 });
@@ -63,10 +63,10 @@ http.interceptors.response.use(
 
 export default http;
 
-// 성공 응답에서 data만 추출
-export async function unwrap<T>(
-  p: Promise<{ data: ApiSuccess<T> }>
-): Promise<T> {
-  const { data } = await p;
-  return data.data;
-}
+// // 성공 응답에서 data만 추출
+// export async function unwrap<T>(
+//   p: Promise<{ data: ApiSuccess<T> }>
+// ): Promise<T> {
+//   const { data } = await p;
+//   return data.data;
+// }

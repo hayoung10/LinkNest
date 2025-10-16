@@ -41,9 +41,9 @@
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <button
           class="h-11 px-6 inline-flex items-center justify-center rounded-lg bg-gray-900 text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200 text-base"
-          @click="$router.push('/login')"
+          @click="handleClick"
         >
-          로그인
+          {{ auth.isLoggedIn ? "워크스페이스로 이동" : "로그인" }}
         </button>
       </div>
 
@@ -59,3 +59,19 @@
     </div>
   </section>
 </template>
+
+<script setup lang="ts">
+import { useAuthStore } from "@/stores/auth";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+const auth = useAuthStore();
+
+function handleClick() {
+  if (auth.isLoggedIn) {
+    router.push({ name: "workspace" });
+  } else {
+    router.push({ name: "login" });
+  }
+}
+</script>

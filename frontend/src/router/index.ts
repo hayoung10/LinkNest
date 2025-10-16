@@ -8,9 +8,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/views/HomeView.vue"),
   },
   {
-    path: "/bookmark",
-    name: "bookmark",
-    component: () => import("@/views/BookmarkListView.vue"),
+    path: "/workspace",
+    name: "workspace",
+    component: () => import("@/views/WorkspaceView.vue"),
     meta: { requiresAuth: true },
   },
   {
@@ -25,12 +25,6 @@ const routes: RouteRecordRaw[] = [
     path: "/login",
     name: "login",
     component: () => import("@/views/LoginView.vue"),
-    meta: { guestOnly: true },
-  },
-  {
-    path: "/signup",
-    name: "signup",
-    component: () => import("@/views/SignupView.vue"),
     meta: { guestOnly: true },
   },
 
