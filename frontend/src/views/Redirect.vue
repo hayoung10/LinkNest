@@ -44,7 +44,7 @@ function resolveRedirectTarget(): string {
   if (redirectStored && isSafeInternalPath(redirectStored))
     return redirectStored;
 
-  return "/";
+  return "/workspace";
 }
 
 /** redirect 경로 복원 */

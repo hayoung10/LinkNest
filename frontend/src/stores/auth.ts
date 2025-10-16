@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import http, { unwrap } from "@/api/http";
+import http from "@/api/http";
 import type { User } from "@/types/common";
 
 type OAuthProvider = "google" | "kakao" | "naver";
@@ -12,7 +12,8 @@ export const useAuthStore = defineStore("auth", {
     _refreshPromise: null as Promise<void> | null,
   }),
   getters: {
-    isLoggedIn: (s) => !!s.accessToken && !!s.user,
+    isLoggedIn: (s) => !!s.accessToken,
+    hasProfile: (s) => !!s.user,
   },
   actions: {
     setAccessToken(token: string | null) {
@@ -27,12 +28,8 @@ export const useAuthStore = defineStore("auth", {
       const apiBase = import.meta.env.VITE_APP_BASE_URL;
 
       const nonce = crypto.getRandomValues(new Uint32Array(2)).join("-");
-      const redirect =
-        location.pathname === "/login"
-          ? "/" // TODO: 다른 보호 라우트 생기면 이전 경로로 복귀하도록 수정
-          : location.pathname + location.search;
+      const redirect = sessionStorage.getItem("oauth:redirect") || "/workspace";
       sessionStorage.setItem("oauth:nonce", nonce);
-      sessionStorage.setItem("oauth:redirect", redirect);
 
       const state = base64url(JSON.stringify({ n: nonce, r: redirect }));
 
@@ -49,10 +46,10 @@ export const useAuthStore = defineStore("auth", {
 
       // 새 refresh 요청 시작
       this._refreshPromise = (async () => {
-        const { accessToken } = await unwrap<{ accessToken: string }>(
-          http.post("/api/v1/auth/refresh")
+        const { data } = await http.post<{ accessToken: string }>(
+          "/auth/refresh"
         );
-        this.setAccessToken(accessToken);
+        this.setAccessToken(data.accessToken);
       })().finally(() => {
         this._refreshPromise = null;
       });
@@ -63,7 +60,7 @@ export const useAuthStore = defineStore("auth", {
     /** 로그아웃 */
     async logout() {
       try {
-        await http.post("/api/v1/auth/logout");
+        await http.post("/auth/logout");
       } catch (e) {
         console.warn("logout request failed:", e);
       } finally {
@@ -88,7 +85,7 @@ export const useAuthStore = defineStore("auth", {
     /** 사용자 프로필 조회 */
     async fetchProfile(force = false) {
       if (!force && this.user) return;
-      const me = await unwrap<User>(http.get("/api/v1/users/me"));
+      const { data: me } = await http.get<User>("/users/me");
       this.setUser(me);
     },
   },
