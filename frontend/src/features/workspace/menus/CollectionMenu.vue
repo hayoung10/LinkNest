@@ -239,33 +239,16 @@ function closeMenu() {
 }
 
 function updatePosition() {
-  // const el = triggerEl.value;
-  // if (!el) return;
-  // const r = el.getBoundingClientRect();
-  // pos.top = r.bottom + 6 + window.scrollY;
-  // pos.left = r.right - 192 + window.scrollX; // 우측 정렬
-
   const trg = triggerEl.value;
   const panel = panelEl.value;
   if (!trg || !panel) return;
 
   const r = trg.getBoundingClientRect();
-
-  // 측정값이 이상하면 192px로 강제
   let w = panel.getBoundingClientRect().width || 192;
   if (w < 120 || w > 400) w = 192;
 
-  const x = r.right - w + window.scrollX; // 우측정렬
-  const y = r.bottom + 6 + window.scrollY; // 트리거 아래 6px
-
-  // 디버그(문제 재발 시 확인)
-  console.log("[CollectionMenu] rect:", r, "panelWidth:", w, "final:", {
-    top: y,
-    left: x,
-  });
-
-  pos.left = x;
-  pos.top = y;
+  pos.left = r.right - w + window.scrollX; // 우측 정렬
+  pos.top = r.bottom + 6 + window.scrollY;
 }
 
 // 바깥 클릭 닫기
