@@ -1,6 +1,7 @@
 <template>
   <aside
-    class="relative overflow-visible w-64 border-r border-border flex flex-col bg-card text-card-foreground"
+    id="workspace-sidebar"
+    class="relative isolate overflow-visible w-64 border-r border-border flex flex-col bg-card text-card-foreground"
   >
     <!-- 상단 로고 영역 -->
     <header

@@ -2,10 +2,12 @@
   <div class="relative">
     <!-- 트리거 -->
     <button
+      ref="triggerEl"
       class="flex items-center gap-3 w-full px-2 py-2 rounded-md hover:bg-accent transition-colors"
-      @click.stop="open = !open"
-      aria-haspopup="menu"
       :aria-expanded="open"
+      aria-haspopup="menu"
+      aria-controls="user-menu-panel"
+      @click.stop="toggleMenu"
     >
       <!-- 아바타 -->
       <div
@@ -23,12 +25,12 @@
       <!-- 이름 + 이메일 -->
       <span class="flex flex-col items-start min-w-0 flex-1">
         <span class="text-sm font-medium truncate w-full">{{ user.name }}</span>
-        <span class="text-xs text-muted-foreground truncat w-full">{{
+        <span class="text-xs text-muted-foreground truncate w-full">{{
           user.email
         }}</span>
       </span>
 
-      <!-- 화살표 아이콘 -->
+      <!-- 화살표 아이콘(^) -->
       <svg
         class="size-4 text-muted-foreground"
         viewBox="0 0 24 24"
@@ -40,28 +42,30 @@
     </button>
 
     <!-- 드롭다운 메뉴 -->
-    <teleport to="body">
+    <Teleport to="body" v-if="open">
       <div
-        v-if="open"
-        class="absolute bottom-full mb-2 right-0 w-56 rounded-md border bg-popover text-popover-foreground shadow-lg z-50 overflow-hidden"
+        id="user-menu-panel"
+        class="panel w-56"
+        :style="panelStyle"
         role="menu"
         @click.stop
       >
         <!-- 유저 정보 -->
-        <div class="px-3 py-2">
-          <p class="text-sm font-medium">{{ user.name }}</p>
-          <p class="text-xs text-muted-foreground truncate">{{ user.email }}</p>
+        <div class="px-4 pt-4 pb-3">
+          <p class="text-[15px] font-semibold leading-[22px]">
+            {{ user.name }}
+          </p>
+          <p class="mt-1 text-xs text-muted-foreground leading-5 truncate">
+            {{ user.email }}
+          </p>
         </div>
-        <div class="h-px bg-border" />
+
+        <div class="divider" />
 
         <!-- 마이페이지 -->
-        <button
-          class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
-          role="menuitem"
-          @click="open = false"
-        >
+        <button class="menu-item" role="menuitem" @click="handleProfile">
           <svg
-            class="size-4"
+            class="menu-icon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -73,13 +77,9 @@
         </button>
 
         <!-- 계정 설정 -->
-        <button
-          class="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
-          role="menuitem"
-          @click="open = false"
-        >
+        <button class="menu-item" role="menuitem" @click="handleSettings">
           <svg
-            class="size-4"
+            class="menu-icon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -92,16 +92,16 @@
           계정 설정
         </button>
 
-        <div class="h-px bg-border" />
+        <div class="divider" />
 
         <!-- 로그아웃 -->
         <button
-          class="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-accent/70"
+          class="menu-item menu-destructive"
           role="menuitem"
-          @click="open = false"
+          @click="handleLogout"
         >
           <svg
-            class="size-4"
+            class="menu-icon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -113,20 +113,159 @@
           로그아웃
         </button>
       </div>
-    </teleport>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import type { CSSProperties } from "vue";
 
 const user = { name: "홍길동", email: "hong@example.com", profileImageUrl: "" }; // 임시 유저
 const initials = computed(() => user.name.charAt(0));
-const open = ref(false);
 
-function onDocClick() {
+const open = ref(false);
+const triggerEl = ref<HTMLElement | null>(null);
+
+const pos = ref({ top: 0, left: 0 });
+const panelWidth = 224;
+const gap = 8;
+
+const panelStyle = computed<CSSProperties>(() => ({
+  position: "fixed",
+  top: `${pos.value.top}px`,
+  left: `${pos.value.left}px`,
+  right: "auto",
+  bottom: "auto",
+  width: `${panelWidth}px`,
+  transform: "translate3d(0,0,0)",
+  fontSize: "14px",
+  lineHeight: "20px",
+}));
+
+let ignoreNextDocClick = false;
+
+async function toggleMenu() {
+  open.value = !open.value;
+  if (open.value) {
+    // 열리는 순간 문서클릭 무시
+    ignoreNextDocClick = true;
+    await nextTick();
+
+    // 위치 계산은 1 프레임 뒤에 (DOM 실제 생성 이후)
+    requestAnimationFrame(() => {
+      updatePosition();
+
+      // 다음 프레임에 문서클릭 허용
+      requestAnimationFrame(() => {
+        ignoreNextDocClick = false;
+      });
+    });
+  }
+}
+
+function updatePosition() {
+  const t = triggerEl.value?.getBoundingClientRect();
+  const panel = document.getElementById("user-menu-panel");
+  const ph = panel ? panel.offsetHeight : 0;
+  if (!t) return;
+
+  // 기본은 위, 공간 없으면 아래에 배치
+  let top = t.top - ph - gap;
+  if (top < 8) top = t.bottom + gap;
+  top = Math.max(8, Math.min(top, window.innerHeight - ph - 8));
+
+  let left = t.right - panelWidth; // 우측 정렬
+  left = Math.max(8, Math.min(left, window.innerWidth - panelWidth - 8));
+
+  pos.value = { top: Math.round(top), left: Math.round(left) };
+}
+
+// 바깥 클릭 닫기
+function onDocClick(e: MouseEvent) {
+  if (!open.value) return;
+  const t = e.target as Node | null;
+  const panel = document.getElementById("user-menu-panel");
+  if (panel?.contains(t as Node)) return;
+  if (triggerEl.value?.contains(t as Node)) return;
   open.value = false;
 }
-onMounted(() => document.addEventListener("click", onDocClick));
-onBeforeUnmount(() => document.removeEventListener("click", onDocClick));
+onMounted(() =>
+  document.addEventListener("click", onDocClick, { capture: true })
+);
+onBeforeUnmount(() =>
+  document.removeEventListener("click", onDocClick, { capture: true })
+);
+
+// 액션 핸들러
+function handleProfile() {
+  open.value = false;
+}
+function handleSettings() {
+  open.value = false;
+}
+function handleLogout() {
+  open.value = false;
+}
 </script>
+
+<style scoped>
+/* 공통 패널 */
+.panel {
+  position: fixed;
+  z-index: 220;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, currentColor 12%, transparent);
+  background: color-mix(in oklab, var(--color-bg, #fff) 100%, transparent);
+  color: var(--popover-foreground, inherit);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
+  padding: 4px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.menu-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.menu-item:hover {
+  background: var(--accent, color-mix(in oklab, currentColor 12%, transparent));
+}
+
+/** 키보드 포커스 접근성 */
+.menu-item:focus-visible {
+  box-shadow: 0 0 0 2px
+      color-mix(in oklab, var(--ring, #3b82f6) 55%, transparent),
+    0 0 0 4px var(--popover, #fff);
+}
+
+.menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.menu-destructive {
+  color: var(--destructive, #dc2626);
+}
+.menu-destructive:hover {
+  background: color-mix(in oklab, #dc2626 10%, transparent);
+}
+
+.divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: color-mix(in oklab, currentColor 12%, transparent);
+  border-radius: 1px;
+}
+</style>

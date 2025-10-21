@@ -3,13 +3,13 @@
     <!-- 트리거 버튼 -->
     <button
       ref="triggerEl"
-      class="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-accent transition-colors"
-      @click.stop="openMenu"
+      class="inline-flex size-6 items-center justify-center rounded hover:bg-accent"
       aria-haspopup="menu"
       :aria-expanded="menuOpen"
-      title="컬렉션 메뉴"
+      :aria-controls="panelId"
+      @click.stop="openMenu"
     >
-      <svg viewBox="0 0 24 24" class="size-4" fill="currentColor">
+      <svg viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor">
         <circle cx="5" cy="12" r="1.8" />
         <circle cx="12" cy="12" r="1.8" />
         <circle cx="19" cy="12" r="1.8" />
@@ -17,23 +17,23 @@
     </button>
 
     <!-- 드롭다운 메뉴 -->
-    <Teleport to="body">
+    <Teleport to="#workspace-sidebar" v-if="menuOpen">
       <div
-        v-if="menuOpen"
         id="collection-menu-panel"
-        ref="panelEl"
-        class="fixed z-[120] rounded-md border bg-popover text-popover-foreground shadow-lg text-sm"
-        :style="{ top: pos.top + 'px', left: pos.left + 'px', width: '192px' }"
-        @mousedown.stop
+        class="panel w-48"
+        :style="panelStyle"
+        role="menu"
         @click.stop
       >
         <button
-          class="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+          class="menu-item"
           :disabled="isOpenAllDisabled"
-          @click="emitAndCloseOpenAll"
+          :aria-disabled="isOpenAllDisabled"
+          role="menuitem"
+          @click="emitAndClose('open-all', collection.id)"
         >
           <svg
-            class="w-4 h-4"
+            class="menu-icon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -47,14 +47,15 @@
           모든 북마크 열기
         </button>
 
-        <div class="my-1 h-px bg-border" />
+        <div class="divider" />
 
         <button
-          class="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent"
-          @click="emitAndCloseAddSub"
+          class="menu-item"
+          role="menuitem"
+          @click="emitAndClose('add-sub', collection.id)"
         >
           <svg
-            class="w-4 h-4"
+            class="menu-icon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -65,12 +66,9 @@
           하위 컬렉션 만들기
         </button>
 
-        <button
-          class="w-full flex items-center gap-2 px-3 py-2 hover:bg-accent"
-          @click="openRenameDialog"
-        >
+        <button class="menu-item" role="menuitem" @click="openRenameDialog">
           <svg
-            class="w-4 h-4"
+            class="menu-icon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -83,14 +81,15 @@
           이름 변경
         </button>
 
-        <div class="my-1 h-px bg-border" />
+        <div class="divider" />
 
         <button
-          class="w-full flex items-center gap-2 px-3 py-2 text-destructive hover:bg-accent/70"
+          class="menu-item menu-destructive"
+          role="menuitem"
           @click="openDeleteDialog"
         >
           <svg
-            class="w-4 h-4"
+            class="menu-icon"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -184,20 +183,13 @@
 </template>
 
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref,
-} from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import type { CSSProperties } from "vue";
 
-type Bookmark = { id: string; title: string };
 type Collection = {
   id: string;
   name: string;
-  bookmarks?: Bookmark[];
+  bookmarks?: { id: string; title: string }[];
   children?: Collection[];
 };
 
@@ -205,50 +197,71 @@ const props = defineProps<{
   collection: Collection;
 }>();
 const emit = defineEmits<{
-  (e: "open-all", collectionId: string): void;
-  (e: "add-sub", parentId: string): void;
-  (e: "rename", payload: { collectionId: string; newName: string }): void;
-  (e: "delete", collectionId: string): void;
+  (e: "open-all", id: string): void;
+  (e: "add-sub", id: string): void;
+  (e: "rename", p: { collectionId: string; newName: string }): void;
+  (e: "delete", id: string): void;
 }>();
 
-// 메뉴 열림 상태 & 위치
 const menuOpen = ref(false);
 const triggerEl = ref<HTMLElement | null>(null);
-const panelEl = ref<HTMLDivElement | null>(null);
-const pos = reactive({ top: 0, left: 0 });
-
-// 다이얼로그 상태
 const showRenameDialog = ref(false);
 const showDeleteDialog = ref(false);
 const newName = ref(props.collection.name);
 
-// 비활성 조건
+// 여러 인스턴스 안전: 패널 ID 고유화
+const panelId = `collection-menu-${props.collection.id}`;
+
+// 메뉴 비활성
 const isOpenAllDisabled = computed(() => {
   const hasBookmarks = (props.collection.bookmarks?.length ?? 0) > 0;
   const hasChildren = (props.collection.children?.length ?? 0) > 0;
   return !(hasBookmarks || hasChildren);
 });
 
+// 위치 계산
+const pos = ref({ top: 0, left: 0 });
+const panelWidth = 192;
+const gap = 8;
+
+const panelStyle = computed<CSSProperties>(() => ({
+  position: "absolute",
+  top: `${pos.value.top}px`,
+  left: `${pos.value.left}px`,
+  width: `${panelWidth}px`,
+  transform: "translateZ(0)",
+  fontSize: "14px",
+  lineHeight: "20px",
+}));
+
 async function openMenu() {
   menuOpen.value = true;
-  await nextTick();
-  updatePosition();
+  nextTick(() => {
+    const trigger = triggerEl.value;
+    const host = document.getElementById("workspace-sidebar");
+    const panel = document.getElementById("collection-menu-panel");
+    if (!trigger || !host || !panel) return;
+
+    const t = trigger.getBoundingClientRect();
+    const h = host.getBoundingClientRect();
+
+    let top = t.bottom - h.top + gap; // 트리거 아래
+    let left = t.right - h.left - panelWidth; // 우측 정렬
+
+    const ph = panel.getBoundingClientRect().height || 0;
+    if (top + ph > h.height) top = t.top - h.top - ph - gap; // 아래 꽉 차면 위로
+
+    top = Math.max(8, Math.min(top, h.height - ph - 8));
+    left = Math.max(8, Math.min(left, h.width - panelWidth - 8));
+
+    pos.value = { top: Math.round(top), left: Math.round(left) };
+  });
 }
-function closeMenu() {
+
+function emitAndClose(e: "open-all" | "add-sub", id: string) {
+  if (e === "open-all") emit("open-all", id);
+  else emit("add-sub", id);
   menuOpen.value = false;
-}
-
-function updatePosition() {
-  const trg = triggerEl.value;
-  const panel = panelEl.value;
-  if (!trg || !panel) return;
-
-  const r = trg.getBoundingClientRect();
-  let w = panel.getBoundingClientRect().width || 192;
-  if (w < 120 || w > 400) w = 192;
-
-  pos.left = r.right - w + window.scrollX; // 우측 정렬
-  pos.top = r.bottom + 6 + window.scrollY;
 }
 
 // 바깥 클릭 닫기
@@ -257,29 +270,24 @@ function onDocClick(e: MouseEvent) {
   const panel = document.getElementById("collection-menu-panel");
   if (panel?.contains(t as Node)) return;
   if (triggerEl.value?.contains(t as Node)) return;
-  closeMenu();
+  menuOpen.value = false;
 }
-onMounted(() => document.addEventListener("click", onDocClick));
-onBeforeUnmount(() => document.removeEventListener("click", onDocClick));
-
-function emitAndCloseOpenAll() {
-  emit("open-all", props.collection.id);
-  closeMenu();
-}
-function emitAndCloseAddSub() {
-  emit("add-sub", props.collection.id);
-  closeMenu();
-}
+onMounted(() =>
+  document.addEventListener("click", onDocClick, { capture: true })
+);
+onBeforeUnmount(() =>
+  document.removeEventListener("click", onDocClick, { capture: true })
+);
 
 // 다이얼로그 핸들러
 function openRenameDialog() {
   newName.value = props.collection.name;
   showRenameDialog.value = true;
-  closeMenu();
+  menuOpen.value = false;
 }
 function openDeleteDialog() {
   showDeleteDialog.value = true;
-  closeMenu();
+  menuOpen.value = false;
 }
 function handleRename() {
   const name = (newName.value ?? "").trim();
@@ -293,3 +301,63 @@ function handleDelete() {
   showDeleteDialog.value = false;
 }
 </script>
+
+<style scoped>
+.panel {
+  position: absolute;
+  z-index: 200;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, currentColor 12%, transparent);
+  background: color-mix(in oklab, var(--color-bg, #fff) 100%, transparent);
+  color: var(--popover-foreground, inherit);
+  box-shadow: 0 19px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgb(0, 0, 0, 0.06);
+  padding: 4px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.menu-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.menu-item:hover {
+  background: color-mix(in oklab, currentColor 10%, transparent);
+}
+
+/** 키보드 포커스 접근성 */
+.menu-item:focus-visible {
+  box-shadow: 0 0 0 2px
+      color-mix(in oklab, var(--ring, #3b82f6) 55%, transparent),
+    0 0 0 4px var(--popover, #fff);
+}
+
+.menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.menu-destructive {
+  color: var(--destructive, #dc2626);
+}
+.menu-destructive:hover {
+  background: color-mix(in oklab, #dc2626 10%, transparent);
+}
+
+.divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: color-mix(in oklab, currentColor 12%, transparent);
+  border-radius: 1px;
+}
+</style>
