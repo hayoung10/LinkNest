@@ -3,12 +3,12 @@
     <!-- 선택 없음 -->
     <div
       v-if="!hasSelection"
-      class="h-full grid place-items-center text-muted-foreground"
+      class="h-full min-h-[60vh] grid place-items-center text-muted/70 py-16"
     >
       <div class="text-center space-y-2">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="size-12 mx-auto opacity-30"
+          class="size-14 mx-auto opacity-30"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
