@@ -3,16 +3,18 @@
     <!-- 컬렉션 헤더 -->
     <div
       class="relative flex items-center gap-1 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer select-none"
-      @click="open = !open"
       role="button"
-      :aria-expanded="open"
+      :aria-expanded="expanded"
       tabindex="0"
       :style="{ paddingLeft: `${depth * 12}px` }"
+      @click.stop="$emit('toggle', node.id)"
+      @keydown.enter.stop="$emit('toggle', node.id)"
+      @keydown.space.prevent.stop="$emit('toggle', node.id)"
     >
       <!-- 토글 아이콘 -->
       <svg
         class="size-4 text-muted-foreground transition-transform"
-        :class="open ? 'rotate-90' : ''"
+        :class="expanded ? 'rotate-90' : ''"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -42,11 +44,14 @@
 
       <!-- 북마크 개수 -->
       <span class="text-xs text-muted-foreground tabular-nums">{{
-        bookmarkCount
+        node.bookmarks?.length ?? 0
       }}</span>
 
       <!-- … 메뉴 버튼 -->
-      <div class="ml-1">
+      <div
+        class="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        @click.stop
+      >
         <CollectionMenu
           :collection="node"
           @open-all="() => {}"
@@ -58,7 +63,7 @@
     </div>
 
     <!-- 내용(하위 컬렉션 + 북마크) -->
-    <div v-if="open">
+    <div v-if="expanded">
       <!-- 재귀: 하위 컬렉션 -->
       <ul v-if="node.children?.length" class="mt-1 space-y-1">
         <CollectionNode
@@ -66,6 +71,8 @@
           :key="child.id"
           :node="child"
           :depth="depth + 1"
+          :expanded-ids="expandedIds"
+          @toggle="$emit('toggle', $event)"
           @select-bookmark="$emit('select-bookmark', $event)"
         />
       </ul>
@@ -124,10 +131,14 @@ const props = withDefaults(
   defineProps<{
     node: Collection;
     depth?: number;
+    expandedIds: Set<string>;
   }>(),
-  { depth: 0 }
+  { depth: 0, expanded: false }
 );
+const emit = defineEmits<{
+  (e: "toggle", id: string): void;
+  (e: "select-bookmark", b: Bookmark): void;
+}>();
 
-const open = ref(true);
-const bookmarkCount = computed(() => props.node.bookmarks?.length ?? 0);
+const expanded = computed(() => props.expandedIds.has(props.node.id));
 </script>
