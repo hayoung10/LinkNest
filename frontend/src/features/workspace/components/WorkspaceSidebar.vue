@@ -34,7 +34,9 @@
           :key="c.id"
           :node="c"
           :depth="0"
-          @select-bookmark="(b: Bookmark) => $emit('select-bookmark', b)"
+          :expanded-ids="expandedIds"
+          @toggle="toggleExpand"
+          @select-bookmark="$emit('select-bookmark', $event)"
         />
       </ul>
 
@@ -54,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
 import UserMenu from "../menus/UserMenu.vue";
 import CollectionNode from "./CollectionNode.vue";
 
@@ -74,4 +77,13 @@ type Collection = {
 
 defineProps<{ collections: Collection[] }>();
 defineEmits<{ (e: "select-bookmark", b: Bookmark): void }>();
+
+// 모두 닫힌 상태로 시작
+const expandedIds = ref<Set<string>>(new Set());
+
+function toggleExpand(id: string) {
+  const next = new Set(expandedIds.value);
+  next.has(id) ? next.delete(id) : next.add(id);
+  expandedIds.value = next;
+}
 </script>

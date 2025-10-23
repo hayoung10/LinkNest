@@ -96,18 +96,7 @@ const collections = ref<Collection[]>([
   },
 ]);
 
-// 미리보기용 (데모 단계에서만 사용)
-const firstBookmark = (() => {
-  const bookmarks: Bookmark[] = [];
-  const collect = (c: Collection) => {
-    if (c.bookmarks) bookmarks.push(...c.bookmarks);
-    (c.children ?? []).forEach(collect);
-  };
-  collections.value.forEach(collect);
-  return bookmarks[0] ?? null;
-})();
-
-const selectedBookmark = ref<Bookmark | null>(firstBookmark);
+const selectedBookmark = ref<Bookmark | null>(null);
 function onSelectBookmark(b: Bookmark) {
   selectedBookmark.value = b;
 }

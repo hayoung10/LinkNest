@@ -107,37 +107,38 @@
     <!-- 이름 변경 다이얼로그 -->
     <div
       v-if="showRenameDialog"
-      class="fixed inset-0 z-[130] bg-black/50 grid place-items-center p-4"
+      class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
       @click.self="showRenameDialog = false"
     >
       <div
-        class="bg-card text-card-foreground w-full max-w-sm rounded-xl shadow-xl p-6"
+        class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6 relative"
       >
         <header class="mb-4">
-          <h3 class="text-lg font-semibold">컬렉션 이름 변경</h3>
-          <p class="text-sm text-muted-foreground">
+          <h3 class="text-[17px] font-semibold leading-6">컬렉션 이름 변경</h3>
+          <p class="mt-1 text-sm text-muted-foreground">
             새로운 컬렉션 이름을 입력해주세요.
           </p>
         </header>
+        <div class="my-4 h-px bg-zinc-200/80 dark:bg-zinc-700/60"></div>
         <div class="space-y-2">
           <label class="block text-sm">컬렉션 이름</label>
           <input
             v-model="newName"
             type="text"
-            class="w-full border rounded-md px-3 py-2 text-sm bg-background"
+            class="w-full rounded-md px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60"
             placeholder="컬렉션 이름"
             autofocus
           />
         </div>
         <footer class="mt-6 flex justify-end gap-2">
           <button
-            class="px-4 py-2 border rounded-md text-sm hover:bg-accent"
+            class="px-4 py-2 rounded-md text-sm border border-zinc-300/70 dark:border-zinc-600/60 bg-zinc-100/70 dark:bg-zinc-800/70 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             @click="showRenameDialog = false"
           >
             취소
           </button>
           <button
-            class="px-4 py-2 rounded-md bg-primary text-white hover:bg-primary/90"
+            class="px-4 py-2 rounded-md text-sm bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
             @click="handleRename"
           >
             변경
@@ -149,15 +150,15 @@
     <!-- 삭제 확인 다이얼로그 -->
     <div
       v-if="showDeleteDialog"
-      class="fixed inset-0 z-[130] bg-black/50 grid place-items-center p-4"
+      class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
       @click.self="showDeleteDialog = false"
     >
       <div
-        class="bg-card text-card-foreground w-full max-w-sm rounded-xl shadow-xl p-6"
+        class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6 relative"
       >
         <header class="mb-4">
-          <h3 class="text-lg font-semibold">컬렉션 삭제</h3>
-          <p class="text-sm text-muted-foreground">
+          <h3 class="text-[17px] font-semibold leading-6">컬렉션 삭제</h3>
+          <p class="mt-1 text-sm text-muted-foreground">
             정말로 "{{ collection.name }}" 컬렉션을 삭제하시겠습니까?<br />
             이 컬렉션에 포함된 모든 북마크도 함께 삭제됩니다. 이 작업은 되돌릴
             수 없습니다.
@@ -171,7 +172,7 @@
             취소
           </button>
           <button
-            class="px-4 py-2 rounded-md bg-destructive text-white hover:bg-destructive/90"
+            class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500"
             @click="handleDelete"
           >
             삭제
