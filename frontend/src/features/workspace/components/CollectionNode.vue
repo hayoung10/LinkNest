@@ -43,9 +43,11 @@
       <span class="truncate flex-1">{{ node.name }}</span>
 
       <!-- 북마크 개수 -->
-      <span class="text-xs text-muted-foreground tabular-nums">{{
-        node.bookmarks?.length ?? 0
-      }}</span>
+      <span
+        v-if="totalCount"
+        class="text-xs text-muted-foreground tabular-nums"
+        >{{ totalCount }}</span
+      >
 
       <!-- … 메뉴 버튼 -->
       <div
@@ -132,8 +134,9 @@ const props = withDefaults(
     node: Collection;
     depth?: number;
     expandedIds: Set<string>;
+    countMode?: "direct" | "aggregate";
   }>(),
-  { depth: 0, expanded: false }
+  { depth: 0, expanded: false, countMode: "aggregate" }
 );
 const emit = defineEmits<{
   (e: "toggle", id: string): void;
@@ -141,4 +144,15 @@ const emit = defineEmits<{
 }>();
 
 const expanded = computed(() => props.expandedIds.has(props.node.id));
+
+// 총합 카운트
+function countAll(n: Collection): number {
+  const self = n.bookmarks?.length ?? 0;
+  const child = (n.children ?? []).reduce((acc, c) => acc + countAll(c), 0);
+  return self + child;
+}
+const directCount = computed(() => props.node.bookmarks?.length ?? 0);
+const totalCount = computed(() =>
+  props.countMode === "aggregate" ? countAll(props.node) : directCount.value
+);
 </script>
