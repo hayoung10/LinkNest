@@ -4,8 +4,8 @@ import { CollectionRes, mapCollectionRes } from "./types";
 
 export interface CollectionCreateReq {
   name: string;
-  icon: string | null;
-  parentId: number | null;
+  icon?: string | null;
+  parentId?: number | null;
 }
 
 export interface CollectionUpdateReq {
