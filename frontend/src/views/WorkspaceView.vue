@@ -4,17 +4,19 @@
     <WorkspaceSidebar
       class="w-64 border-r border-border"
       :collections="collections"
+      @add-collection="onAddCollection"
       @select-bookmark="onSelectBookmark"
     />
 
     <!-- 우측: 메인 콘텐츠 -->
     <section class="flex-1 overflow-auto">
-      <BookmarkContent :bookmark="selectedBookmark" />
+      <BookmarkContent v-if="selectedBookmark" :bookmark="selectedBookmark" />
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import { createCollection } from "@/features/workspace";
 import BookmarkContent from "@/features/workspace/components/BookmarkContent.vue";
 import WorkspaceSidebar from "@/features/workspace/components/WorkspaceSidebar.vue";
 import { ref } from "vue";
@@ -99,5 +101,9 @@ const collections = ref<Collection[]>([
 const selectedBookmark = ref<Bookmark | null>(null);
 function onSelectBookmark(b: Bookmark) {
   selectedBookmark.value = b;
+}
+
+function onAddCollection(name: string) {
+  return createCollection({ name });
 }
 </script>
