@@ -9,7 +9,7 @@ export interface CollectionCreateReq {
 }
 
 export interface CollectionUpdateReq {
-  name: string;
+  name?: string;
   icon?: string | null;
 }
 

@@ -5,8 +5,8 @@ import { BookmarkRes, mapBookmarkRes } from "./types";
 export interface BookmarkCreateReq {
   collectionId: number;
   url: string;
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
 }
 
 export interface BookmarkUpdateReq {
