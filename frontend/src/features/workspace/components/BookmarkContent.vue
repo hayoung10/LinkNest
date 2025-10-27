@@ -126,7 +126,7 @@
               v-model="editedBookmark!.title"
               type="text"
               class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
-              placeholder="북마크 제목"
+              placeholder="북마크 제목 (선택)"
             />
           </div>
 
@@ -146,12 +146,12 @@
               v-model="editedBookmark!.description"
               type="text"
               class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
-              placeholder="북마크 설명"
+              placeholder="북마크에 대한 설명을 입력하세요. (선택)"
             />
           </div>
         </template>
 
-        <!-- 편집 모드 -->
+        <!-- 보기 모드 -->
         <template v-else>
           <div>
             <h2 class="sr-only">제목</h2>
@@ -204,41 +204,55 @@
     </div>
 
     <!-- 삭제 확인 다이얼로그 -->
-    <div
-      v-if="showDeleteDialog"
-      class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
-      @click.self="showDeleteDialog = false"
-    >
+    <teleport to="#modals">
       <div
-        class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6 relative"
+        v-if="showDeleteDialog"
+        class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
+        @click.self="showDeleteDialog = false"
+        @keydown.esc="showDeleteDialog = false"
       >
-        <header class="mb-4">
-          <h3 class="text-[17px] font-semibold leading-6">북마크 삭제</h3>
-          <p class="mt-1 test-sm text-muted-foreground">
-            정말로 이 북마크를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-          </p>
-        </header>
-        <footer class="mt-6 flex justify-end gap-2">
-          <button
-            class="px-4 py-2 border rounded-md text-sm hover:bg-accent"
-            @click="showDeleteDialog = false"
-          >
-            취소
-          </button>
-          <button
-            class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500"
-            @click="handleDelete"
-          >
-            삭제
-          </button>
-        </footer>
+        <div
+          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6 relative"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bookmark-delete-title"
+        >
+          <header class="mb-4">
+            <h3
+              id="bookmark-delete-title"
+              class="text-[17px] font-semibold leading-6"
+            >
+              북마크 삭제
+            </h3>
+            <p class="mt-1 test-sm text-muted-foreground">
+              정말로 이 북마크를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </p>
+          </header>
+          <footer class="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              class="px-4 py-2 border rounded-md text-sm hover:bg-accent"
+              @click="showDeleteDialog = false"
+            >
+              취소
+            </button>
+            <button
+              ref="confirmBtnRef"
+              type="button"
+              class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500"
+              @click="handleDelete"
+            >
+              삭제
+            </button>
+          </footer>
+        </div>
       </div>
-    </div>
+    </teleport>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 type Bookmark = {
   id: string;
@@ -264,6 +278,7 @@ const hasSelection = computed(() => !!props.bookmark);
 const isEditing = ref(false);
 const editedBookmark = ref<Bookmark | null>(null);
 const showDeleteDialog = ref(false);
+const confirmBtnRef = ref<HTMLElement | null>(null);
 
 // 표시할 북마크
 const currentBookmark = computed<Bookmark>(
@@ -275,28 +290,31 @@ function handleEdit() {
   editedBookmark.value = { ...props.bookmark };
   isEditing.value = true;
 }
-
 function handleCancel() {
   editedBookmark.value = null;
   isEditing.value = false;
 }
-
 function handleSave() {
   if (!editedBookmark.value) return;
   emit("update-bookmark", editedBookmark.value);
   isEditing.value = false;
 }
-
 function handleDelete() {
   if (!props.bookmark) return;
   emit("delete-bookmark", props.bookmark.id);
   showDeleteDialog.value = false;
 }
-
 function openUrl() {
   const url = currentBookmark.value?.url;
   if (url) window.open(url, "_blank");
 }
+
+watch(showDeleteDialog, async (open) => {
+  if (open) {
+    await nextTick();
+    confirmBtnRef.value?.focus();
+  }
+});
 </script>
 
 <style scoped>
