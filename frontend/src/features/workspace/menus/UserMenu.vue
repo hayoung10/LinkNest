@@ -4,9 +4,9 @@
     <button
       ref="triggerEl"
       class="flex items-center gap-3 w-full px-2 py-2 rounded-md hover:bg-accent transition-colors"
-      :aria-expanded="open"
+      :aria-expanded="menuOpen"
       aria-haspopup="menu"
-      aria-controls="user-menu-panel"
+      :aria-controls="panelId"
       @click.stop="toggleMenu"
     >
       <!-- 아바타 -->
@@ -42,13 +42,14 @@
     </button>
 
     <!-- 드롭다운 메뉴 -->
-    <Teleport to="body" v-if="open">
+    <teleport to="#modals" v-if="menuOpen">
       <div
-        id="user-menu-panel"
+        :id="panelId"
         class="panel w-56"
         :style="panelStyle"
         role="menu"
         @click.stop
+        @keydown.esc.prevent.stop="closeMenu"
       >
         <!-- 유저 정보 -->
         <div class="px-4 pt-4 pb-3">
@@ -63,7 +64,12 @@
         <div class="divider" />
 
         <!-- 마이페이지 -->
-        <button class="menu-item" role="menuitem" @click="handleProfile">
+        <button
+          ref="firstItemRef"
+          class="menu-item"
+          role="menuitem"
+          @click="handleProfile"
+        >
           <svg
             class="menu-icon"
             viewBox="0 0 24 24"
@@ -113,7 +119,7 @@
           로그아웃
         </button>
       </div>
-    </Teleport>
+    </teleport>
   </div>
 </template>
 
@@ -124,8 +130,12 @@ import type { CSSProperties } from "vue";
 const user = { name: "홍길동", email: "hong@example.com", profileImageUrl: "" }; // 임시 유저
 const initials = computed(() => user.name.charAt(0));
 
-const open = ref(false);
+const menuOpen = ref(false);
 const triggerEl = ref<HTMLElement | null>(null);
+const firstItemRef = ref<HTMLElement | null>(null);
+
+const ignoreNextDocClick = ref(false);
+const panelId = "user-menu-panel";
 
 const pos = ref({ top: 0, left: 0 });
 const panelWidth = 224;
@@ -135,40 +145,17 @@ const panelStyle = computed<CSSProperties>(() => ({
   position: "fixed",
   top: `${pos.value.top}px`,
   left: `${pos.value.left}px`,
-  right: "auto",
-  bottom: "auto",
   width: `${panelWidth}px`,
   transform: "translate3d(0,0,0)",
-  fontSize: "14px",
-  lineHeight: "20px",
 }));
 
-let ignoreNextDocClick = false;
-
-async function toggleMenu() {
-  open.value = !open.value;
-  if (open.value) {
-    // 열리는 순간 문서클릭 무시
-    ignoreNextDocClick = true;
-    await nextTick();
-
-    // 위치 계산은 1 프레임 뒤에 (DOM 실제 생성 이후)
-    requestAnimationFrame(() => {
-      updatePosition();
-
-      // 다음 프레임에 문서클릭 허용
-      requestAnimationFrame(() => {
-        ignoreNextDocClick = false;
-      });
-    });
-  }
-}
-
 function updatePosition() {
-  const t = triggerEl.value?.getBoundingClientRect();
-  const panel = document.getElementById("user-menu-panel");
-  const ph = panel ? panel.offsetHeight : 0;
-  if (!t) return;
+  const trigger = triggerEl.value;
+  const panel = document.getElementById(panelId);
+  if (!trigger || !panel) return;
+
+  const t = trigger.getBoundingClientRect();
+  const ph = panel?.offsetHeight ?? 0;
 
   // 기본은 위, 공간 없으면 아래에 배치
   let top = t.top - ph - gap;
@@ -181,15 +168,38 @@ function updatePosition() {
   pos.value = { top: Math.round(top), left: Math.round(left) };
 }
 
+function toggleMenu() {
+  menuOpen.value ? closeMenu() : openMenu();
+}
+function closeMenu() {
+  if (!menuOpen.value) return;
+  menuOpen.value = false;
+  triggerEl.value?.focus();
+}
+async function openMenu() {
+  if (menuOpen.value) return;
+  ignoreNextDocClick.value = true;
+  menuOpen.value = true;
+
+  await nextTick();
+  await new Promise(requestAnimationFrame);
+
+  updatePosition();
+  firstItemRef.value?.focus();
+  requestAnimationFrame(() => {
+    ignoreNextDocClick.value = false;
+  });
+}
+
 // 바깥 클릭 닫기
 function onDocClick(e: MouseEvent) {
-  if (!open.value) return;
+  if (!menuOpen.value || ignoreNextDocClick.value) return;
   const t = e.target as Node | null;
-  const panel = document.getElementById("user-menu-panel");
-  if (panel?.contains(t as Node)) return;
-  if (triggerEl.value?.contains(t as Node)) return;
-  open.value = false;
+  const panel = document.getElementById(panelId);
+  if (panel?.contains(t) || triggerEl.value?.contains(t)) return;
+  closeMenu();
 }
+
 onMounted(() =>
   document.addEventListener("click", onDocClick, { capture: true })
 );
@@ -199,13 +209,13 @@ onBeforeUnmount(() =>
 
 // 액션 핸들러
 function handleProfile() {
-  open.value = false;
+  closeMenu();
 }
 function handleSettings() {
-  open.value = false;
+  closeMenu();
 }
 function handleLogout() {
-  open.value = false;
+  closeMenu();
 }
 </script>
 

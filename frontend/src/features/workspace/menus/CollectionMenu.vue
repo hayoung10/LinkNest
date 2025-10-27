@@ -7,7 +7,7 @@
       aria-haspopup="menu"
       :aria-expanded="menuOpen"
       :aria-controls="panelId"
-      @click.stop="openMenu"
+      @click.stop="toggleMenu"
     >
       <svg viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor">
         <circle cx="5" cy="12" r="1.8" />
@@ -17,19 +17,22 @@
     </button>
 
     <!-- 드롭다운 메뉴 -->
-    <Teleport to="#workspace-sidebar" v-if="menuOpen">
+    <teleport to="#modals" v-if="menuOpen">
       <div
-        id="collection-menu-panel"
+        :id="panelId"
         class="panel w-48"
         :style="panelStyle"
         role="menu"
+        aria-orientation="vertical"
         @click.stop
+        @keydown.esc.prevent.stop="closeMenu"
       >
         <button
           class="menu-item"
           :disabled="isOpenAllDisabled"
           :aria-disabled="isOpenAllDisabled"
           role="menuitem"
+          ref="firstItemRef"
           @click="emitAndClose('open-all', collection.id)"
         >
           <svg
@@ -102,89 +105,105 @@
           삭제
         </button>
       </div>
-    </Teleport>
+    </teleport>
 
     <!-- 이름 변경 다이얼로그 -->
-    <div
-      v-if="showRenameDialog"
-      class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
-      @click.self="showRenameDialog = false"
-    >
+    <teleport to="#modals">
       <div
-        class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6 relative"
+        v-if="showRenameDialog"
+        class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
+        @click.self="showRenameDialog = false"
+        @keydown.esc="showRenameDialog = false"
       >
-        <header class="mb-4">
-          <h3 class="text-[17px] font-semibold leading-6">컬렉션 이름 변경</h3>
-          <p class="mt-1 text-sm text-muted-foreground">
-            새로운 컬렉션 이름을 입력해주세요.
-          </p>
-        </header>
-        <div class="my-4 h-px bg-zinc-200/80 dark:bg-zinc-700/60"></div>
-        <div class="space-y-2">
-          <label class="block text-sm">컬렉션 이름</label>
-          <input
-            v-model="newName"
-            type="text"
-            class="w-full rounded-md px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60"
-            placeholder="컬렉션 이름"
-            autofocus
-          />
+        <div
+          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6 relative"
+        >
+          <header class="mb-4">
+            <h3 class="text-[17px] font-semibold leading-6">
+              컬렉션 이름 변경
+            </h3>
+            <p class="mt-1 text-sm text-muted-foreground">
+              새로운 컬렉션 이름을 입력해주세요.
+            </p>
+          </header>
+          <div class="my-4 h-px bg-zinc-200/80 dark:bg-zinc-700/60"></div>
+          <div class="space-y-2">
+            <label class="block text-sm">컬렉션 이름</label>
+            <input
+              ref="renameInputRef"
+              v-model="newName"
+              type="text"
+              class="w-full rounded-md px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60"
+              placeholder="컬렉션 이름"
+              autofocus
+            />
+          </div>
+          <footer class="mt-6 flex justify-end gap-2">
+            <button
+              class="px-4 py-2 rounded-md text-sm border border-zinc-300/70 dark:border-zinc-600/60 bg-zinc-100/70 dark:bg-zinc-800/70 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              @click="showRenameDialog = false"
+            >
+              취소
+            </button>
+            <button
+              class="px-4 py-2 rounded-md text-sm bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
+              @click="handleRename"
+            >
+              변경
+            </button>
+          </footer>
         </div>
-        <footer class="mt-6 flex justify-end gap-2">
-          <button
-            class="px-4 py-2 rounded-md text-sm border border-zinc-300/70 dark:border-zinc-600/60 bg-zinc-100/70 dark:bg-zinc-800/70 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            @click="showRenameDialog = false"
-          >
-            취소
-          </button>
-          <button
-            class="px-4 py-2 rounded-md text-sm bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
-            @click="handleRename"
-          >
-            변경
-          </button>
-        </footer>
       </div>
-    </div>
+    </teleport>
 
     <!-- 삭제 확인 다이얼로그 -->
-    <div
-      v-if="showDeleteDialog"
-      class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
-      @click.self="showDeleteDialog = false"
-    >
+    <teleport to="#modals">
       <div
-        class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6 relative"
+        v-if="showDeleteDialog"
+        class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
+        @click.self="showDeleteDialog = false"
+        @keydown.esc="showDeleteDialog = false"
       >
-        <header class="mb-4">
-          <h3 class="text-[17px] font-semibold leading-6">컬렉션 삭제</h3>
-          <p class="mt-1 text-sm text-muted-foreground">
-            정말로 "{{ collection.name }}" 컬렉션을 삭제하시겠습니까?<br />
-            이 컬렉션에 포함된 모든 북마크도 함께 삭제됩니다. 이 작업은 되돌릴
-            수 없습니다.
-          </p>
-        </header>
-        <footer class="mt-6 flex justify-end gap-2">
-          <button
-            class="px-4 py-2 border rounded-md text-sm hover:bg-accent"
-            @click="showDeleteDialog = false"
-          >
-            취소
-          </button>
-          <button
-            class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500"
-            @click="handleDelete"
-          >
-            삭제
-          </button>
-        </footer>
+        <div
+          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6 relative"
+        >
+          <header class="mb-4">
+            <h3 class="text-[17px] font-semibold leading-6">컬렉션 삭제</h3>
+            <p class="mt-1 text-sm text-muted-foreground">
+              정말로 "{{ collection.name }}" 컬렉션을 삭제하시겠습니까?<br />
+              이 컬렉션에 포함된 모든 북마크도 함께 삭제됩니다. 이 작업은 되돌릴
+              수 없습니다.
+            </p>
+          </header>
+          <footer class="mt-6 flex justify-end gap-2">
+            <button
+              class="px-4 py-2 border rounded-md text-sm hover:bg-accent"
+              @click="showDeleteDialog = false"
+            >
+              취소
+            </button>
+            <button
+              class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500"
+              @click="handleDelete"
+            >
+              삭제
+            </button>
+          </footer>
+        </div>
       </div>
-    </div>
+    </teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import type { CSSProperties } from "vue";
 
 type Collection = {
@@ -206,12 +225,15 @@ const emit = defineEmits<{
 
 const menuOpen = ref(false);
 const triggerEl = ref<HTMLElement | null>(null);
+const firstItemRef = ref<HTMLElement | null>(null);
+
+const ignoreNextDocClick = ref(false);
+const panelId = `collection-menu-${props.collection.id}`;
+
+const renameInputRef = ref<HTMLElement | null>(null);
 const showRenameDialog = ref(false);
 const showDeleteDialog = ref(false);
 const newName = ref(props.collection.name);
-
-// 여러 인스턴스 안전: 패널 ID 고유화
-const panelId = `collection-menu-${props.collection.id}`;
 
 // 메뉴 비활성
 const isOpenAllDisabled = computed(() => {
@@ -220,75 +242,102 @@ const isOpenAllDisabled = computed(() => {
   return !(hasBookmarks || hasChildren);
 });
 
-// 위치 계산
+// 위치 계산 (뷰포트 기준: position fixed)
 const pos = ref({ top: 0, left: 0 });
 const panelWidth = 192;
 const gap = 8;
 
 const panelStyle = computed<CSSProperties>(() => ({
-  position: "absolute",
+  position: "fixed",
   top: `${pos.value.top}px`,
   left: `${pos.value.left}px`,
   width: `${panelWidth}px`,
+  zIndex: 60,
   transform: "translateZ(0)",
-  fontSize: "14px",
-  lineHeight: "20px",
 }));
 
-async function openMenu() {
-  menuOpen.value = true;
-  nextTick(() => {
-    const trigger = triggerEl.value;
-    const host = document.getElementById("workspace-sidebar");
-    const panel = document.getElementById("collection-menu-panel");
-    if (!trigger || !host || !panel) return;
+function updatePosition() {
+  const t = triggerEl.value?.getBoundingClientRect();
+  const panel = document.getElementById(panelId);
+  if (!t || !panel) return;
 
-    const t = trigger.getBoundingClientRect();
-    const h = host.getBoundingClientRect();
+  const ph = panel.offsetHeight || 0;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
 
-    let top = t.bottom - h.top + gap; // 트리거 아래
-    let left = t.right - h.left - panelWidth; // 우측 정렬
+  // 트리거 아래, 우측 정렬
+  let top = t.bottom + gap;
+  let left = t.right - panelWidth;
 
-    const ph = panel.getBoundingClientRect().height || 0;
-    if (top + ph > h.height) top = t.top - h.top - ph - gap; // 아래 꽉 차면 위로
+  if (top + ph > vh - 8) top = Math.max(8, t.top - ph - gap); // 아래 꽉 차면 위로
+  left = Math.min(Math.max(8, left), vw - panelWidth - 8);
 
-    top = Math.max(8, Math.min(top, h.height - ph - 8));
-    left = Math.max(8, Math.min(left, h.width - panelWidth - 8));
-
-    pos.value = { top: Math.round(top), left: Math.round(left) };
-  });
+  pos.value = { top: Math.round(top), left: Math.round(left) };
 }
 
-function emitAndClose(e: "open-all" | "add-sub", id: string) {
-  if (e === "open-all") emit("open-all", id);
-  else emit("add-sub", id);
+function toggleMenu() {
+  menuOpen.value ? closeMenu() : openMenu();
+}
+function closeMenu() {
+  if (!menuOpen.value) return;
   menuOpen.value = false;
+  triggerEl.value?.focus();
+}
+async function openMenu() {
+  if (menuOpen.value) return;
+  ignoreNextDocClick.value = true;
+  menuOpen.value = true;
+
+  await nextTick();
+  await new Promise(requestAnimationFrame);
+
+  updatePosition();
+  firstItemRef.value?.focus();
+  requestAnimationFrame(() => {
+    ignoreNextDocClick.value = false;
+  });
 }
 
 // 바깥 클릭 닫기
 function onDocClick(e: MouseEvent) {
+  if (!menuOpen.value || ignoreNextDocClick.value) return;
   const t = e.target as Node | null;
-  const panel = document.getElementById("collection-menu-panel");
-  if (panel?.contains(t as Node)) return;
-  if (triggerEl.value?.contains(t as Node)) return;
-  menuOpen.value = false;
+  const panel = document.getElementById(panelId);
+  if (panel?.contains(t) || triggerEl.value?.contains(t)) return;
+  closeMenu();
 }
-onMounted(() =>
-  document.addEventListener("click", onDocClick, { capture: true })
-);
-onBeforeUnmount(() =>
-  document.removeEventListener("click", onDocClick, { capture: true })
-);
+
+function onScrollOrResize() {
+  if (!menuOpen.value) return;
+  updatePosition();
+}
+
+onMounted(() => {
+  document.addEventListener("click", onDocClick, { capture: true });
+  window.addEventListener("resize", onScrollOrResize, { passive: true });
+  window.addEventListener("scroll", onScrollOrResize, { passive: true });
+});
+onBeforeUnmount(() => {
+  document.removeEventListener("click", onDocClick, { capture: true });
+  window.removeEventListener("resize", onScrollOrResize);
+  window.removeEventListener("scroll", onScrollOrResize);
+});
+
+function emitAndClose(e: "open-all" | "add-sub", id: string) {
+  if (e === "open-all") emit("open-all", id);
+  else emit("add-sub", id);
+  closeMenu();
+}
 
 // 다이얼로그 핸들러
 function openRenameDialog() {
   newName.value = props.collection.name;
   showRenameDialog.value = true;
-  menuOpen.value = false;
+  closeMenu();
 }
 function openDeleteDialog() {
   showDeleteDialog.value = true;
-  menuOpen.value = false;
+  closeMenu();
 }
 function handleRename() {
   const name = (newName.value ?? "").trim();
@@ -301,12 +350,18 @@ function handleDelete() {
   emit("delete", props.collection.id);
   showDeleteDialog.value = false;
 }
+
+// 입력 포커스
+watch(showRenameDialog, async (open) => {
+  if (open) {
+    await nextTick();
+    renameInputRef.value?.focus();
+  }
+});
 </script>
 
 <style scoped>
 .panel {
-  position: absolute;
-  z-index: 200;
   border-radius: 12px;
   border: 1px solid color-mix(in oklab, currentColor 12%, transparent);
   background: color-mix(in oklab, var(--color-bg, #fff) 100%, transparent);
@@ -337,7 +392,7 @@ function handleDelete() {
   background: color-mix(in oklab, currentColor 10%, transparent);
 }
 
-/** 키보드 포커스 접근성 */
+/** 키보드 포커스 */
 .menu-item:focus-visible {
   box-shadow: 0 0 0 2px
       color-mix(in oklab, var(--ring, #3b82f6) 55%, transparent),
