@@ -1,3 +1,6 @@
+export type ISODateTime = string;
+export type ID = number;
+
 // API 성공/실패 응답 규약
 export type ApiSuccess<T> = {
   status: number;
@@ -11,42 +14,41 @@ export type ApiError = {
   code: string;
   message: string;
   path?: string;
-  timestamp?: string;
+  timestamp?: ISODateTime;
 };
 
 export type Role = "ROLE_USER" | "ROLE_ADMIN";
 
 export interface User {
-  id: number;
+  id: ID;
   name: string;
-  profileImageUrl: string | null;
+  profileImageUrl?: string | null;
   role: Role;
-  createdAt: string;
-  updatedAt: string;
-  bookmarkCount: number;
-  collectionCount: number;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+  bookmarkCount?: number;
+  collectionCount?: number;
 }
 
-/** 화면/스토어에서 사용 */
 export interface Bookmark {
-  id: number;
-  collectionId: number;
+  id: ID;
+  collectionId: ID;
   url: string;
-  title: string;
-  description: string;
-  createdAt?: string;
-  updatedAt?: string;
+  title?: string | null;
+  description?: string | null;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
 }
 
 export interface Collection {
-  id: number;
+  id: ID;
   name: string;
   icon?: string | null;
-  parentId?: number | null;
-  sortOrder?: number;
-  createdAt?: string;
-  updatedAt?: string;
+  parentId?: ID | null;
+  sortOrder?: number | null;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
   bookmarkCount?: number;
-
+  children?: Collection[];
   bookmarks?: Bookmark[];
 }
