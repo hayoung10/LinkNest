@@ -203,24 +203,18 @@ import {
   onMounted,
   ref,
   watch,
+  type CSSProperties,
 } from "vue";
-import type { CSSProperties } from "vue";
-
-type Collection = {
-  id: string;
-  name: string;
-  bookmarks?: { id: string; title: string }[];
-  children?: Collection[];
-};
+import type { Collection, ID } from "@/types/common";
 
 const props = defineProps<{
   collection: Collection;
 }>();
 const emit = defineEmits<{
-  (e: "open-all", id: string): void;
-  (e: "add-sub", id: string): void;
-  (e: "rename", p: { collectionId: string; newName: string }): void;
-  (e: "delete", id: string): void;
+  (e: "open-all", id: ID): void;
+  (e: "add-sub", id: ID): void;
+  (e: "rename", p: { collectionId: ID; newName: string }): void;
+  (e: "delete", id: ID): void;
 }>();
 
 const menuOpen = ref(false);
@@ -323,7 +317,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("scroll", onScrollOrResize);
 });
 
-function emitAndClose(e: "open-all" | "add-sub", id: string) {
+function emitAndClose(e: "open-all" | "add-sub", id: ID) {
   if (e === "open-all") emit("open-all", id);
   else emit("add-sub", id);
   closeMenu();
