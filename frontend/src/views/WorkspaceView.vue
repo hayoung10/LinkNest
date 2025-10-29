@@ -5,105 +5,139 @@
       class="w-64 border-r border-border"
       :collections="collections"
       @add-collection="onAddCollection"
-      @select-bookmark="onSelectBookmark"
+      @select-collection="onSelectCollection"
     />
 
     <!-- 우측: 메인 콘텐츠 -->
     <section class="flex-1 overflow-auto">
-      <BookmarkContent v-if="selectedBookmark" :bookmark="selectedBookmark" />
+      <BookmarkList
+        :key="selectedCollection?.id || 'none'"
+        :collection="selectedCollection"
+        @add-bookmark="onAddBookmark"
+        @select-bookmark="onSelectBookmark"
+      />
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { createCollection } from "@/features/workspace";
-import BookmarkContent from "@/features/workspace/components/BookmarkContent.vue";
-import WorkspaceSidebar from "@/features/workspace/components/WorkspaceSidebar.vue";
 import { ref } from "vue";
+import WorkspaceSidebar from "@/features/workspace/components/WorkspaceSidebar.vue";
+import BookmarkList from "@/features/workspace/components/BookmarkList.vue";
+import type { Bookmark, Collection } from "@/types/common";
 
-type Bookmark = {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-  collectionId: string;
-};
-type Collection = {
-  id: string;
-  name: string;
-  icon?: string | null;
-  children?: Collection[];
-  bookmarks?: Bookmark[];
-};
-
+// Mock
+const now = () => new Date().toISOString();
 const collections = ref<Collection[]>([
   {
-    id: "c-travel",
+    id: 1,
     name: "여행 계획",
+    createdAt: now(),
+    updatedAt: now(),
     children: [
       {
-        id: "c-japan",
+        id: 11,
         name: "일본 여행",
+        icon: null,
+        parentId: 1,
+        sortOrder: 1,
+        createdAt: now(),
+        updatedAt: now(),
         bookmarks: [
           {
-            id: "b1",
+            id: 101,
+            collectionId: 11,
+            url: "https://example.com/osaka-food",
             title: "오사카 맛집 리스트",
             description: "현지인 추천 맛집 20곳 정리된 블로그 글이에요.",
-            url: "https://example.com/osaka-food",
-            collectionId: "c-japan",
+            createdAt: now(),
+            updatedAt: now(),
           },
           {
-            id: "b2",
+            id: 102,
+            collectionId: 11,
+            url: "https://example.com/kyoto-trip",
             title: "교토 여행 일정표",
             description: "3박 4일 코스로 여행 동선 정리된 글입니다.",
-            url: "https://example.com/kyoto-trip",
-            collectionId: "c-japan",
+            createdAt: now(),
+            updatedAt: now(),
           },
         ],
       },
       {
-        id: "c-europe",
+        id: 12,
         name: "유럽 여행",
+        icon: null,
+        parentId: 1,
+        sortOrder: 2,
+        createdAt: now(),
+        updatedAt: now(),
         bookmarks: [
           {
-            id: "b3",
+            id: 103,
+            collectionId: 12,
+            url: "https://example.com/paris-places",
             title: "파리 관광 명소 모음",
             description: "에펠탑, 루브르, 몽마르뜨까지 주요 명소 한눈에 보기.",
-            url: "https://example.com/paris-places",
-            collectionId: "c-europe",
+            createdAt: now(),
+            updatedAt: now(),
           },
         ],
       },
     ],
   },
   {
-    id: "c-lifestyle",
+    id: 2,
     name: "라이프스타일",
+    createdAt: now(),
+    updatedAt: now(),
     bookmarks: [
       {
-        id: "b4",
+        id: 201,
+        collectionId: 2,
+        url: "https://example.com/daily-routine",
         title: "하루 루틴 관리 팁",
         description: "생산적인 하루를 위한 시간 관리 루틴 정리.",
-        url: "https://example.com/daily-routine",
-        collectionId: "c-lifestyle",
+        createdAt: now(),
+        updatedAt: now(),
       },
       {
-        id: "b5",
-        title: "인테리어 아이디어 모음",
-        description: "작은 공간을 넓게 보이게 하는 인테리어 아이디어 모음.",
+        id: 202,
+        collectionId: 2,
         url: "https://example.com/interior-ideas",
-        collectionId: "c-lifestyle",
+        title: "인테리어 아이디어 모음",
+        description: "작은 공간을 넓게 보이게 하는 인테리어 아이디어.",
+        createdAt: now(),
+        updatedAt: now(),
       },
     ],
   },
 ]);
 
-const selectedBookmark = ref<Bookmark | null>(null);
-function onSelectBookmark(b: Bookmark) {
-  selectedBookmark.value = b;
+const selectedCollection = ref<Collection | null>(null);
+
+// 핸들러
+function onSelectCollection(c: Collection) {
+  selectedCollection.value = c;
 }
 
 function onAddCollection(name: string) {
-  return createCollection({ name });
+  // TODO: createCollection API 연결
+  console.log("[TODO] createCollection:", name);
+}
+
+function onAddBookmark(payload: {
+  title?: string | null;
+  description?: string | null;
+  url: string;
+  collectionId: number;
+}) {
+  // TODO: createBookmark API 연결 (나중에)
+  console.log("[TODO] createBookmark:", payload);
+}
+
+function onSelectBookmark(_b: Bookmark) {
+  // TODO: 상세 패널/사이드뷰 연결 시 사용
+  console.log("[UI] selectBookmark:", _b);
 }
 </script>
