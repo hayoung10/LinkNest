@@ -28,7 +28,28 @@
 
     <!-- 컬렉션 리스트 -->
     <nav class="flex-1 overflow-y-auto p-2 text-sm">
-      <div class="px-2 py-2 text-muted-foreground font-medium">컬렉션</div>
+      <div class="flex items-center justify-between px-2 py-2">
+        <div class="text-muted-foreground font-medium">컬렉션</div>
+        <button
+          type="button"
+          class="inline-flex items-center justify-center size-7 rounded-md border border-border hover:bg-accent transition-colors"
+          aria-label="새 컬렉션 만들기"
+          title="새 컬렉션"
+          @click="openAddCollectionDialog"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            class="size-4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M12 5v14" />
+            <path d="M5 12h14" />
+          </svg>
+        </button>
+      </div>
+
       <ul class="space-y-1">
         <CollectionNode
           v-for="c in collections"
@@ -37,17 +58,9 @@
           :depth="0"
           :expanded-ids="expandedIds"
           @toggle="toggleExpand"
-          @select-bookmark="$emit('select-bookmark', $event)"
+          @select-collection="$emit('select-collection', $event)"
         />
       </ul>
-
-      <!-- 컬렉션 추가 버튼 -->
-      <button
-        class="mt-2 w-full text-left px-2 py-1.5 rounded-md border border-dashed text-muted-foreground hover:bg-accent transition-colors"
-        @click="showAddCollectionDialog = true"
-      >
-        + 컬렉션 추가
-      </button>
     </nav>
 
     <!-- 하단 유저 메뉴 -->
@@ -121,34 +134,20 @@
 import { computed, nextTick, ref, watch } from "vue";
 import UserMenu from "../menus/UserMenu.vue";
 import CollectionNode from "./CollectionNode.vue";
+import type { Collection } from "@/types/common";
 
-type Bookmark = {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-  collectionId: string;
-};
-type Collection = {
-  id: string;
-  name: string;
-  icon?: string | null;
-  children?: Collection[];
-  bookmarks?: Bookmark[];
-};
+defineOptions({ inheritAttrs: false });
 
 const props = defineProps<{ collections: Collection[] }>();
 const emit = defineEmits<{
-  (e: "select-bookmark", b: Bookmark): void;
+  (e: "select-collection", c: Collection): void;
   (e: "add-collection", name: string): void;
 }>();
-defineOptions({
-  inheritAttrs: false,
-});
 
 // 확장 상태
-const expandedIds = ref<Set<string>>(new Set());
-function toggleExpand(id: string) {
+const expandedIds = ref<Set<number>>(new Set());
+
+function toggleExpand(id: number) {
   const next = new Set(expandedIds.value);
   next.has(id) ? next.delete(id) : next.add(id);
   expandedIds.value = next;
@@ -167,8 +166,12 @@ function resetAddCollectionForm() {
   newCollection.value = "";
 }
 function closeAddCollectionDialog() {
-  showAddCollectionDialog.value = false;
   resetAddCollectionForm();
+  showAddCollectionDialog.value = false;
+}
+function openAddCollectionDialog() {
+  resetAddCollectionForm();
+  showAddCollectionDialog.value = true;
 }
 function handleAdd() {
   if (!canSubmit.value) return;
