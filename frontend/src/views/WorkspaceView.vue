@@ -9,13 +9,31 @@
     />
 
     <!-- 우측: 메인 콘텐츠 -->
-    <section class="flex-1 overflow-auto">
+    <section class="relative flex-1 overflow-hidden">
+      <!-- 목록 -->
       <BookmarkList
         :key="selectedCollection?.id || 'none'"
         :collection="selectedCollection"
         @add-bookmark="onAddBookmark"
         @select-bookmark="onSelectBookmark"
       />
+
+      <!-- 우측 상세 패널 -->
+      <SidePanel
+        :open="!!selectedBookmark"
+        width="min(640px, 92vw)"
+        side="right"
+        @close="selectedBookmark = null"
+      >
+        <BookmarkDetail
+          v-if="selectedBookmark"
+          :bookmark="selectedBookmark"
+          :collection-name="selectedCollection?.name"
+          @close="selectedBookmark = null"
+          @update-bookmark="onUpdateBookmark"
+          @delete-bookmark="onDeleteBookmark"
+        />
+      </SidePanel>
     </section>
   </div>
 </template>
@@ -24,7 +42,16 @@
 import { ref } from "vue";
 import WorkspaceSidebar from "@/features/workspace/components/WorkspaceSidebar.vue";
 import BookmarkList from "@/features/workspace/components/BookmarkList.vue";
+import SidePanel from "@/components/overlays/SidePanel.vue";
+import BookmarkDetail from "@/features/workspace/components/BookmarkDetail.vue";
 import type { Bookmark, Collection } from "@/types/common";
+
+type UpdateBookmarkPayload = {
+  id: number;
+  title?: string | null;
+  url: string;
+  description?: string | null;
+};
 
 // Mock
 const now = () => new Date().toISOString();
@@ -115,6 +142,7 @@ const collections = ref<Collection[]>([
 ]);
 
 const selectedCollection = ref<Collection | null>(null);
+const selectedBookmark = ref<Bookmark | null>(null);
 
 // 핸들러
 function onSelectCollection(c: Collection) {
@@ -126,18 +154,28 @@ function onAddCollection(name: string) {
   console.log("[TODO] createCollection:", name);
 }
 
+function onSelectBookmark(b: Bookmark) {
+  selectedBookmark.value = b;
+}
+
 function onAddBookmark(payload: {
   title?: string | null;
   description?: string | null;
   url: string;
   collectionId: number;
 }) {
-  // TODO: createBookmark API 연결 (나중에)
+  // TODO: createBookmark API 연결
   console.log("[TODO] createBookmark:", payload);
 }
 
-function onSelectBookmark(_b: Bookmark) {
-  // TODO: 상세 패널/사이드뷰 연결 시 사용
-  console.log("[UI] selectBookmark:", _b);
+function onUpdateBookmark(payload: UpdateBookmarkPayload) {
+  // TODO: updateBookmark API 연결
+  console.log("[TODO] updateBookmark:", payload);
+}
+
+function onDeleteBookmark(id: number) {
+  // TODO: deleteBookmark API 연결
+  console.log("[TODO] deleteBookmark id:", id);
+  selectedBookmark.value = null;
 }
 </script>
