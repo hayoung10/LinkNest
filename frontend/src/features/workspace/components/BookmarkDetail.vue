@@ -2,18 +2,17 @@
   <section class="h-full flex flex-col bg-card text-card-foreground">
     <!-- 헤더 -->
     <header class="sticky top-0 z-10 bg-card border-b border-border">
-      <div class="flex items-center justify-between px-4 py-3">
+      <div class="relative flex items-center justify-between px-4 py-3">
+        <!-- 좌: 컬렉션 정보 -->
         <div class="min-w-0">
-          <p
-            v-if="collectionName"
-            class="text-xs text-muted-foreground truncate"
-          >
+          <p v-if="collectionName" class="text-[15px] font-semibold">
             {{ collectionName }}
           </p>
         </div>
 
-        <div class="flex items-center gap-1">
-          <!-- 보기/편집 모드 -->
+        <!-- 우: 액션(보기/편집) -->
+        <div class="flex items-center gap-1 pr-10">
+          <!-- 보기 모드 -->
           <template v-if="!isEditing">
             <button
               @click="handleEdit"
@@ -33,7 +32,6 @@
                   d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
                 />
               </svg>
-
               <span>수정</span>
             </button>
             <button
@@ -54,10 +52,11 @@
                 <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                 <path d="M10 11v6M14 11v6" />
               </svg>
-
               <span>삭제</span>
             </button>
           </template>
+
+          <!-- 편집 모드 -->
           <template v-else>
             <button
               @click="handleCancel"
@@ -74,7 +73,6 @@
               >
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
-
               <span>취소</span>
             </button>
             <button
@@ -96,15 +94,14 @@
                 <path d="M17 21v-8H7v8" />
                 <path d="M7 3v5h8" />
               </svg>
-
               <span>저장</span>
             </button>
           </template>
 
-          <!-- 공통: 닫기 -->
+          <!-- 우측 상단: 닫기 -->
           <button
             type="button"
-            class="p-2 rounded-md hover:bg-accent"
+            class="absolute right-2 top-2 p-2 rounded-md hover:bg-accent"
             aria-label="패널 닫기"
             @click="$emit('close')"
           >
@@ -122,7 +119,7 @@
           <input
             v-model="editedBookmark!.title"
             type="text"
-            class="w-full rounded-md px-3 py-2 text-xl font-semibold bg-transparent border-0 border-b border-border/70 focus:border-ring focus:outline-none focus:ring-0 placeholder:text-muted-foreground/70"
+            class="w-full border-0 border-b border-border/70 bg-transparent px-3 py-2.5 text-xl font-semibold placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/40"
             placeholder="(제목 없음)"
           />
         </template>
@@ -186,12 +183,12 @@
         <template v-if="isEditing">
           <textarea
             v-model="editedBookmark!.description"
-            class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
+            class="min-h-[120px] resize-y w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
             placeholder="(북마크에 대한 설명을 남겨보세요.)"
           />
         </template>
         <template v-else>
-          <p class="text-muted-foreground whitespace-pre-wrap min-h-[1.5rem]">
+          <p class="text-muted-foreground whitespace-pre-wrap min-h-[120px]">
             {{
               currentBookmark.description ??
               "(북마크에 대한 설명을 남겨보세요.)"
