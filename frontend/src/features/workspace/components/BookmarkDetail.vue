@@ -5,16 +5,20 @@
       <div class="relative flex items-center justify-between px-4 py-3">
         <!-- 좌: 컬렉션 정보 -->
         <div class="min-w-0">
-          <p v-if="collectionName" class="text-[15px] font-semibold">
+          <p
+            v-if="collectionName"
+            class="text-[15px] font-semibold text-neutral-500 dark:text-neutral-400 truncate"
+          >
             {{ collectionName }}
           </p>
         </div>
 
         <!-- 우: 액션(보기/편집) -->
-        <div class="flex items-center gap-1 pr-10">
+        <div class="flex items-center gap-1">
           <!-- 보기 모드 -->
           <template v-if="!isEditing">
             <button
+              type="button"
               @click="handleEdit"
               class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm"
             >
@@ -24,17 +28,16 @@
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
               >
                 <path d="M12 20h9" />
                 <path
                   d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
                 />
               </svg>
-              <span>수정</span>
+              <span class="ml-1">수정</span>
             </button>
             <button
+              type="button"
               @click="showDeleteDialog = true"
               class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 text-sm"
             >
@@ -44,21 +47,20 @@
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
               >
                 <path d="M3 6h18" />
                 <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                 <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                 <path d="M10 11v6M14 11v6" />
               </svg>
-              <span>삭제</span>
+              <span class="ml-1">삭제</span>
             </button>
           </template>
 
           <!-- 편집 모드 -->
           <template v-else>
             <button
+              type="button"
               @click="handleCancel"
               class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm"
             >
@@ -68,16 +70,16 @@
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
               >
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
-              <span>취소</span>
+              <span class="ml-1">취소</span>
             </button>
             <button
+              type="button"
+              :disabled="!canSave"
               @click="handleSave"
-              class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 text-sm"
+              class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -85,8 +87,6 @@
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
               >
                 <path
                   d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
@@ -94,14 +94,14 @@
                 <path d="M17 21v-8H7v8" />
                 <path d="M7 3v5h8" />
               </svg>
-              <span>저장</span>
+              <span class="ml-1">저장</span>
             </button>
           </template>
 
           <!-- 우측 상단: 닫기 -->
           <button
             type="button"
-            class="absolute right-2 top-2 p-2 rounded-md hover:bg-accent"
+            class="ml-1 p-2 rounded-md hover:bg-accent"
             aria-label="패널 닫기"
             @click="$emit('close')"
           >
@@ -117,6 +117,7 @@
       <div class="space-y-2">
         <template v-if="isEditing">
           <input
+            ref="titleRef"
             v-model="editedBookmark!.title"
             type="text"
             class="w-full border-0 border-b border-border/70 bg-transparent px-3 py-2.5 text-xl font-semibold placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/40"
@@ -132,16 +133,23 @@
 
       <!-- 링크 -->
       <div class="space-y-2">
-        <label class="block text-sm text-muted-foreground">링크</label>
         <template v-if="isEditing">
+          <label class="block text-sm text-muted-foreground">링크 *</label>
           <input
             v-model="editedBookmark!.url"
             type="url"
             class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
             placeholder="https://example.com"
           />
+          <p
+            v-if="editedBookmark!.url && !isUrlValid"
+            class="text-xs text-red-500 mt-1"
+          >
+            올바른 URL 형식이 아닙니다.
+          </p>
         </template>
         <template v-else>
+          <label class="block text-sm text-muted-foreground">링크</label>
           <div class="border rounded-lg p-4 bg-muted/30">
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="min-w-0 flex items-center gap-2">
@@ -162,11 +170,13 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   class="text-primary hover:underline truncate"
+                  :title="currentBookmark.url"
                 >
                   {{ currentBookmark.url }}
                 </a>
               </div>
               <button
+                type="button"
                 class="text-xs px-2.5 py-1.5 rounded-md hover:bg-accent shrink-0"
                 @click="openUrl"
               >
@@ -269,14 +279,31 @@ const emit = defineEmits<{
   (e: "delete-bookmark", id: ID): void;
 }>();
 
+defineExpose({ focusTitle });
+
 // 편집 상태
 const isEditing = ref(false);
 const editedBookmark = ref<Bookmark | null>(null);
 const showDeleteDialog = ref(false);
 const confirmBtnRef = ref<HTMLElement | null>(null);
+const titleRef = ref<HTMLInputElement | null>(null);
 
 const currentBookmark = computed<Bookmark>(
   () => (isEditing.value ? editedBookmark.value : props.bookmark) as Bookmark
+);
+
+const isUrlValid = computed(() => {
+  const v = (editedBookmark.value?.url ?? "").trim();
+  if (!isEditing) return false;
+  try {
+    new URL(v);
+    return true;
+  } catch {
+    return false;
+  }
+});
+const canSave = computed(
+  () => isEditing.value && !!editedBookmark.value && isUrlValid.value
 );
 
 // 유틸
@@ -290,6 +317,9 @@ const normalize = (s?: string | null) => {
 };
 
 // 핸들러
+function focusTitle() {
+  titleRef.value?.focus();
+}
 function handleEdit() {
   editedBookmark.value = { ...props.bookmark };
   isEditing.value = true;
@@ -299,7 +329,7 @@ function handleCancel() {
   isEditing.value = false;
 }
 function handleSave() {
-  if (!editedBookmark.value) return;
+  if (!canSave.value || !editedBookmark.value) return;
   emit("update-bookmark", {
     id: editedBookmark.value.id,
     title: normalize(editedBookmark.value.title),
