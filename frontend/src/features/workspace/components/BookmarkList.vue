@@ -57,7 +57,7 @@
             type="button"
             class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 transition-colors"
             aria-label="새 북마크 추가"
-            @click="openAddDialog"
+            @click="$emit('open-add')"
           >
             <svg
               viewBox="0 0 24 24"
@@ -167,82 +167,6 @@
       </div>
     </div>
   </main>
-
-  <!-- 새 북마크 추가 다이얼로그 -->
-  <teleport to="#modals">
-    <div
-      v-if="showAddDialog"
-      class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
-      @click.self="closeAddDialog"
-      @keydown.esc="closeAddDialog"
-    >
-      <form
-        class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6 relative"
-        role="dialog"
-        aria-modal="true"
-        :aria-labelledby="dialogTitleId"
-        @submit.prevent="handleAdd"
-      >
-        <header class="mb-4">
-          <h3 :id="dialogTitleId" class="text-[17px] font-semibold leading-6">
-            새 북마크 추가
-          </h3>
-          <p class="mt-1 text-sm text-muted-foreground">
-            저장하고 싶은 링크의 정보를 입력해주세요.
-          </p>
-        </header>
-
-        <div class="my-4 h-px bg-zinc-200/80 dark:bg-zinc-700/60"></div>
-
-        <div class="space-y-2">
-          <label class="block text-sm" :for="titleInputId">제목</label>
-          <input
-            :id="titleInputId"
-            ref="titleInputRef"
-            v-model.trim="form.title"
-            type="text"
-            class="w-full rounded-md px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60"
-            placeholder="(제목 없음)"
-          />
-          <label class="block text-sm" :for="urlInputId">링크 *</label>
-          <input
-            :id="urlInputId"
-            v-model.trim="form.url"
-            type="url"
-            class="w-full rounded-md px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60"
-            placeholder="http://example.com"
-            required
-          />
-          <label class="block text-sm" :for="descInputId">설명</label>
-          <input
-            :id="descInputId"
-            v-model.trim="form.description"
-            type="text"
-            class="w-full rounded-md px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60"
-            placeholder="(북마크에 대한 설명을 남겨보세요.)"
-          />
-        </div>
-
-        <footer class="mt-6 flex justify-end gap-2">
-          <button
-            type="button"
-            class="px-4 py-2 rounded-md text-sm border border-zinc-300/70 dark:border-zinc-600/60 bg-zinc-100/70 dark:bg-zinc-800/70 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            @click="closeAddDialog"
-          >
-            취소
-          </button>
-          <button
-            type="submit"
-            :disabled="!canSubmit"
-            :aria-disabled="!canSubmit"
-            class="px-4 py-2 rounded-md text-sm bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
-          >
-            추가
-          </button>
-        </footer>
-      </form>
-    </div>
-  </teleport>
 </template>
 
 <script setup lang="ts">
@@ -251,65 +175,13 @@ import type { Bookmark, Collection, ID } from "@/types/common";
 
 const props = defineProps<{ collection: Collection | null }>();
 
-type NewBookmarkPayload = {
-  url: string;
-  collectionId: ID; // number
-  title?: string | null;
-  description?: string | null;
-};
-
 const emit = defineEmits<{
-  (e: "add-bookmark", bookmark: NewBookmarkPayload): void;
+  (e: "open-add"): void;
   (e: "select-bookmark", bookmark: Bookmark): void;
 }>();
 
 const hasSelection = computed(() => !!props.collection);
 const bookmarks = computed<Bookmark[]>(() => props.collection?.bookmarks ?? []);
-
-// 다이얼로그
-const showAddDialog = ref(false);
-const form = ref({ title: "", url: "", description: "" });
-
-const dialogTitleId = "add-bookmark-title";
-const titleInputId = "add-bookmark-title-input";
-const urlInputId = "add-bookmark-url-input";
-const descInputId = "add-bookmark-desc-input";
-const titleInputRef = ref<HTMLInputElement | null>(null);
-
-const canSubmit = computed(() => form.value.url.trim().length > 0);
-
-function openAddDialog() {
-  resetForm();
-  showAddDialog.value = true;
-}
-function closeAddDialog() {
-  resetForm();
-  showAddDialog.value = false;
-}
-function resetForm() {
-  form.value.title = "";
-  form.value.url = "";
-  form.value.description = "";
-}
-function handleAdd() {
-  if (!canSubmit.value || !props.collection?.id) return;
-
-  const payload: NewBookmarkPayload = {
-    url: form.value.url.trim(),
-    collectionId: props.collection.id,
-    title: form.value.title.trim() || undefined,
-    description: form.value.description.trim() || undefined,
-  };
-
-  emit("add-bookmark", payload);
-  closeAddDialog();
-}
-watch(showAddDialog, async (open) => {
-  if (open) {
-    await nextTick();
-    titleInputRef.value?.focus();
-  }
-});
 
 // 유틸
 function displayTitle(b: Bookmark): string {

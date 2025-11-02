@@ -14,24 +14,42 @@
       <BookmarkList
         :key="selectedCollection?.id || 'none'"
         :collection="selectedCollection"
-        @add-bookmark="onAddBookmark"
+        @open-add="isAddOpen = true"
         @select-bookmark="onSelectBookmark"
       />
 
-      <!-- 우측 상세 패널 -->
+      <!-- 북마크 상세 패널 -->
       <SidePanel
         :open="!!selectedBookmark"
         width="min(640px, 92vw)"
         side="right"
+        @after-open="editRef?.focusTitle()"
         @close="selectedBookmark = null"
       >
         <BookmarkDetail
           v-if="selectedBookmark"
+          ref="editRef"
           :bookmark="selectedBookmark"
           :collection-name="selectedCollection?.name"
           @close="selectedBookmark = null"
           @update-bookmark="onUpdateBookmark"
           @delete-bookmark="onDeleteBookmark"
+        />
+      </SidePanel>
+      <!-- 북마크 추가 패널 -->
+      <SidePanel
+        :open="isAddOpen"
+        width="min(640px, 92vw)"
+        side="right"
+        @after-open="addRef?.focusTitle()"
+        @close="isAddOpen = false"
+      >
+        <AddBookmarkForm
+          ref="addRef"
+          :open="isAddOpen"
+          :collection-id="selectedCollection?.id ?? null"
+          @close="isAddOpen = false"
+          @submit="onAddBookmark"
         />
       </SidePanel>
     </section>
@@ -44,6 +62,7 @@ import WorkspaceSidebar from "@/features/workspace/components/WorkspaceSidebar.v
 import BookmarkList from "@/features/workspace/components/BookmarkList.vue";
 import SidePanel from "@/components/overlays/SidePanel.vue";
 import BookmarkDetail from "@/features/workspace/components/BookmarkDetail.vue";
+import AddBookmarkForm from "@/features/workspace/components/AddBookmarkForm.vue";
 import type { Bookmark, Collection } from "@/types/common";
 
 type UpdateBookmarkPayload = {
@@ -143,6 +162,9 @@ const collections = ref<Collection[]>([
 
 const selectedCollection = ref<Collection | null>(null);
 const selectedBookmark = ref<Bookmark | null>(null);
+const isAddOpen = ref(false);
+const addRef = ref<{ focusTitle: () => void } | null>(null);
+const editRef = ref<{ focusTitle: () => void } | null>(null);
 
 // 핸들러
 function onSelectCollection(c: Collection) {
@@ -160,12 +182,13 @@ function onSelectBookmark(b: Bookmark) {
 
 function onAddBookmark(payload: {
   title?: string | null;
-  description?: string | null;
   url: string;
+  description?: string | null;
   collectionId: number;
 }) {
   // TODO: createBookmark API 연결
   console.log("[TODO] createBookmark:", payload);
+  isAddOpen.value = false;
 }
 
 function onUpdateBookmark(payload: UpdateBookmarkPayload) {
