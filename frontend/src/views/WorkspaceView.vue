@@ -23,10 +23,12 @@
         :open="!!selectedBookmark"
         width="min(640px, 92vw)"
         side="right"
+        @after-open="editRef?.focusTitle()"
         @close="selectedBookmark = null"
       >
         <BookmarkDetail
           v-if="selectedBookmark"
+          ref="editRef"
           :bookmark="selectedBookmark"
           :collection-name="selectedCollection?.name"
           @close="selectedBookmark = null"
@@ -39,9 +41,11 @@
         :open="isAddOpen"
         width="min(640px, 92vw)"
         side="right"
+        @after-open="addRef?.focusTitle()"
         @close="isAddOpen = false"
       >
         <AddBookmarkForm
+          ref="addRef"
           :open="isAddOpen"
           :collection-id="selectedCollection?.id ?? null"
           @close="isAddOpen = false"
@@ -159,6 +163,8 @@ const collections = ref<Collection[]>([
 const selectedCollection = ref<Collection | null>(null);
 const selectedBookmark = ref<Bookmark | null>(null);
 const isAddOpen = ref(false);
+const addRef = ref<{ focusTitle: () => void } | null>(null);
+const editRef = ref<{ focusTitle: () => void } | null>(null);
 
 // 핸들러
 function onSelectCollection(c: Collection) {

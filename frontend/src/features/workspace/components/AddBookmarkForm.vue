@@ -18,7 +18,7 @@
 
     <!-- 본문 -->
     <div class="flex-1 overflow-auto px-5 py-4 space-y-6">
-      <p class="mt-1 text-sm text-muted-foreground">
+      <p class="text-sm text-neutral-500 dark:text-neutral-400 pb-4">
         저장하고 싶은 링크의 정보를 입력해주세요.
       </p>
 
@@ -26,6 +26,7 @@
       <div class="space-y-2">
         <input
           :id="titleId"
+          ref="titleRef"
           v-model="form!.title"
           type="text"
           class="w-full border-0 border-b border-border/70 bg-transparent px-3 py-2.5 text-xl font-semibold placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/40"
@@ -40,7 +41,6 @@
         >
         <input
           :id="urlId"
-          ref="urlRef"
           v-model.trim="form!.url"
           type="url"
           class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
@@ -133,9 +133,11 @@ const emit = defineEmits<{
   ): void;
 }>();
 
+defineExpose({ focusTitle });
+
 const form = ref({ title: "", url: "", description: "" });
 
-const urlRef = ref<HTMLInputElement | null>(null);
+const titleRef = ref<HTMLInputElement | null>(null);
 const uid = Math.random().toString(36).slice(2);
 const titleId = `add-bm-title-${uid}`;
 const urlId = `add-bm-url-${uid}`;
@@ -159,11 +161,15 @@ const normalize = (s?: string | null) => {
 };
 
 // 핸들러
-function handleClose() {
-  emit("close");
+function focusTitle() {
+  titleRef.value?.focus();
 }
 function resetForm() {
   form.value = { title: "", url: "", description: "" };
+}
+function handleClose() {
+  resetForm();
+  emit("close");
 }
 function handleSubmit() {
   if (!canSave.value || props.collectionId === null) return;
@@ -175,16 +181,4 @@ function handleSubmit() {
   });
   resetForm();
 }
-
-watch(
-  () => props.open,
-  async (open) => {
-    if (open) {
-      await nextTick();
-      urlRef.value?.focus();
-    } else {
-      resetForm();
-    }
-  }
-);
 </script>

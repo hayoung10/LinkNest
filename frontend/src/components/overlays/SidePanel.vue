@@ -1,6 +1,6 @@
 <template>
   <teleport :to="teleportTo">
-    <transition name="fade">
+    <transition name="slide" @after-enter="$emit('after-open')">
       <div
         v-if="open"
         class="fixed inset-0"
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -59,7 +59,7 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{ (e: "close"): void }>();
+const emit = defineEmits<{ (e: "close"): void; (e: "after-open"): void }>();
 
 const panelRef = ref<HTMLElement | null>(null);
 
@@ -109,7 +109,10 @@ watch(
     lockBodyScroll(o);
     if (o) {
       // 패널 포커스
-      requestAnimationFrame(() => panelRef.value?.focus?.());
+      await nextTick();
+      requestAnimationFrame(() => {
+        emit("after-open");
+      });
       window.addEventListener("keydown", onKeydown);
     } else {
       window.removeEventListener("keydown", onKeydown);
