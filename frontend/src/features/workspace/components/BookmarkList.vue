@@ -175,13 +175,6 @@ import type { Bookmark, Collection, ID } from "@/types/common";
 
 const props = defineProps<{ collection: Collection | null }>();
 
-type NewBookmarkPayload = {
-  url: string;
-  collectionId: ID; // number
-  title?: string | null;
-  description?: string | null;
-};
-
 const emit = defineEmits<{
   (e: "open-add"): void;
   (e: "select-bookmark", bookmark: Bookmark): void;
@@ -189,14 +182,6 @@ const emit = defineEmits<{
 
 const hasSelection = computed(() => !!props.collection);
 const bookmarks = computed<Bookmark[]>(() => props.collection?.bookmarks ?? []);
-
-// 다이얼로그
-const showAddDialog = ref(false);
-const form = ref({ title: "", url: "", description: "" });
-
-const titleInputRef = ref<HTMLInputElement | null>(null);
-
-const canSubmit = computed(() => form.value.url.trim().length > 0);
 
 // 유틸
 function displayTitle(b: Bookmark): string {
