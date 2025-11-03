@@ -25,12 +25,10 @@
         role="menu"
         aria-orientation="vertical"
         @click.stop
-        @keydown.esc.prevent.stop="closeMenu"
+        @keydown.esc.prevent.stop="closeMenu()"
       >
         <button
           class="menu-item"
-          :disabled="isOpenAllDisabled"
-          :aria-disabled="isOpenAllDisabled"
           role="menuitem"
           ref="firstItemRef"
           @click="emitAndClose('open-all', collection.id)"
@@ -151,9 +149,7 @@ import {
   computed,
   nextTick,
   onBeforeUnmount,
-  onMounted,
   ref,
-  watch,
   type CSSProperties,
 } from "vue";
 import type { Collection, ID } from "@/types/common";
@@ -168,23 +164,13 @@ const emit = defineEmits<{
   (e: "delete", id: ID): void;
 }>();
 
+// 상태
 const menuOpen = ref(false);
 const triggerEl = ref<HTMLElement | null>(null);
 const firstItemRef = ref<HTMLElement | null>(null);
-
-const ignoreNextDocClick = ref(false);
-const panelId = `collection-menu-${props.collection.id}`;
-
 const showDeleteDialog = ref(false);
 
-// 메뉴 비활성
-const isOpenAllDisabled = computed(() => {
-  const hasBookmarks = (props.collection.bookmarks?.length ?? 0) > 0;
-  const hasChildren = (props.collection.children?.length ?? 0) > 0;
-  return !(hasBookmarks || hasChildren);
-});
-
-// 위치 계산 (뷰포트 기준: position fixed)
+const panelId = `collection-menu-${props.collection.id}`;
 const pos = ref({ top: 0, left: 0 });
 const panelWidth = 192;
 const gap = 8;
@@ -217,52 +203,41 @@ function updatePosition() {
   pos.value = { top: Math.round(top), left: Math.round(left) };
 }
 
-function toggleMenu() {
-  menuOpen.value ? closeMenu() : openMenu();
-}
-function closeMenu() {
-  if (!menuOpen.value) return;
-  menuOpen.value = false;
-  triggerEl.value?.focus();
-}
-async function openMenu() {
+function openMenu() {
   if (menuOpen.value) return;
-  ignoreNextDocClick.value = true;
   menuOpen.value = true;
 
-  await nextTick();
-  await new Promise(requestAnimationFrame);
-
-  updatePosition();
-  firstItemRef.value?.focus();
-  requestAnimationFrame(() => {
-    ignoreNextDocClick.value = false;
+  nextTick(() => {
+    updatePosition();
+    requestAnimationFrame(() => firstItemRef.value?.focus());
   });
+
+  document.addEventListener("click", onDocClick, { capture: true });
+}
+function closeMenu(returnFocus = true) {
+  if (!menuOpen.value) return;
+  menuOpen.value = false;
+  document.removeEventListener("click", onDocClick, { capture: true });
+
+  if (returnFocus) {
+    requestAnimationFrame(() => triggerEl.value?.focus());
+  }
+}
+function toggleMenu() {
+  menuOpen.value ? closeMenu() : openMenu();
 }
 
 // 바깥 클릭 닫기
 function onDocClick(e: MouseEvent) {
-  if (!menuOpen.value || ignoreNextDocClick.value) return;
+  if (!menuOpen.value) return;
   const t = e.target as Node | null;
   const panel = document.getElementById(panelId);
   if (panel?.contains(t) || triggerEl.value?.contains(t)) return;
   closeMenu();
 }
 
-function onScrollOrResize() {
-  if (!menuOpen.value) return;
-  updatePosition();
-}
-
-onMounted(() => {
-  document.addEventListener("click", onDocClick, { capture: true });
-  window.addEventListener("resize", onScrollOrResize, { passive: true });
-  window.addEventListener("scroll", onScrollOrResize, { passive: true });
-});
 onBeforeUnmount(() => {
   document.removeEventListener("click", onDocClick, { capture: true });
-  window.removeEventListener("resize", onScrollOrResize);
-  window.removeEventListener("scroll", onScrollOrResize);
 });
 
 function emitAndClose(e: "open-all" | "add-sub", id: ID) {
@@ -276,7 +251,7 @@ function startRename() {
     id: props.collection.id,
     name: props.collection.name,
   });
-  closeMenu();
+  closeMenu(false);
 }
 
 // 다이얼로그 핸들러

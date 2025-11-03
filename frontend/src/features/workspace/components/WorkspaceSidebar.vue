@@ -172,6 +172,15 @@ async function startRename(payload: { id: number; name: string }) {
   draftName.value = (name ?? "").trim();
   originalName.value = (name ?? "").trim();
   isRenaming.value = false;
+
+  await nextTick();
+  requestAnimationFrame(() => {
+    const el = document.getElementById(
+      `col-rename-${id}`
+    ) as HTMLInputElement | null;
+    el?.focus();
+    el?.select();
+  });
 }
 function changeDraft(v: string) {
   draftName.value = v ?? "";
