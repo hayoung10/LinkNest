@@ -5,21 +5,9 @@
       class="relative flex items-center gap-1 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer select-none"
       role="button"
       :aria-expanded="hasChildren ? expanded : undefined"
-      tabindex="0"
+      :tabindex="isEditing ? -1 : 0"
       :style="{ paddingLeft: `${depth * 12}px` }"
-      @click.stop="$emit('select-collection', node)"
-      @keydown.enter.stop="$emit('select-collection', node)"
-      @keydown.space.prevent.stop="
-        hasChildren
-          ? $emit('toggle', node.id)
-          : $emit('select-collection', node)
-      "
-      @keydown.arrow-right.prevent.stop="
-        hasChildren && !expanded && $emit('toggle', node.id)
-      "
-      @keydown.arrow-left.prevent.stop="
-        hasChildren && expanded && $emit('toggle', node.id)
-      "
+      v-on="headerListeners"
     >
       <!-- 토글 아이콘 -->
       <button
@@ -59,25 +47,49 @@
       </svg>
 
       <!-- 이름 -->
-      <span class="truncate flex-1" :title="node.name">{{ node.name }}</span>
+      <div class="flex-1 min-w-0">
+        <span v-if="!isEditing" class="truncate" :title="node.name">{{
+          node.name
+        }}</span>
+        <input
+          v-else
+          :id="`col-rename-${node.id}`"
+          type="text"
+          class="w-full rounded-sm px-2 py-1 text-sm bg-background border border-border focus:outline-none focus:ring-2 focus:ring-ring/50"
+          :value="draftName"
+          :aria-label="`컬렉션 이름 편집: ${node.name}`"
+          @click.stop
+          @mousedown.stop
+          @input="
+            $emit('input-rename', ($event.target as HTMLInputElement).value)
+          "
+          @keydown.enter.stop="$emit('submit-rename')"
+          @keydown.esc.stop="$emit('cancel-rename')"
+          @blur="$emit('submit-rename')"
+        />
+      </div>
 
       <!-- 북마크 개수 -->
       <span
-        v-if="totalCount"
+        v-if="totalCount && !isEditing"
         class="text-xs text-muted-foreground tabular-nums"
         >{{ totalCount }}</span
       >
 
       <!-- … 메뉴 버튼 -->
       <div
+        v-if="!isEditing"
         class="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
         @click.stop
       >
         <CollectionMenu
           :collection="node"
+          :editing-id="editingId"
+          :draft-name="draftName"
+          :is-renaming="isRenaming"
           @open-all="() => {}"
           @add-sub="() => {}"
-          @rename="() => {}"
+          @start-rename="$emit('start-rename', $event)"
           @delete="() => {}"
         />
       </div>
@@ -93,8 +105,16 @@
           :node="child"
           :depth="depth + 1"
           :expanded-ids="expandedIds"
+          :count-mode="countMode"
+          :editing-id="editingId"
+          :draft-name="draftName"
+          :is-renaming="isRenaming"
           @toggle="$emit('toggle', $event)"
           @select-collection="$emit('select-collection', $event)"
+          @start-rename="$emit('start-rename', $event)"
+          @input-rename="$emit('input-rename', $event)"
+          @submit-rename="$emit('submit-rename')"
+          @cancel-rename="$emit('cancel-rename')"
         />
       </ul>
     </div>
@@ -102,9 +122,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import type { Collection } from "@/types/common";
+import { computed, nextTick, ref, watch } from "vue";
 import CollectionMenu from "../menus/CollectionMenu.vue";
+import type { Collection, ID } from "@/types/common";
 
 defineOptions({ name: "CollectionNode" });
 
@@ -116,18 +136,69 @@ const props = withDefaults(
     depth?: number;
     expandedIds: Set<number>;
     countMode?: CountMode;
+
+    // 이름 변경에 대한 상태
+    editingId?: number | null;
+    draftName?: string;
+    isRenaming?: boolean;
   }>(),
-  { depth: 0, countMode: "aggregate" as CountMode }
+  {
+    depth: 0,
+    countMode: "aggregate" as CountMode,
+    editingId: null,
+    draftName: "",
+    isRenaming: false,
+  }
 );
+
 const emit = defineEmits<{
   (e: "toggle", id: number): void;
   (e: "select-collection", c: Collection): void;
+
+  // 이름 변경 이벤트
+  (e: "start-rename", payload: { id: ID; name: string }): void;
+  (e: "input-rename", value: string): void;
+  (e: "submit-rename"): void;
+  (e: "cancel-rename"): void;
 }>();
 
 const expanded = computed(() => props.expandedIds.has(props.node.id));
 const hasChildren = computed(() => (props.node.children?.length ?? 0) > 0);
+const isEditing = computed(() => props.editingId === props.node.id);
 
-// 총합 카운트
+// 헤더 리스너 (편집 중일 때 비활성화)
+const headerListeners = computed(() => {
+  if (isEditing.value) return {};
+
+  return {
+    click: (e: MouseEvent) => {
+      e.stopPropagation();
+      emit("select-collection", props.node);
+    },
+    keydown: (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.stopPropagation();
+        emit("select-collection", props.node);
+      } else if (e.key === " ") {
+        e.preventDefault();
+        e.stopPropagation();
+        hasChildren.value
+          ? emit("toggle", props.node.id)
+          : emit("select-collection", props.node);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (hasChildren.value && !expanded.value) emit("toggle", props.node.id);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (hasChildren.value && expanded.value) emit("toggle", props.node.id);
+      }
+    },
+  };
+});
+
+// 북마크 카운트 계산
 function countAll(n: Collection): number {
   const self = n.bookmarks?.length ?? 0;
   const child = (n.children ?? []).reduce((acc, c) => acc + countAll(c), 0);

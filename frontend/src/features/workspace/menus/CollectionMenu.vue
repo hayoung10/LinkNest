@@ -25,12 +25,10 @@
         role="menu"
         aria-orientation="vertical"
         @click.stop
-        @keydown.esc.prevent.stop="closeMenu"
+        @keydown.esc.prevent.stop="closeMenu()"
       >
         <button
           class="menu-item"
-          :disabled="isOpenAllDisabled"
-          :aria-disabled="isOpenAllDisabled"
           role="menuitem"
           ref="firstItemRef"
           @click="emitAndClose('open-all', collection.id)"
@@ -69,7 +67,7 @@
           하위 컬렉션 만들기
         </button>
 
-        <button class="menu-item" role="menuitem" @click="openRenameDialog">
+        <button class="menu-item" role="menuitem" @click="startRename">
           <svg
             class="menu-icon"
             viewBox="0 0 24 24"
@@ -81,7 +79,7 @@
               d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"
             />
           </svg>
-          이름 변경
+          이름 변경하기
         </button>
 
         <div class="divider" />
@@ -104,55 +102,6 @@
           </svg>
           삭제
         </button>
-      </div>
-    </teleport>
-
-    <!-- 이름 변경 다이얼로그 -->
-    <teleport to="#modals">
-      <div
-        v-if="showRenameDialog"
-        class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
-        @click.self="showRenameDialog = false"
-        @keydown.esc="showRenameDialog = false"
-      >
-        <div
-          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6 relative"
-        >
-          <header class="mb-4">
-            <h3 class="text-[17px] font-semibold leading-6">
-              컬렉션 이름 변경
-            </h3>
-            <p class="mt-1 text-sm text-muted-foreground">
-              새로운 컬렉션 이름을 입력해주세요.
-            </p>
-          </header>
-          <div class="my-4 h-px bg-zinc-200/80 dark:bg-zinc-700/60"></div>
-          <div class="space-y-2">
-            <label class="block text-sm">컬렉션 이름</label>
-            <input
-              ref="renameInputRef"
-              v-model="newName"
-              type="text"
-              class="w-full rounded-md px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60"
-              placeholder="컬렉션 이름"
-              autofocus
-            />
-          </div>
-          <footer class="mt-6 flex justify-end gap-2">
-            <button
-              class="px-4 py-2 rounded-md text-sm border border-zinc-300/70 dark:border-zinc-600/60 bg-zinc-100/70 dark:bg-zinc-800/70 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              @click="showRenameDialog = false"
-            >
-              취소
-            </button>
-            <button
-              class="px-4 py-2 rounded-md text-sm bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
-              @click="handleRename"
-            >
-              변경
-            </button>
-          </footer>
-        </div>
       </div>
     </teleport>
 
@@ -200,9 +149,7 @@ import {
   computed,
   nextTick,
   onBeforeUnmount,
-  onMounted,
   ref,
-  watch,
   type CSSProperties,
 } from "vue";
 import type { Collection, ID } from "@/types/common";
@@ -213,30 +160,17 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "open-all", id: ID): void;
   (e: "add-sub", id: ID): void;
-  (e: "rename", p: { collectionId: ID; newName: string }): void;
+  (e: "start-rename", payload: { id: ID; name: string }): void;
   (e: "delete", id: ID): void;
 }>();
 
+// 상태
 const menuOpen = ref(false);
 const triggerEl = ref<HTMLElement | null>(null);
 const firstItemRef = ref<HTMLElement | null>(null);
-
-const ignoreNextDocClick = ref(false);
-const panelId = `collection-menu-${props.collection.id}`;
-
-const renameInputRef = ref<HTMLElement | null>(null);
-const showRenameDialog = ref(false);
 const showDeleteDialog = ref(false);
-const newName = ref(props.collection.name);
 
-// 메뉴 비활성
-const isOpenAllDisabled = computed(() => {
-  const hasBookmarks = (props.collection.bookmarks?.length ?? 0) > 0;
-  const hasChildren = (props.collection.children?.length ?? 0) > 0;
-  return !(hasBookmarks || hasChildren);
-});
-
-// 위치 계산 (뷰포트 기준: position fixed)
+const panelId = `collection-menu-${props.collection.id}`;
 const pos = ref({ top: 0, left: 0 });
 const panelWidth = 192;
 const gap = 8;
@@ -269,52 +203,41 @@ function updatePosition() {
   pos.value = { top: Math.round(top), left: Math.round(left) };
 }
 
-function toggleMenu() {
-  menuOpen.value ? closeMenu() : openMenu();
-}
-function closeMenu() {
-  if (!menuOpen.value) return;
-  menuOpen.value = false;
-  triggerEl.value?.focus();
-}
-async function openMenu() {
+function openMenu() {
   if (menuOpen.value) return;
-  ignoreNextDocClick.value = true;
   menuOpen.value = true;
 
-  await nextTick();
-  await new Promise(requestAnimationFrame);
-
-  updatePosition();
-  firstItemRef.value?.focus();
-  requestAnimationFrame(() => {
-    ignoreNextDocClick.value = false;
+  nextTick(() => {
+    updatePosition();
+    requestAnimationFrame(() => firstItemRef.value?.focus());
   });
+
+  document.addEventListener("click", onDocClick, { capture: true });
+}
+function closeMenu(returnFocus = true) {
+  if (!menuOpen.value) return;
+  menuOpen.value = false;
+  document.removeEventListener("click", onDocClick, { capture: true });
+
+  if (returnFocus) {
+    requestAnimationFrame(() => triggerEl.value?.focus());
+  }
+}
+function toggleMenu() {
+  menuOpen.value ? closeMenu() : openMenu();
 }
 
 // 바깥 클릭 닫기
 function onDocClick(e: MouseEvent) {
-  if (!menuOpen.value || ignoreNextDocClick.value) return;
+  if (!menuOpen.value) return;
   const t = e.target as Node | null;
   const panel = document.getElementById(panelId);
   if (panel?.contains(t) || triggerEl.value?.contains(t)) return;
   closeMenu();
 }
 
-function onScrollOrResize() {
-  if (!menuOpen.value) return;
-  updatePosition();
-}
-
-onMounted(() => {
-  document.addEventListener("click", onDocClick, { capture: true });
-  window.addEventListener("resize", onScrollOrResize, { passive: true });
-  window.addEventListener("scroll", onScrollOrResize, { passive: true });
-});
 onBeforeUnmount(() => {
   document.removeEventListener("click", onDocClick, { capture: true });
-  window.removeEventListener("resize", onScrollOrResize);
-  window.removeEventListener("scroll", onScrollOrResize);
 });
 
 function emitAndClose(e: "open-all" | "add-sub", id: ID) {
@@ -323,35 +246,23 @@ function emitAndClose(e: "open-all" | "add-sub", id: ID) {
   closeMenu();
 }
 
-// 다이얼로그 핸들러
-function openRenameDialog() {
-  newName.value = props.collection.name;
-  showRenameDialog.value = true;
-  closeMenu();
+function startRename() {
+  emit("start-rename", {
+    id: props.collection.id,
+    name: props.collection.name,
+  });
+  closeMenu(false);
 }
+
+// 다이얼로그 핸들러
 function openDeleteDialog() {
   showDeleteDialog.value = true;
   closeMenu();
-}
-function handleRename() {
-  const name = (newName.value ?? "").trim();
-  if (name && name !== props.collection.name) {
-    emit("rename", { collectionId: props.collection.id, newName: name });
-  }
-  showRenameDialog.value = false;
 }
 function handleDelete() {
   emit("delete", props.collection.id);
   showDeleteDialog.value = false;
 }
-
-// 입력 포커스
-watch(showRenameDialog, async (open) => {
-  if (open) {
-    await nextTick();
-    renameInputRef.value?.focus();
-  }
-});
 </script>
 
 <style scoped>
