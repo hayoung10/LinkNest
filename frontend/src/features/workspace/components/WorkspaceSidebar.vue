@@ -57,8 +57,15 @@
           :node="c"
           :depth="0"
           :expanded-ids="expandedIds"
+          :editing-id="editingId"
+          :draft-name="draftName"
+          :is-renaming="isRenaming"
           @toggle="toggleExpand"
           @select-collection="$emit('select-collection', $event)"
+          @start-rename="startRename"
+          @input-rename="changeDraft"
+          @submit-rename="submitRename"
+          @cancel-rename="cancelRename"
         />
       </ul>
     </nav>
@@ -142,18 +149,55 @@ const props = defineProps<{ collections: Collection[] }>();
 const emit = defineEmits<{
   (e: "select-collection", c: Collection): void;
   (e: "add-collection", name: string): void;
+  (e: "rename-collection", p: { id: number; newName: string }): void;
 }>();
 
 // 확장 상태
 const expandedIds = ref<Set<number>>(new Set());
-
 function toggleExpand(id: number) {
   const next = new Set(expandedIds.value);
   next.has(id) ? next.delete(id) : next.add(id);
   expandedIds.value = next;
 }
 
-// 다이얼로그
+// 이름 변경하기
+const editingId = ref<number | null>(null);
+const draftName = ref(""); // 입력 중인 이름
+const originalName = ref("");
+const isRenaming = ref(false);
+
+async function startRename(payload: { id: number; name: string }) {
+  const { id, name } = payload ?? { id: -1, name: "" };
+  editingId.value = id;
+  draftName.value = (name ?? "").trim();
+  originalName.value = (name ?? "").trim();
+  isRenaming.value = false;
+}
+function changeDraft(v: string) {
+  draftName.value = v ?? "";
+}
+function cancelRename() {
+  editingId.value = null;
+  draftName.value = "";
+  isRenaming.value = false;
+}
+function submitRename() {
+  const id = editingId.value;
+  const next = (draftName.value ?? "").trim();
+
+  if (id == null) return;
+  if (!next || next === originalName.value) {
+    cancelRename();
+    return;
+  }
+
+  isRenaming.value = true;
+  emit("rename-collection", { id, newName: next });
+  isRenaming.value = false;
+  cancelRename();
+}
+
+// 새 컬렉션 추가 다이얼로그
 const showAddCollectionDialog = ref(false);
 const newCollection = ref("");
 const nameInputRef = ref<HTMLInputElement | null>(null);
@@ -179,7 +223,7 @@ function handleAdd() {
   closeAddCollectionDialog();
 }
 
-// 입력 포커스
+// 다이얼로그 포커스
 watch(showAddCollectionDialog, async (open) => {
   if (open) {
     await nextTick();
