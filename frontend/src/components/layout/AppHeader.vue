@@ -7,18 +7,7 @@
         <div
           class="size-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center"
         >
-          <svg
-            class="size-5 text-white"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M10 13a5 5 0 0 1 7 0l2 2a5 5 0 0 1-7 7l-2-2" />
-            <path d="M14 11a5 5 0 0 1-7 0l-2-2a5 5 0 1 1 7-7l2 2" />
-          </svg>
+          <LogoIcon :size="20" klass="text-white" />
         </div>
         <span class="font-semibold">LinkNest</span>
       </div>
@@ -43,6 +32,7 @@
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "vue-router";
+import LogoIcon from "../icons/LogoIcon.vue";
 
 const router = useRouter();
 const auth = useAuthStore();

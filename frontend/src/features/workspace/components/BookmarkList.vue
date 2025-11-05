@@ -34,19 +34,7 @@
       <!-- 헤더 -->
       <header class="flex items-center justify-between mb-2">
         <div class="min-w-0 flex items-center gap-2 pl-3">
-          <svg
-            class="size-7 text-muted-foreground opacity-80"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M3 7h5l2 2h11v9" />
-            <path d="M3 7v10a2 2 0 0 0 2 2h16" />
-          </svg>
+          <FolderIcon size="28" class="text-muted-foreground opacity-80" />
           <h2 class="text-xl font-semibold text-foreground truncate">
             {{ collection?.name }}
           </h2>
@@ -59,17 +47,7 @@
             aria-label="새 북마크 추가"
             @click="$emit('open-add')"
           >
-            <svg
-              viewBox="0 0 24 24"
-              class="size-4"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              aria-hidden="true"
-            >
-              <path d="M12 5v14" />
-              <path d="M5 12h14" />
-            </svg>
+            <PlusIcon :size="16" klass="shrink-0" />
             <span>추가</span>
           </button>
         </div>
@@ -102,21 +80,7 @@
                     aria-label="링크 새 탭에서 열기"
                     @click.stop
                   >
-                    <svg
-                      viewBox="0 0 24 24"
-                      class="size-4"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path
-                        d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-                      />
-                      <polyline points="15 3 21 3 21 9" />
-                      <line x1="10" y1="14" x2="21" y2="3" />
-                    </svg>
+                    <ExternalLinkIcon :size="16" />
                   </a>
                 </div>
                 <div
@@ -170,8 +134,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
-import type { Bookmark, Collection, ID } from "@/types/common";
+import { computed } from "vue";
+import type { Bookmark, Collection } from "@/types/common";
+import FolderIcon from "@/components/icons/FolderIcon.vue";
+import PlusIcon from "@/components/icons/PlusIcon.vue";
+import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 
 const props = defineProps<{ collection: Collection | null }>();
 

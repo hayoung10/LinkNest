@@ -15,19 +15,7 @@
           <div
             class="size-12 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-4"
           >
-            <svg
-              class="size-6 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M3 7h5l2 2h11v9a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"
-              />
-            </svg>
+            <FolderIcon :size="32" klass="text-white" />
           </div>
           <h3 class="text-lg font-semibold">스마트 정리</h3>
           <p class="text-muted-foreground text-sm">
@@ -62,3 +50,7 @@
     </div>
   </section>
 </template>
+
+<script setup lang="ts">
+import FolderIcon from "@/components/icons/FolderIcon.vue";
+</script>

@@ -17,34 +17,16 @@
         aria-label="하위 항목 토글"
         @click.stop="$emit('toggle', node.id)"
       >
-        <svg
-          class="size-4 transition-transform"
-          :class="expanded ? 'rotate-90' : ''"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M9 18l6-6-6-6" />
-        </svg>
+        <ChevronIcon
+          :size="16"
+          :direction="expanded ? 'down' : 'right'"
+          class="size-4 transition-transform duration-150"
+        />
       </button>
       <span v-else class="inline-block w-5" aria-hidden="true"></span>
 
       <!-- 폴더 아이콘 -->
-      <svg
-        class="size-4 text-muted-foreground opacity-80"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M3 7h5l2 2h11v9" />
-        <path d="M3 7v10a2 2 0 0 0 2 2h16" />
-      </svg>
+      <FolderIcon :size="16" class="size-4 text-muted-foreground opacity-80" />
 
       <!-- 이름 -->
       <div class="flex-1 min-w-0">
@@ -122,9 +104,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed } from "vue";
 import CollectionMenu from "../menus/CollectionMenu.vue";
 import type { Collection, ID } from "@/types/common";
+import ChevronIcon from "@/components/icons/ChevronIcon.vue";
+import FolderIcon from "@/components/icons/FolderIcon.vue";
 
 defineOptions({ name: "CollectionNode" });
 
