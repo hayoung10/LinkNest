@@ -31,14 +31,12 @@
       </span>
 
       <!-- 화살표 아이콘(^) -->
-      <svg
-        class="size-4 text-muted-foreground"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-      >
-        <path d="M6 14l6-6 6 6" />
-      </svg>
+      <ChevronIcon
+        :size="16"
+        direction="up"
+        class="text-muted-foreground"
+        aria-hidden="true"
+      />
     </button>
 
     <!-- 드롭다운 메뉴 -->
@@ -124,6 +122,7 @@
 </template>
 
 <script setup lang="ts">
+import ChevronIcon from "@/components/icons/ChevronIcon.vue";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import type { CSSProperties } from "vue";
 

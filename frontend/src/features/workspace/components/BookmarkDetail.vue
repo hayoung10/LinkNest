@@ -22,18 +22,7 @@
               @click="handleEdit"
               class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="size-6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M12 20h9" />
-                <path
-                  d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
-                />
-              </svg>
+              <EditIcon class="size-6" />
               <span class="ml-1">수정</span>
             </button>
             <button
@@ -41,18 +30,7 @@
               @click="showDeleteDialog = true"
               class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 text-sm"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="size-6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M3 6h18" />
-                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                <path d="M10 11v6M14 11v6" />
-              </svg>
+              <TrashIcon class="size-6" />
               <span class="ml-1">삭제</span>
             </button>
           </template>
@@ -64,15 +42,7 @@
               @click="handleCancel"
               class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="size-6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
+              <CloseIcon class="size-6" />
               <span class="ml-1">취소</span>
             </button>
             <button
@@ -81,19 +51,7 @@
               @click="handleSave"
               class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="size-6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
-                />
-                <path d="M17 21v-8H7v8" />
-                <path d="M7 3v5h8" />
-              </svg>
+              <SaveIcon class="size-6" />
               <span class="ml-1">저장</span>
             </button>
           </template>
@@ -153,18 +111,7 @@
           <div class="border rounded-lg p-4 bg-muted/30">
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="min-w-0 flex items-center gap-2">
-                <svg
-                  class="size-4 shrink-0"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <path
-                    d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-                  />
-                  <path d="M15 3h6v6" />
-                  <path d="M10 14L21 3" />
-                </svg>
+                <ExternalLinkIcon class="size-4 shrink-0" />
                 <a
                   :href="currentBookmark.url"
                   target="_blank"
@@ -259,6 +206,11 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import type { Bookmark, ID } from "@/types/common";
+import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
+import TrashIcon from "@/components/icons/TrashIcon.vue";
+import SaveIcon from "@/components/icons/SaveIcon.vue";
+import CloseIcon from "@/components/icons/CloseIcon.vue";
+import EditIcon from "@/components/icons/EditIcon.vue";
 
 const props = defineProps<{
   bookmark: Bookmark;

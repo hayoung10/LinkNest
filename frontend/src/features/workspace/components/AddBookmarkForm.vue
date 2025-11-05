@@ -74,16 +74,7 @@
         class="inline-flex items-center h-9 gap-1.5 px-3 rounded-md hover:bg-accent text-sm"
         @click="handleClose"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="size-6"
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
+        <CloseIcon class="size-6" />
         <span>취소</span>
       </button>
       <button
@@ -92,20 +83,7 @@
         :disabled="!canSave"
         @click="handleSubmit"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="size-4"
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path
-            d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
-          />
-          <path d="M17 21v-8H7v8" />
-          <path d="M7 3v5h8" />
-        </svg>
+        <SaveIcon class="size-6" />
         <span>저장</span>
       </button>
     </footer>
@@ -113,7 +91,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import CloseIcon from "@/components/icons/CloseIcon.vue";
+import SaveIcon from "@/components/icons/SaveIcon.vue";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
   open: boolean;

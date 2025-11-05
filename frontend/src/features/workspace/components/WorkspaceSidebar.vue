@@ -12,15 +12,7 @@
         <div
           class="size-7 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-md grid place-items-center"
         >
-          <svg
-            class="size-4 text-white"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <path d="M10 13a5 5 0 0 1 7 0l2 2a5 5 0 0 1-7 7l-2-2" />
-            <path d="M14 11a5 5 0 0 1-7 0l-2-2a5 5 0 1 1 7-7l2 2" />
-          </svg>
+          <LogoIcon :size="16" klass="text-white" />
         </div>
         <span class="font-semibold text-sm">LinkNest</span>
       </div>
@@ -37,16 +29,7 @@
           title="새 컬렉션"
           @click="openAddCollectionDialog"
         >
-          <svg
-            viewBox="0 0 24 24"
-            class="size-4"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M12 5v14" />
-            <path d="M5 12h14" />
-          </svg>
+          <PlusIcon :size="16" />
         </button>
       </div>
 
@@ -142,6 +125,8 @@ import { computed, nextTick, ref, watch } from "vue";
 import UserMenu from "../menus/UserMenu.vue";
 import CollectionNode from "./CollectionNode.vue";
 import type { Collection } from "@/types/common";
+import PlusIcon from "@/components/icons/PlusIcon.vue";
+import LogoIcon from "@/components/icons/LogoIcon.vue";
 
 defineOptions({ inheritAttrs: false });
 

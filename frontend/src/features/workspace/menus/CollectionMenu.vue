@@ -33,18 +33,7 @@
           ref="firstItemRef"
           @click="emitAndClose('open-all', collection.id)"
         >
-          <svg
-            class="menu-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <path
-              d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-            />
-            <path d="M15 3h6v6" />
-            <path d="M10 14L21 3" />
-          </svg>
+          <ExternalLinkIcon class="menu-icon" :stroke-width="1" />
           모든 북마크 열기
         </button>
 
@@ -68,17 +57,7 @@
         </button>
 
         <button class="menu-item" role="menuitem" @click="startRename">
-          <svg
-            class="menu-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <path d="M12 20h9" />
-            <path
-              d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"
-            />
-          </svg>
+          <EditIcon class="menu-icon" :stroke-width="1" />
           이름 변경하기
         </button>
 
@@ -89,17 +68,7 @@
           role="menuitem"
           @click="openDeleteDialog"
         >
-          <svg
-            class="menu-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <path d="M3 6h18" />
-            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-            <path d="M10 11v6M14 11v6" />
-          </svg>
+          <TrashIcon class="menu-icon" :stroke-width="1" />
           삭제
         </button>
       </div>
@@ -153,6 +122,9 @@ import {
   type CSSProperties,
 } from "vue";
 import type { Collection, ID } from "@/types/common";
+import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
+import TrashIcon from "@/components/icons/TrashIcon.vue";
+import EditIcon from "@/components/icons/EditIcon.vue";
 
 const props = defineProps<{
   collection: Collection;
