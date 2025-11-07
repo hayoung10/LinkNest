@@ -1,6 +1,7 @@
 import http from "@/api/http";
 import { Bookmark } from "@/types/common";
-import { BookmarkRes, mapBookmarkRes } from "./types";
+import { BookmarkRes } from "./types";
+import { mapBookmarkRes } from "./mappers";
 
 export interface BookmarkCreateReq {
   collectionId: number;

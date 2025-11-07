@@ -105,7 +105,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import CollectionMenu from "../menus/CollectionMenu.vue";
+import { CollectionMenu } from "@/features/workspace";
 import type { Collection, ID } from "@/types/common";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
 import FolderIcon from "@/components/icons/FolderIcon.vue";

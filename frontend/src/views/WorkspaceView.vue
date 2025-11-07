@@ -58,11 +58,13 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import WorkspaceSidebar from "@/features/workspace/components/WorkspaceSidebar.vue";
-import BookmarkList from "@/features/workspace/components/BookmarkList.vue";
+import {
+  WorkspaceSidebar,
+  BookmarkList,
+  BookmarkDetail,
+  AddBookmarkForm,
+} from "@/features/workspace";
 import SidePanel from "@/components/overlays/SidePanel.vue";
-import BookmarkDetail from "@/features/workspace/components/BookmarkDetail.vue";
-import AddBookmarkForm from "@/features/workspace/components/AddBookmarkForm.vue";
 import type { Bookmark, Collection } from "@/types/common";
 
 type UpdateBookmarkPayload = {
