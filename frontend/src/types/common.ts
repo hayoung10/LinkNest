@@ -45,7 +45,7 @@ export interface Collection {
   name: string;
   icon?: string | null;
   parentId?: ID | null;
-  sortOrder?: number | null;
+  sortOrder?: number;
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
   bookmarkCount?: number;
