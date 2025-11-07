@@ -1,6 +1,7 @@
 import http from "@/api/http";
 import { Collection } from "@/types/common";
-import { CollectionRes, mapCollectionRes } from "./types";
+import { CollectionRes } from "./types";
+import { mapCollectionRes } from "./mappers";
 
 export interface CollectionCreateReq {
   name: string;
@@ -25,8 +26,8 @@ export interface CollectionReorderReq {
 export async function createCollection(
   payload: CollectionCreateReq
 ): Promise<Collection> {
-  const { data } = await http.patch<CollectionRes>(`/collections`, payload);
-  return mapCollectionRes(data, []);
+  const { data } = await http.post<CollectionRes>(`/collections`, payload);
+  return mapCollectionRes(data);
 }
 
 /** 단건 조회 */
@@ -46,7 +47,7 @@ export async function updateCollection(
   );
 
   // 북마크(children)는 호출부에서 기존 상태 유지
-  return mapCollectionRes(data, []);
+  return mapCollectionRes(data);
 }
 
 /** 삭제 (204 No Content) */
@@ -61,7 +62,7 @@ export async function listChildren(
   const { data } = await http.get<CollectionRes[]>(`/collections`, {
     params: { parentId },
   });
-  return data.map((r) => mapCollectionRes(r, [])); // 목록에 bookmarks 포함 X
+  return data.map((r) => mapCollectionRes(r)); // 목록에 bookmarks 포함 X
 }
 
 /** 이동 (204 No Content) */
