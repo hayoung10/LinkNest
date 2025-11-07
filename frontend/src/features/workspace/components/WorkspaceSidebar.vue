@@ -122,8 +122,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import UserMenu from "../menus/UserMenu.vue";
-import CollectionNode from "./CollectionNode.vue";
+import { CollectionNode, UserMenu } from "@/features/workspace";
 import type { Collection } from "@/types/common";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import LogoIcon from "@/components/icons/LogoIcon.vue";
