@@ -1,16 +1,5 @@
 import { defineStore } from "pinia";
 import { Bookmark, Collection, ID } from "@/types/common";
-import {
-  CollectionCreateReq,
-  CollectionMoveReq,
-  CollectionReorderReq,
-  CollectionUpdateReq,
-} from "@/api/collections";
-import {
-  BookmarkCreateReq,
-  BookmarkMoveReq,
-  BookmarkUpdateReq,
-} from "@/api/bookmarks";
 
 type LoadKey = "collections" | "bookmarks";
 
@@ -25,9 +14,9 @@ interface WorkspaceState {
 function setLoading(
   target: Record<LoadKey, boolean>,
   key: LoadKey,
-  isloading: boolean
+  isLoading: boolean
 ) {
-  target[key] = isloading;
+  target[key] = isLoading;
 }
 function fail(
   target: Record<LoadKey, string | null>,
@@ -49,6 +38,16 @@ export const useWorkspaceStore = defineStore<"workspace", WorkspaceState>(
       error: { collections: null, bookmarks: null },
     }),
 
+    getters: {
+      getcurrentCollection(state): Collection | null {
+        if (state.selectedCollectionId == null) return null;
+        return (
+          state.collections.find((c) => c.id === state.selectedCollectionId) ??
+          null
+        );
+      },
+    },
+
     actions: {
       // 초기화
       resetAll() {
@@ -63,7 +62,11 @@ export const useWorkspaceStore = defineStore<"workspace", WorkspaceState>(
       },
 
       // 컬렉션
-      async createCollection(payload: CollectionCreateReq) {
+      async createCollection(payload: {
+        name: string;
+        icon?: string | null;
+        parentId?: ID | null;
+      }) {
         setLoading(this.isLoading, "collections", true);
         try {
           // TODO: API 연결
@@ -90,7 +93,10 @@ export const useWorkspaceStore = defineStore<"workspace", WorkspaceState>(
         }
       },
 
-      async updateCollection(id: ID, payload: CollectionUpdateReq) {
+      async updateCollection(
+        id: ID,
+        payload: { name?: string; icon?: string | null }
+      ) {
         setLoading(this.isLoading, "collections", true);
         try {
           // TODO: API 연결
@@ -128,7 +134,7 @@ export const useWorkspaceStore = defineStore<"workspace", WorkspaceState>(
         }
       },
 
-      async moveCollection(id: ID, payload: CollectionMoveReq) {
+      async moveCollection(id: ID, targetParentId: ID | null) {
         setLoading(this.isLoading, "collections", true);
         try {
           // TODO: API 연결
@@ -139,7 +145,7 @@ export const useWorkspaceStore = defineStore<"workspace", WorkspaceState>(
         }
       },
 
-      async reorderCollection(id: ID, payload: CollectionReorderReq) {
+      async reorderCollection(id: ID, newOrder: number) {
         setLoading(this.isLoading, "collections", true);
         try {
           // TODO: API 연결
@@ -151,7 +157,12 @@ export const useWorkspaceStore = defineStore<"workspace", WorkspaceState>(
       },
 
       // 북마크
-      async createBookmark(payload: BookmarkCreateReq) {
+      async createBookmark(payload: {
+        collectionId: ID;
+        url: string;
+        title?: string;
+        description?: string;
+      }) {
         setLoading(this.isLoading, "bookmarks", true);
         try {
           // TODO: API 연결
@@ -178,7 +189,10 @@ export const useWorkspaceStore = defineStore<"workspace", WorkspaceState>(
         }
       },
 
-      async updateBookmark(id: ID, payload: BookmarkUpdateReq) {
+      async updateBookmark(
+        id: ID,
+        payload: { url?: string; title?: string; description?: string }
+      ) {
         setLoading(this.isLoading, "bookmarks", true);
         try {
           // TODO: API 연결
@@ -216,7 +230,7 @@ export const useWorkspaceStore = defineStore<"workspace", WorkspaceState>(
         }
       },
 
-      async moveBookmark(id: ID, payload: BookmarkMoveReq) {
+      async moveBookmark(id: ID, targetCollectionId: ID) {
         setLoading(this.isLoading, "bookmarks", true);
         try {
           // TODO: API 연결
