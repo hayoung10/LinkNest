@@ -45,6 +45,7 @@
           :is-renaming="isRenaming"
           @toggle="toggleExpand"
           @select-collection="$emit('select-collection', $event)"
+          @delete-collection="$emit('delete-collection', $event)"
           @start-rename="startRename"
           @input-rename="changeDraft"
           @submit-rename="submitRename"
@@ -109,7 +110,7 @@
           <button
             type="submit"
             :disabled="!canSubmit"
-            :aria:disabled="!canSubmit"
+            :aria-disabled="!canSubmit"
             class="px-4 py-2 rounded-md text-sm bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
           >
             추가
@@ -123,7 +124,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import { CollectionNode, UserMenu } from "@/features/workspace";
-import type { Collection } from "@/types/common";
+import type { Collection, ID } from "@/types/common";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import LogoIcon from "@/components/icons/LogoIcon.vue";
 
@@ -134,6 +135,7 @@ const emit = defineEmits<{
   (e: "select-collection", c: Collection): void;
   (e: "add-collection", name: string): void;
   (e: "rename-collection", p: { id: number; newName: string }): void;
+  (e: "delete-collection", id: ID): void;
 }>();
 
 // 확장 상태

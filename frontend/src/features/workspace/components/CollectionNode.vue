@@ -72,7 +72,7 @@
           @open-all="() => {}"
           @add-sub="() => {}"
           @start-rename="$emit('start-rename', $event)"
-          @delete="() => {}"
+          @delete="$emit('delete-collection', node.id)"
         />
       </div>
     </div>
@@ -93,6 +93,7 @@
           :is-renaming="isRenaming"
           @toggle="$emit('toggle', $event)"
           @select-collection="$emit('select-collection', $event)"
+          @delete-collection="$emit('delete-collection', $event)"
           @start-rename="$emit('start-rename', $event)"
           @input-rename="$emit('input-rename', $event)"
           @submit-rename="$emit('submit-rename')"
@@ -138,6 +139,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "toggle", id: number): void;
   (e: "select-collection", c: Collection): void;
+  (e: "delete-collection", id: ID): void;
 
   // 이름 변경 이벤트
   (e: "start-rename", payload: { id: ID; name: string }): void;
