@@ -38,7 +38,7 @@ export const useWorkspaceStore = defineStore("workspace", {
   }),
 
   getters: {
-    getcurrentCollection(state): Collection | null {
+    currentCollection(state): Collection | null {
       if (state.selectedCollectionId == null) return null;
       return (
         state.collections.find((c) => c.id === state.selectedCollectionId) ??

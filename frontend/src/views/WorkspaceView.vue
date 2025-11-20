@@ -6,14 +6,16 @@
       :collections="collections"
       @add-collection="onAddCollection"
       @select-collection="onSelectCollection"
+      @rename-collection="onRenameCollection"
+      @delete-collection="onDeleteCollection"
     />
 
     <!-- 우측: 메인 콘텐츠 -->
     <section class="relative flex-1 overflow-hidden">
       <!-- 목록 -->
       <BookmarkList
-        :key="selectedCollection?.id || 'none'"
-        :collection="selectedCollection"
+        :key="currentCollection?.id || 'none'"
+        :collection="currentCollection"
         @open-add="isAddOpen = true"
         @select-bookmark="onSelectBookmark"
       />
@@ -30,7 +32,7 @@
           v-if="selectedBookmark"
           ref="editRef"
           :bookmark="selectedBookmark"
-          :collection-name="selectedCollection?.name"
+          :collection-name="currentCollection?.name"
           @close="selectedBookmark = null"
           @update-bookmark="onUpdateBookmark"
           @delete-bookmark="onDeleteBookmark"
@@ -47,7 +49,7 @@
         <AddBookmarkForm
           ref="addRef"
           :open="isAddOpen"
-          :collection-id="selectedCollection?.id ?? null"
+          :collection-id="currentCollection?.id ?? null"
           @close="isAddOpen = false"
           @submit="onAddBookmark"
         />
@@ -57,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import {
   WorkspaceSidebar,
   BookmarkList,
@@ -65,7 +67,9 @@ import {
   AddBookmarkForm,
 } from "@/features/workspace";
 import SidePanel from "@/components/overlays/SidePanel.vue";
-import type { Bookmark, Collection } from "@/types/common";
+import type { Bookmark, Collection, ID } from "@/types/common";
+import { useWorkspaceStore } from "@/stores/workspace";
+import { storeToRefs } from "pinia";
 
 type UpdateBookmarkPayload = {
   id: number;
@@ -74,108 +78,34 @@ type UpdateBookmarkPayload = {
   description?: string | null;
 };
 
-// Mock
-const now = () => new Date().toISOString();
-const collections = ref<Collection[]>([
-  {
-    id: 1,
-    name: "여행 계획",
-    createdAt: now(),
-    updatedAt: now(),
-    children: [
-      {
-        id: 11,
-        name: "일본 여행",
-        icon: null,
-        parentId: 1,
-        sortOrder: 1,
-        createdAt: now(),
-        updatedAt: now(),
-        bookmarks: [
-          {
-            id: 101,
-            collectionId: 11,
-            url: "https://example.com/osaka-food",
-            title: "오사카 맛집 리스트",
-            description: "현지인 추천 맛집 20곳 정리된 블로그 글이에요.",
-            createdAt: now(),
-            updatedAt: now(),
-          },
-          {
-            id: 102,
-            collectionId: 11,
-            url: "https://example.com/kyoto-trip",
-            title: "교토 여행 일정표",
-            description: "3박 4일 코스로 여행 동선 정리된 글입니다.",
-            createdAt: now(),
-            updatedAt: now(),
-          },
-        ],
-      },
-      {
-        id: 12,
-        name: "유럽 여행",
-        icon: null,
-        parentId: 1,
-        sortOrder: 2,
-        createdAt: now(),
-        updatedAt: now(),
-        bookmarks: [
-          {
-            id: 103,
-            collectionId: 12,
-            url: "https://example.com/paris-places",
-            title: "파리 관광 명소 모음",
-            description: "에펠탑, 루브르, 몽마르뜨까지 주요 명소 한눈에 보기.",
-            createdAt: now(),
-            updatedAt: now(),
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "라이프스타일",
-    createdAt: now(),
-    updatedAt: now(),
-    bookmarks: [
-      {
-        id: 201,
-        collectionId: 2,
-        url: "https://example.com/daily-routine",
-        title: "하루 루틴 관리 팁",
-        description: "생산적인 하루를 위한 시간 관리 루틴 정리.",
-        createdAt: now(),
-        updatedAt: now(),
-      },
-      {
-        id: 202,
-        collectionId: 2,
-        url: "https://example.com/interior-ideas",
-        title: "인테리어 아이디어 모음",
-        description: "작은 공간을 넓게 보이게 하는 인테리어 아이디어.",
-        createdAt: now(),
-        updatedAt: now(),
-      },
-    ],
-  },
-]);
+const workspace = useWorkspaceStore();
+const { collections, currentCollection, selectedCollectionId } =
+  storeToRefs(workspace);
 
-const selectedCollection = ref<Collection | null>(null);
 const selectedBookmark = ref<Bookmark | null>(null);
 const isAddOpen = ref(false);
 const addRef = ref<{ focusTitle: () => void } | null>(null);
 const editRef = ref<{ focusTitle: () => void } | null>(null);
 
+onMounted(() => {
+  workspace.fetchCollections();
+});
+
 // 핸들러
 function onSelectCollection(c: Collection) {
-  selectedCollection.value = c;
+  workspace.selectCollection(c.id);
 }
 
-function onAddCollection(name: string) {
-  // TODO: createCollection API 연결
-  console.log("[TODO] createCollection:", name);
+async function onAddCollection(name: string) {
+  await workspace.createCollection({ name, parentId: null, icon: null });
+}
+
+async function onRenameCollection(payload: { id: ID; newName: string }) {
+  await workspace.updateCollection(payload.id, { name: payload.newName });
+}
+
+async function onDeleteCollection(id: ID) {
+  await workspace.deleteCollection(id);
 }
 
 function onSelectBookmark(b: Bookmark) {
