@@ -16,6 +16,7 @@
       <BookmarkList
         :key="currentCollection?.id || 'none'"
         :collection="currentCollection"
+        :bookmarks="bookmarks"
         @open-add="isAddOpen = true"
         @select-bookmark="onSelectBookmark"
       />
@@ -79,7 +80,7 @@ type UpdateBookmarkPayload = {
 };
 
 const workspace = useWorkspaceStore();
-const { collections, currentCollection, selectedCollectionId } =
+const { collections, currentCollection, selectedCollectionId, bookmarks } =
   storeToRefs(workspace);
 
 const selectedBookmark = ref<Bookmark | null>(null);
@@ -92,8 +93,11 @@ onMounted(() => {
 });
 
 // 핸들러
-function onSelectCollection(c: Collection) {
+async function onSelectCollection(c: Collection) {
   workspace.selectCollection(c.id);
+  selectedBookmark.value = null;
+  isAddOpen.value = false;
+  await workspace.fetchBookmarks(c.id);
 }
 
 async function onAddCollection(name: string) {
@@ -106,31 +110,58 @@ async function onRenameCollection(payload: { id: ID; newName: string }) {
 
 async function onDeleteCollection(id: ID) {
   await workspace.deleteCollection(id);
+
+  if (selectedCollectionId.value === id) {
+    selectedBookmark.value = null;
+    await workspace.fetchBookmarks();
+  }
 }
 
 function onSelectBookmark(b: Bookmark) {
   selectedBookmark.value = b;
 }
 
-function onAddBookmark(payload: {
+async function onAddBookmark(payload: {
   title?: string | null;
   url: string;
   description?: string | null;
   collectionId: number;
 }) {
-  // TODO: createBookmark API 연결
-  console.log("[TODO] createBookmark:", payload);
+  await workspace.createBookmark({
+    collectionId: payload.collectionId,
+    url: payload.url,
+    title: payload.title ?? undefined,
+    description: payload.description ?? undefined,
+  });
+  await workspace.fetchBookmarks(payload.collectionId);
   isAddOpen.value = false;
 }
 
-function onUpdateBookmark(payload: UpdateBookmarkPayload) {
-  // TODO: updateBookmark API 연결
-  console.log("[TODO] updateBookmark:", payload);
+async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
+  await workspace.updateBookmark(payload.id, {
+    url: payload.url,
+    title: payload.title,
+    description: payload.description,
+  });
+
+  // 패널 업데이트
+  const updated = workspace.bookmarks.find((b) => b.id === payload.id);
+  if (updated) {
+    selectedBookmark.value = updated;
+  }
+
+  if (currentCollection.value?.id != null) {
+    await workspace.fetchBookmarks(currentCollection.value.id);
+  }
 }
 
-function onDeleteBookmark(id: number) {
-  // TODO: deleteBookmark API 연결
-  console.log("[TODO] deleteBookmark id:", id);
+async function onDeleteBookmark(id: number) {
+  await workspace.deleteBookmark(id);
+
+  if (currentCollection.value?.id != null) {
+    await workspace.fetchBookmarks(currentCollection.value.id);
+  }
+
   selectedBookmark.value = null;
 }
 </script>

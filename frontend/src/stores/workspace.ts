@@ -206,7 +206,11 @@ export const useWorkspaceStore = defineStore("workspace", {
 
     async updateBookmark(
       id: ID,
-      payload: { url?: string; title?: string; description?: string }
+      payload: {
+        url?: string;
+        title?: string | null;
+        description?: string | null;
+      }
     ) {
       setLoading(this.isLoading, "bookmarks", true);
       try {
