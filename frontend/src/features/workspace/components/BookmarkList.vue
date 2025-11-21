@@ -140,7 +140,10 @@ import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 
-const props = defineProps<{ collection: Collection | null }>();
+const props = defineProps<{
+  collection: Collection | null;
+  bookmarks: Bookmark[];
+}>();
 
 const emit = defineEmits<{
   (e: "open-add"): void;
@@ -148,7 +151,7 @@ const emit = defineEmits<{
 }>();
 
 const hasSelection = computed(() => !!props.collection);
-const bookmarks = computed<Bookmark[]>(() => props.collection?.bookmarks ?? []);
+const bookmarks = computed<Bookmark[]>(() => props.bookmarks);
 
 // 유틸
 function displayTitle(b: Bookmark): string {

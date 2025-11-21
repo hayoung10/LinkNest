@@ -246,7 +246,7 @@ const currentBookmark = computed<Bookmark>(
 
 const isUrlValid = computed(() => {
   const v = (editedBookmark.value?.url ?? "").trim();
-  if (!isEditing) return false;
+  if (!isEditing.value) return false;
   try {
     new URL(v);
     return true;

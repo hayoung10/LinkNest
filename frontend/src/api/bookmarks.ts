@@ -12,8 +12,8 @@ export interface BookmarkCreateReq {
 
 export interface BookmarkUpdateReq {
   url?: string;
-  title?: string;
-  description?: string;
+  title?: string | null;
+  description?: string | null;
 }
 
 export interface BookmarkMoveReq {
