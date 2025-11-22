@@ -10,5 +10,6 @@ public record CollectionRes(
         int sortOrder,
         Instant createdAt,
         Instant updatedAt,
-        long bookmarkCount
+        long bookmarkCount,
+        long childCount
 ) {}

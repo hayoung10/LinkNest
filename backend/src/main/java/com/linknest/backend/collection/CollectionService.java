@@ -38,13 +38,13 @@ public class CollectionService {
         collection.setSortOrder(nextOrder);
 
         Collection saved = collectionRepository.save(collection);
-        return buildResWithCount(saved);
+        return buildResWithCount(userId, saved);
     }
 
     // ---------- 조회 ----------
     public CollectionRes get(Long userId, Long id) {
         Collection collection = requireOwnedCollection(userId, id);
-        return buildResWithCount(collection);
+        return buildResWithCount(userId, collection);
     }
 
     // ---------- 수정 ----------
@@ -68,7 +68,7 @@ public class CollectionService {
                 ? collectionRepository.findAllByUserIdAndParentIsNullOrderBySortOrderAscCreatedAtAsc(userId)
                 : collectionRepository.findAllByUserIdAndParentIdOrderBySortOrderAscCreatedAtAsc(userId, parentId);
 
-        return list.stream().map(this::buildResWithCount).toList();
+        return list.stream().map(c -> buildResWithCount(userId, c)).toList();
     }
 
     // ---------- 이동 (경로 변경) ----------
@@ -126,9 +126,10 @@ public class CollectionService {
         return collection;
     }
 
-    private CollectionRes buildResWithCount(Collection c) {
-        long count = bookmarkRepository.countByCollectionId(c.getId());
-        return mapper.toResWithCount(c, count);
+    private CollectionRes buildResWithCount(Long userId, Collection c) {
+        long bookmarkCount = bookmarkRepository.countByCollectionId(c.getId());
+        long childCount = collectionRepository.countByUserIdAndParentId(userId, c.getId());
+        return mapper.toResWithCount(c, bookmarkCount, childCount);
     }
 
     private int nextOrderForRoot(Long userId) { // 루트 컬렉션 중 가장 큰 sortOrder + 1 계산

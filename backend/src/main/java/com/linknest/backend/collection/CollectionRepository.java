@@ -21,4 +21,6 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
 
     @Query("select max(c.sortOrder) from Collection c where c.user.id = :userId and c.parent.id = :parentId")
     Integer findMaxSortOrderByUserIdAndParentId(@Param("userId") Long userId, @Param("parentId") Long parentId);
+
+    long countByUserIdAndParentId(Long userId, Long parentId);
 }
