@@ -16,10 +16,12 @@ public interface CollectionMapper {
 
     // Entity -> Res
     @Mapping(target = "bookmarkCount", constant = "0L")
+    @Mapping(target = "childCount", constant = "0L")
     @Mapping(target = "parentId", source = "parent.id")
     CollectionRes toRes(Collection collection);
 
     @InheritConfiguration(name = "toRes")
-    @Mapping(target = "bookmarkCount", expression = "java(count)")
-    CollectionRes toResWithCount(Collection c, long count);
+    @Mapping(target = "bookmarkCount", expression = "java(bookmarkCount)")
+    @Mapping(target = "childCount", expression = "java(childCount)")
+    CollectionRes toResWithCount(Collection c, long bookmarkCount, long childCount);
 }
