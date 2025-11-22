@@ -49,6 +49,7 @@ export interface Collection {
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
   bookmarkCount?: number;
+  childCount?: number;
   children?: Collection[];
   bookmarks?: Bookmark[];
 }

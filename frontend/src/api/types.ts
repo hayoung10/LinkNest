@@ -18,4 +18,5 @@ export interface CollectionRes {
   createdAt: string;
   updatedAt: string;
   bookmarkCount: number;
+  childCount: number;
 }
