@@ -25,5 +25,6 @@ export function mapCollectionRes(dto: CollectionRes): Collection {
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
     bookmarkCount: dto.bookmarkCount,
+    childCount: dto.childCount,
   };
 }
