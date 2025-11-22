@@ -70,10 +70,20 @@ export const useWorkspaceStore = defineStore("workspace", {
       setLoading(this.isLoading, "collections", true);
       try {
         const created = await CollectionApi.createCollection(payload);
-        if (
-          (payload.parentId ?? null) === (this.selectedCollectionId ?? null)
-        ) {
+
+        if (created.parentId === null) {
           this.collections.push(created);
+          return;
+        }
+
+        const parent = this.collections.find((c) => c.id === created.parentId);
+        if (parent) {
+          parent.children = [...(parent.children ?? []), created];
+        } else {
+          console.warn(
+            "[createCollection] parent collection not found:",
+            created
+          );
         }
       } catch (e) {
         fail(this.error, "collections", e, "컬렉션 생성에 실패했습니다.");
@@ -140,6 +150,28 @@ export const useWorkspaceStore = defineStore("workspace", {
           "collections",
           e,
           "컬렉션 목록을 불러오지 못했습니다."
+        );
+      } finally {
+        setLoading(this.isLoading, "collections", false);
+      }
+    },
+
+    async fetchChildCollections(id: ID) {
+      setLoading(this.isLoading, "collections", true);
+      try {
+        const children = await CollectionApi.listChildren(id);
+        const collection = this.collections.find((c) => c.id === id);
+        if (collection) {
+          collection.children = children;
+        } else {
+          console.warn("[fetchChildCollection] collection not found:", id);
+        }
+      } catch (e) {
+        fail(
+          this.error,
+          "collections",
+          e,
+          "하위 컬렉션 목록을 불러오지 못했습니다."
         );
       } finally {
         setLoading(this.isLoading, "collections", false);

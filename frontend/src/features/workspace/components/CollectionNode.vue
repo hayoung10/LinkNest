@@ -7,7 +7,7 @@
       :aria-expanded="hasChildren ? expanded : undefined"
       :tabindex="isEditing ? -1 : 0"
       :style="{ paddingLeft: `${depth * 12}px` }"
-      v-on="headerListeners"
+      v-on="nodeHandlers"
     >
       <!-- 토글 아이콘 -->
       <button
@@ -53,9 +53,9 @@
 
       <!-- 북마크 개수 -->
       <span
-        v-if="totalCount && !isEditing"
+        v-if="bookmarkCount && !isEditing"
         class="text-xs text-muted-foreground tabular-nums"
-        >{{ totalCount }}</span
+        >{{ bookmarkCount }}</span
       >
 
       <!-- … 메뉴 버튼 -->
@@ -149,17 +149,19 @@ const emit = defineEmits<{
 }>();
 
 const expanded = computed(() => props.expandedIds.has(props.node.id));
-const hasChildren = computed(() => (props.node.children?.length ?? 0) > 0);
+const hasChildren = computed(() => (props.node.childCount ?? 0) > 0);
+const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
 const isEditing = computed(() => props.editingId === props.node.id);
 
 // 헤더 리스너 (편집 중일 때 비활성화)
-const headerListeners = computed(() => {
+const nodeHandlers = computed(() => {
   if (isEditing.value) return {};
 
   return {
     click: (e: MouseEvent) => {
       e.stopPropagation();
       emit("select-collection", props.node);
+      emit("toggle", props.node.id);
     },
     keydown: (e: KeyboardEvent) => {
       if (e.key === "Enter") {
@@ -183,15 +185,4 @@ const headerListeners = computed(() => {
     },
   };
 });
-
-// 북마크 카운트 계산
-function countAll(n: Collection): number {
-  const self = n.bookmarks?.length ?? 0;
-  const child = (n.children ?? []).reduce((acc, c) => acc + countAll(c), 0);
-  return self + child;
-}
-const directCount = computed(() => props.node.bookmarks?.length ?? 0);
-const totalCount = computed(() =>
-  props.countMode === "aggregate" ? countAll(props.node) : directCount.value
-);
 </script>

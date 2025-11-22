@@ -127,6 +127,7 @@ import { CollectionNode, UserMenu } from "@/features/workspace";
 import type { Collection, ID } from "@/types/common";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import LogoIcon from "@/components/icons/LogoIcon.vue";
+import { useWorkspaceStore } from "@/stores/workspace";
 
 defineOptions({ inheritAttrs: false });
 
@@ -138,11 +139,22 @@ const emit = defineEmits<{
   (e: "delete-collection", id: ID): void;
 }>();
 
+const workspace = useWorkspaceStore();
+
 // 확장 상태
 const expandedIds = ref<Set<number>>(new Set());
-function toggleExpand(id: number) {
+
+async function toggleExpand(id: number) {
   const next = new Set(expandedIds.value);
-  next.has(id) ? next.delete(id) : next.add(id);
+
+  if (!next.has(id)) {
+    // 펼쳐야 하는 경우
+    await workspace.fetchChildCollections(id);
+    next.add(id);
+  } else {
+    next.delete(id);
+  }
+
   expandedIds.value = next;
 }
 
