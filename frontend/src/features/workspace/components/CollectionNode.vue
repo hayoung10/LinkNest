@@ -2,7 +2,12 @@
   <li class="group relative">
     <!-- 컬렉션 헤더 -->
     <div
-      class="relative flex items-center gap-1 px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer select-none"
+      :class="[
+        'relative flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer select-none',
+        isActive
+          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 font-medium ring-1 ring-blue-300'
+          : 'hover:bg-zinc-100 dark:hover:bg-zinc-800',
+      ]"
       role="button"
       :aria-expanded="hasChildren ? expanded : undefined"
       :tabindex="isEditing ? -1 : 0"
@@ -87,6 +92,7 @@
           :node="child"
           :depth="depth + 1"
           :expanded-ids="expandedIds"
+          :selected-id="selectedId"
           :count-mode="countMode"
           :editing-id="editingId"
           :draft-name="draftName"
@@ -121,6 +127,7 @@ const props = withDefaults(
     depth?: number;
     expandedIds: Set<number>;
     countMode?: CountMode;
+    selectedId?: number | null;
 
     // 이름 변경에 대한 상태
     editingId?: number | null;
@@ -130,6 +137,7 @@ const props = withDefaults(
   {
     depth: 0,
     countMode: "aggregate" as CountMode,
+    selectedId: null,
     editingId: null,
     draftName: "",
     isRenaming: false,
@@ -152,6 +160,7 @@ const expanded = computed(() => props.expandedIds.has(props.node.id));
 const hasChildren = computed(() => (props.node.childCount ?? 0) > 0);
 const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
 const isEditing = computed(() => props.editingId === props.node.id);
+const isActive = computed(() => props.selectedId === props.node.id);
 
 // 핸들러 (편집 중일 때 비활성화)
 const nodeHandlers = computed(() => {
