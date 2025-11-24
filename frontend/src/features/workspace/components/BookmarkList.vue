@@ -150,7 +150,8 @@ const emit = defineEmits<{
   (e: "select-bookmark", bookmark: Bookmark): void;
 }>();
 
-const hasSelection = computed(() => !!props.collection);
+const selectedCollectionId = computed(() => props.collection?.id ?? null);
+const hasSelection = computed(() => selectedCollectionId.value !== null);
 const bookmarks = computed<Bookmark[]>(() => props.bookmarks ?? []);
 const hasBookmarks = computed(() => bookmarks.value.length > 0);
 

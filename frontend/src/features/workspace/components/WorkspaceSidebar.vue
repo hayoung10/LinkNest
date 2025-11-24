@@ -40,7 +40,7 @@
           :node="c"
           :depth="0"
           :expanded-ids="expandedIds"
-          :selected-id="selectedCollectionId"
+          :selected-collection-id="selectedCollectionId"
           :editing-id="editingId"
           :draft-name="draftName"
           :is-renaming="isRenaming"

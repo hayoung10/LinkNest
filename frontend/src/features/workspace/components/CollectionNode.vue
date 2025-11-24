@@ -92,7 +92,7 @@
           :node="child"
           :depth="depth + 1"
           :expanded-ids="expandedIds"
-          :selected-id="selectedId"
+          :selected-id="selectedCollectionId"
           :count-mode="countMode"
           :editing-id="editingId"
           :draft-name="draftName"
@@ -127,7 +127,7 @@ const props = withDefaults(
     depth?: number;
     expandedIds: Set<number>;
     countMode?: CountMode;
-    selectedId?: number | null;
+    selectedCollectionId?: number | null;
 
     // 이름 변경에 대한 상태
     editingId?: number | null;
@@ -137,7 +137,7 @@ const props = withDefaults(
   {
     depth: 0,
     countMode: "aggregate" as CountMode,
-    selectedId: null,
+    selectedCollectionId: null,
     editingId: null,
     draftName: "",
     isRenaming: false,
@@ -160,7 +160,7 @@ const expanded = computed(() => props.expandedIds.has(props.node.id));
 const hasChildren = computed(() => (props.node.childCount ?? 0) > 0);
 const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
 const isEditing = computed(() => props.editingId === props.node.id);
-const isActive = computed(() => props.selectedId === props.node.id);
+const isActive = computed(() => props.selectedCollectionId === props.node.id);
 
 // 핸들러 (편집 중일 때 비활성화)
 const nodeHandlers = computed(() => {
