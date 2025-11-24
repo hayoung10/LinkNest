@@ -14,8 +14,8 @@
     <section class="relative flex-1 overflow-hidden">
       <!-- 목록 -->
       <BookmarkList
-        :key="currentCollection?.id || 'none'"
-        :collection="currentCollection"
+        :key="selectedCollection?.id || 'none'"
+        :collection="selectedCollection"
         :bookmarks="bookmarks"
         @open-add="isAddOpen = true"
         @select-bookmark="onSelectBookmark"
@@ -33,7 +33,7 @@
           v-if="selectedBookmark"
           ref="editRef"
           :bookmark="selectedBookmark"
-          :collection-name="currentCollection?.name"
+          :collection-name="selectedCollection?.name"
           @close="selectedBookmark = null"
           @update-bookmark="onUpdateBookmark"
           @delete-bookmark="onDeleteBookmark"
@@ -50,7 +50,7 @@
         <AddBookmarkForm
           ref="addRef"
           :open="isAddOpen"
-          :collection-id="currentCollection?.id ?? null"
+          :collection-id="selectedCollection?.id ?? null"
           @close="isAddOpen = false"
           @submit="onAddBookmark"
         />
@@ -80,10 +80,11 @@ type UpdateBookmarkPayload = {
 };
 
 const workspace = useWorkspaceStore();
-const { collections, currentCollection, selectedCollectionId, bookmarks } =
-  storeToRefs(workspace);
+const { collections, selectedCollectionId, bookmarks } = storeToRefs(workspace);
 
+const selectedCollection = ref<Collection | null>(null);
 const selectedBookmark = ref<Bookmark | null>(null);
+
 const isAddOpen = ref(false);
 const addRef = ref<{ focusTitle: () => void } | null>(null);
 const editRef = ref<{ focusTitle: () => void } | null>(null);
@@ -94,9 +95,12 @@ onMounted(() => {
 
 // 핸들러
 async function onSelectCollection(c: Collection) {
+  selectedCollection.value = c;
   workspace.selectCollection(c.id);
+
   selectedBookmark.value = null;
   isAddOpen.value = false;
+
   await workspace.fetchBookmarks(c.id);
 }
 
@@ -112,6 +116,7 @@ async function onDeleteCollection(id: ID) {
   await workspace.deleteCollection(id);
 
   if (selectedCollectionId.value === id) {
+    selectedCollection.value = null;
     selectedBookmark.value = null;
     await workspace.fetchBookmarks();
   }
@@ -150,16 +155,16 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
     selectedBookmark.value = updated;
   }
 
-  if (currentCollection.value?.id != null) {
-    await workspace.fetchBookmarks(currentCollection.value.id);
+  if (selectedCollection.value?.id != null) {
+    await workspace.fetchBookmarks(selectedCollection.value.id);
   }
 }
 
 async function onDeleteBookmark(id: number) {
   await workspace.deleteBookmark(id);
 
-  if (currentCollection.value?.id != null) {
-    await workspace.fetchBookmarks(currentCollection.value.id);
+  if (selectedCollection.value?.id != null) {
+    await workspace.fetchBookmarks(selectedCollection.value.id);
   }
 
   selectedBookmark.value = null;

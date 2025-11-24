@@ -56,7 +56,7 @@
       <div class="divider" />
 
       <!-- 북마크 리스트 -->
-      <template v-if="bookmarks.length">
+      <template v-if="hasBookmarks">
         <ul class="mt-0" role="list" aria-label="북마크 목록">
           <template v-for="b in bookmarks" :key="b.id">
             <li
@@ -151,7 +151,8 @@ const emit = defineEmits<{
 }>();
 
 const hasSelection = computed(() => !!props.collection);
-const bookmarks = computed<Bookmark[]>(() => props.bookmarks);
+const bookmarks = computed<Bookmark[]>(() => props.bookmarks ?? []);
+const hasBookmarks = computed(() => bookmarks.value.length > 0);
 
 // 유틸
 function displayTitle(b: Bookmark): string {

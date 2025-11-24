@@ -38,16 +38,6 @@ export const useWorkspaceStore = defineStore("workspace", {
     error: { collections: null, bookmarks: null },
   }),
 
-  getters: {
-    currentCollection(state): Collection | null {
-      if (state.selectedCollectionId == null) return null;
-      return (
-        state.collections.find((c) => c.id === state.selectedCollectionId) ??
-        null
-      );
-    },
-  },
-
   actions: {
     // 초기화
     resetAll() {
