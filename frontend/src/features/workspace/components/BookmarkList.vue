@@ -69,7 +69,15 @@
                 :title="displayTitle(b)"
               >
                 <div class="text-sm font-semibold flex items-center gap-2">
-                  <span class="truncate">{{ b.title }}</span>
+                  <span
+                    class="truncate"
+                    :class="
+                      hasTitle(b)
+                        ? 'text-foreground'
+                        : 'text-neutral-400 dark:text-neutral-500'
+                    "
+                    >{{ displayTitle(b) }}</span
+                  >
 
                   <!-- 링크 아이콘 -->
                   <a
@@ -159,6 +167,9 @@ const hasBookmarks = computed(() => bookmarks.value.length > 0);
 function displayTitle(b: Bookmark): string {
   const t = (b.title ?? "").trim();
   return t || "(제목 없음)";
+}
+function hasTitle(b: Bookmark): boolean {
+  return !!b.title?.trim();
 }
 function domain(url: string) {
   try {
