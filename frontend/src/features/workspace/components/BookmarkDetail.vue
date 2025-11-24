@@ -7,7 +7,7 @@
         <div class="min-w-0">
           <p
             v-if="collectionName"
-            class="text-[15px] font-semibold text-neutral-500 dark:text-neutral-400 truncate"
+            class="text-[15px] font-semibold text-foreground truncate"
           >
             {{ collectionName }}
           </p>
@@ -83,7 +83,14 @@
           />
         </template>
         <template v-else>
-          <h1 class="text-xl font-semibold text-foreground truncate">
+          <h1
+            class="text-xl font-semibold truncate"
+            :class="
+              hasTitle
+                ? 'text-foreground'
+                : 'text-neutral-400 dark:text-neutral-500'
+            "
+          >
             {{ displayTitle(currentBookmark) }}
           </h1>
         </template>
@@ -92,7 +99,7 @@
       <!-- 링크 -->
       <div class="space-y-2">
         <template v-if="isEditing">
-          <label class="block text-sm text-muted-foreground">링크 *</label>
+          <label class="block text-sm text-foreground">링크 *</label>
           <input
             v-model="editedBookmark!.url"
             type="url"
@@ -107,7 +114,7 @@
           </p>
         </template>
         <template v-else>
-          <label class="block text-sm text-muted-foreground">링크</label>
+          <label class="block text-sm text-foreground">링크</label>
           <div class="border rounded-lg p-4 bg-muted/30">
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="min-w-0 flex items-center gap-2">
@@ -136,7 +143,8 @@
 
       <!-- 설명 -->
       <div class="space-y-2">
-        <label class="block text-sm text-muted-foreground">설명</label>
+        <label class="block text-sm text-foreground">설명</label>
+        <div class="h-px w-full bg-neutral-200 dark:bg-neutral-800 mt-4"></div>
         <template v-if="isEditing">
           <textarea
             v-model="editedBookmark!.description"
@@ -145,7 +153,14 @@
           />
         </template>
         <template v-else>
-          <p class="text-muted-foreground whitespace-pre-wrap min-h-[120px]">
+          <p
+            class="whitespace-pre-wrap min-h-[120px]"
+            :class="
+              hasDescription
+                ? 'text-foreground'
+                : 'text-neutral-400 dark:text-neutral-500'
+            "
+          >
             {{
               currentBookmark.description ??
               "(북마크에 대한 설명을 남겨보세요.)"
@@ -243,6 +258,9 @@ const titleRef = ref<HTMLInputElement | null>(null);
 const currentBookmark = computed<Bookmark>(
   () => (isEditing.value ? editedBookmark.value : props.bookmark) as Bookmark
 );
+
+const hasTitle = computed(() => !!props.bookmark.title?.trim());
+const hasDescription = computed(() => !!props.bookmark.description?.trim());
 
 const isUrlValid = computed(() => {
   const v = (editedBookmark.value?.url ?? "").trim();
