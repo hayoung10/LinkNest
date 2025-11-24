@@ -40,11 +40,12 @@
           :node="c"
           :depth="0"
           :expanded-ids="expandedIds"
+          :selected-collection-id="selectedCollectionId"
           :editing-id="editingId"
           :draft-name="draftName"
           :is-renaming="isRenaming"
           @toggle="toggleExpand"
-          @select-collection="$emit('select-collection', $event)"
+          @select-collection="handleSelectCollection"
           @delete-collection="$emit('delete-collection', $event)"
           @start-rename="startRename"
           @input-rename="changeDraft"
@@ -140,6 +141,14 @@ const emit = defineEmits<{
 }>();
 
 const workspace = useWorkspaceStore();
+
+// 선택된 컬렉션 ID
+const selectedCollectionId = ref<number | null>(null);
+
+function handleSelectCollection(c: Collection) {
+  selectedCollectionId.value = c.id;
+  emit("select-collection", c);
+}
 
 // 확장 상태
 const expandedIds = ref<Set<number>>(new Set());

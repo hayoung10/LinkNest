@@ -56,11 +56,16 @@
       <div class="divider" />
 
       <!-- 북마크 리스트 -->
-      <template v-if="bookmarks.length">
+      <template v-if="hasBookmarks">
         <ul class="mt-0" role="list" aria-label="북마크 목록">
           <template v-for="b in bookmarks" :key="b.id">
             <li
-              class="px-2 py-3 rounded-md hover:bg-accent cursor-pointer select-none"
+              class="px-2 py-3 rounded-md cursor-pointer select-none transition-colors"
+              :class="
+                isActive(b)
+                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 ring-1 ring-blue-300'
+                  : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+              "
             >
               <button
                 type="button"
@@ -69,7 +74,15 @@
                 :title="displayTitle(b)"
               >
                 <div class="text-sm font-semibold flex items-center gap-2">
-                  <span class="truncate">{{ b.title }}</span>
+                  <span
+                    class="truncate"
+                    :class="
+                      hasTitle(b)
+                        ? 'text-foreground'
+                        : 'text-neutral-400 dark:text-neutral-500'
+                    "
+                    >{{ displayTitle(b) }}</span
+                  >
 
                   <!-- 링크 아이콘 -->
                   <a
@@ -143,6 +156,7 @@ import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 const props = defineProps<{
   collection: Collection | null;
   bookmarks: Bookmark[];
+  selectedBookmarkId?: number | null;
 }>();
 
 const emit = defineEmits<{
@@ -150,14 +164,25 @@ const emit = defineEmits<{
   (e: "select-bookmark", bookmark: Bookmark): void;
 }>();
 
-const hasSelection = computed(() => !!props.collection);
-const bookmarks = computed<Bookmark[]>(() => props.bookmarks);
+const selectedCollectionId = computed(() => props.collection?.id ?? null);
+const hasSelection = computed(() => selectedCollectionId.value !== null);
+const bookmarks = computed<Bookmark[]>(() => props.bookmarks ?? []);
+const hasBookmarks = computed(() => bookmarks.value.length > 0);
 
 // 유틸
 function displayTitle(b: Bookmark): string {
   const t = (b.title ?? "").trim();
   return t || "(제목 없음)";
 }
+
+function hasTitle(b: Bookmark): boolean {
+  return !!b.title?.trim();
+}
+
+function isActive(b: Bookmark): boolean {
+  return props.selectedBookmarkId === b.id;
+}
+
 function domain(url: string) {
   try {
     return new URL(url).host.replace(/^www\./, "");
@@ -165,6 +190,7 @@ function domain(url: string) {
     return url;
   }
 }
+
 function formatDate(iso?: string): string {
   if (!iso) return "-";
   try {
@@ -177,6 +203,7 @@ function formatDate(iso?: string): string {
     return "-";
   }
 }
+
 function onSelect(b: Bookmark) {
   emit("select-bookmark", b);
 }
