@@ -153,7 +153,7 @@ const hasChildren = computed(() => (props.node.childCount ?? 0) > 0);
 const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
 const isEditing = computed(() => props.editingId === props.node.id);
 
-// 헤더 리스너 (편집 중일 때 비활성화)
+// 핸들러 (편집 중일 때 비활성화)
 const nodeHandlers = computed(() => {
   if (isEditing.value) return {};
 
@@ -161,7 +161,6 @@ const nodeHandlers = computed(() => {
     click: (e: MouseEvent) => {
       e.stopPropagation();
       emit("select-collection", props.node);
-      emit("toggle", props.node.id);
     },
     keydown: (e: KeyboardEvent) => {
       if (e.key === "Enter") {
