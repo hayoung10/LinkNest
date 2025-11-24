@@ -17,6 +17,7 @@
         :key="selectedCollection?.id || 'none'"
         :collection="selectedCollection"
         :bookmarks="bookmarks"
+        :selected-bookmark-id="selectedBookmark?.id ?? null"
         @open-add="isAddOpen = true"
         @select-bookmark="onSelectBookmark"
       />
