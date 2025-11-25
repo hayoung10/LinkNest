@@ -93,11 +93,12 @@
 <script setup lang="ts">
 import CloseIcon from "@/components/icons/CloseIcon.vue";
 import SaveIcon from "@/components/icons/SaveIcon.vue";
+import type { ID } from "@/types/common";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
   open: boolean;
-  collectionId: number | null;
+  collectionId: ID | null;
 }>();
 
 const emit = defineEmits<{
@@ -108,7 +109,7 @@ const emit = defineEmits<{
       title?: string | null;
       url: string;
       description?: string | null;
-      collectionId: number;
+      collectionId: ID;
     }
   ): void;
 }>();

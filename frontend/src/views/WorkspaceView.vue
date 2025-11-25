@@ -74,7 +74,7 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 
 type UpdateBookmarkPayload = {
-  id: number;
+  id: ID;
   title?: string | null;
   url: string;
   description?: string | null;
@@ -135,7 +135,7 @@ async function onAddBookmark(payload: {
   title?: string | null;
   url: string;
   description?: string | null;
-  collectionId: number;
+  collectionId: ID;
 }) {
   await workspace.createBookmark({
     collectionId: payload.collectionId,
@@ -165,7 +165,7 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
   }
 }
 
-async function onDeleteBookmark(id: number) {
+async function onDeleteBookmark(id: ID) {
   await workspace.deleteBookmark(id);
 
   if (selectedCollection.value?.id != null) {
