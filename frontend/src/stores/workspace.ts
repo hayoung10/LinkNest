@@ -60,20 +60,23 @@ export const useWorkspaceStore = defineStore("workspace", {
       setLoading(this.isLoading, "collections", true);
       try {
         const created = await CollectionApi.createCollection(payload);
+        const parentId = payload.parentId ?? null;
 
-        if (created.parentId === null) {
+        if (parentId === null) {
+          // 루트 컬렉션 추가
           this.collections.push(created);
           return;
         }
 
-        const parent = this.collections.find((c) => c.id === created.parentId);
+        // 하위 컬렉션 추가
+        const parent = this.collections.find((c) => c.id === parentId);
         if (parent) {
           parent.children = [...(parent.children ?? []), created];
         } else {
-          console.warn(
-            "[createCollection] parent collection not found:",
-            created
-          );
+          console.warn("[createCollection] parent collection not found:", {
+            parentId,
+            created,
+          });
         }
       } catch (e) {
         fail(this.error, "collections", e, "컬렉션 생성에 실패했습니다.");

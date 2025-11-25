@@ -27,7 +27,7 @@
           class="inline-flex items-center justify-center size-7 rounded-md border border-border hover:bg-accent transition-colors"
           aria-label="새 컬렉션 만들기"
           title="새 컬렉션"
-          @click="openAddCollectionDialog"
+          @click="openAddCollectionDialog(null)"
         >
           <PlusIcon :size="16" />
         </button>
@@ -45,6 +45,7 @@
           :draft-name="draftName"
           :is-renaming="isRenaming"
           @toggle="toggleExpand"
+          @add-collection="openAddCollectionDialog"
           @select-collection="handleSelectCollection"
           @delete-collection="$emit('delete-collection', $event)"
           @start-rename="startRename"
@@ -135,7 +136,7 @@ defineOptions({ inheritAttrs: false });
 const props = defineProps<{ collections: Collection[] }>();
 const emit = defineEmits<{
   (e: "select-collection", c: Collection): void;
-  (e: "add-collection", name: string): void;
+  (e: "add-collection", payload: { name: string; parentId: ID | null }): void;
   (e: "rename-collection", p: { id: number; newName: string }): void;
   (e: "delete-collection", id: ID): void;
 }>();
@@ -219,6 +220,7 @@ const newCollection = ref("");
 const nameInputRef = ref<HTMLInputElement | null>(null);
 const dialogTitleId = "add-collection-title";
 const nameInputId = "add-collection-name";
+const parentIdRef = ref<ID | null>(null);
 
 const canSubmit = computed(() => newCollection.value.trim().length > 0);
 
@@ -229,13 +231,17 @@ function closeAddCollectionDialog() {
   resetAddCollectionForm();
   showAddCollectionDialog.value = false;
 }
-function openAddCollectionDialog() {
+function openAddCollectionDialog(parentId: ID | null = null) {
   resetAddCollectionForm();
+  parentIdRef.value = parentId;
   showAddCollectionDialog.value = true;
 }
 function handleAdd() {
   if (!canSubmit.value) return;
-  emit("add-collection", newCollection.value.trim());
+  emit("add-collection", {
+    name: newCollection.value.trim(),
+    parentId: parentIdRef.value,
+  });
   closeAddCollectionDialog();
 }
 

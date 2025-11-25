@@ -105,8 +105,12 @@ async function onSelectCollection(c: Collection) {
   await workspace.fetchBookmarks(c.id);
 }
 
-async function onAddCollection(name: string) {
-  await workspace.createCollection({ name, parentId: null, icon: null });
+async function onAddCollection(payload: { name: string; parentId: ID | null }) {
+  await workspace.createCollection({
+    name: payload.name,
+    parentId: payload.parentId,
+    icon: null,
+  });
 }
 
 async function onRenameCollection(payload: { id: ID; newName: string }) {
