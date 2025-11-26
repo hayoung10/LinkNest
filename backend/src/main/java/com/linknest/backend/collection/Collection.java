@@ -40,7 +40,7 @@ public class Collection {
     @JoinColumn(name = "parent_id")
     private Collection parent;
 
-    @OneToMany(mappedBy = "parent")
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.REMOVE)
     private List<Collection> children = new ArrayList<>();
 
     @OneToMany(mappedBy = "collection", cascade = CascadeType.ALL, orphanRemoval = true)
