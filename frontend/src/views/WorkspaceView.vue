@@ -12,7 +12,7 @@
     />
 
     <!-- 우측: 메인 콘텐츠 -->
-    <section class="relative flex-1 overflow-hidden">
+    <section class="relative flex-1 flex flex-col overflow-hidden min-h-0">
       <!-- 목록 -->
       <BookmarkList
         :key="selectedCollection?.id || 'none'"
