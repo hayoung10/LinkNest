@@ -8,6 +8,7 @@
       @select-collection="onSelectCollection"
       @rename-collection="onRenameCollection"
       @delete-collection="onDeleteCollection"
+      @open-all="onOpenAllBookmarks"
     />
 
     <!-- 우측: 메인 콘텐츠 -->
@@ -71,6 +72,7 @@ import {
 import SidePanel from "@/components/overlays/SidePanel.vue";
 import type { Bookmark, Collection, ID } from "@/types/common";
 import { useWorkspaceStore } from "@/stores/workspace";
+import * as BookmarkApi from "@/api/bookmarks";
 import { storeToRefs } from "pinia";
 
 type UpdateBookmarkPayload = {
@@ -124,6 +126,39 @@ async function onDeleteCollection(id: ID) {
     selectedCollection.value = null;
     selectedBookmark.value = null;
     await workspace.fetchBookmarks();
+  }
+}
+
+async function onOpenAllBookmarks(collectionId: ID) {
+  try {
+    let target = bookmarks.value;
+
+    if (selectedCollection.value?.id !== collectionId) {
+      target = await BookmarkApi.listBookmarks(collectionId);
+    }
+
+    const urls = target
+      .map((b) => b.url?.trim())
+      .filter((u): u is string => !!u);
+
+    if (!urls.length) return;
+
+    // 10개 초과인 경우, 확인 대화창
+    if (urls.length > 10) {
+      const ok = window.confirm(
+        `총 ${urls.length}개의 북마크를 새 탭에서 여시겠습니까?\n` +
+          "브라우저 설정에 따라 일부 탭은 차단될 수 있습니다."
+      );
+      if (!ok) return;
+    }
+
+    // 탭 열기 시도 + 차단된 개수 카운트
+    let blockedCount = 0;
+    for (const url of urls) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  } catch (e) {
+    console.error("[WorkspaceView] failed to open all bookmarks", e);
   }
 }
 

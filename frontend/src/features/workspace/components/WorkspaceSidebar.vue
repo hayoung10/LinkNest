@@ -46,6 +46,7 @@
           :is-renaming="isRenaming"
           @toggle="toggleExpand"
           @add-collection="openAddCollectionDialog"
+          @open-all="$emit('open-all', $event)"
           @select-collection="handleSelectCollection"
           @delete-collection="$emit('delete-collection', $event)"
           @start-rename="startRename"
@@ -139,6 +140,7 @@ const emit = defineEmits<{
   (e: "add-collection", payload: { name: string; parentId: ID | null }): void;
   (e: "rename-collection", p: { id: ID; newName: string }): void;
   (e: "delete-collection", id: ID): void;
+  (e: "open-all", id: ID): void;
 }>();
 
 const workspace = useWorkspaceStore();

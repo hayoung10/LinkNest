@@ -74,7 +74,7 @@
           :editing-id="editingId"
           :draft-name="draftName"
           :is-renaming="isRenaming"
-          @open-all="() => {}"
+          @open-all="$emit('open-all', $event)"
           @add-collection="$emit('add-collection', $event)"
           @start-rename="$emit('start-rename', $event)"
           @delete="$emit('delete-collection', node.id)"
@@ -99,6 +99,7 @@
           :is-renaming="isRenaming"
           @toggle="$emit('toggle', $event)"
           @add-collection="$emit('add-collection', $event)"
+          @open-all="$emit('open-all', $event)"
           @select-collection="$emit('select-collection', $event)"
           @delete-collection="$emit('delete-collection', $event)"
           @start-rename="$emit('start-rename', $event)"
@@ -148,6 +149,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "toggle", id: ID): void;
   (e: "add-collection", parentId: ID): void;
+  (e: "open-all", id: ID): void;
   (e: "select-collection", c: Collection): void;
   (e: "delete-collection", id: ID): void;
 
