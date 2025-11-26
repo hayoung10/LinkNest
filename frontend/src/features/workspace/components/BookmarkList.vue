@@ -148,7 +148,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { Bookmark, Collection } from "@/types/common";
+import type { Bookmark, Collection, ID } from "@/types/common";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
@@ -156,7 +156,7 @@ import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 const props = defineProps<{
   collection: Collection | null;
   bookmarks: Bookmark[];
-  selectedBookmarkId?: number | null;
+  selectedBookmarkId?: ID | null;
 }>();
 
 const emit = defineEmits<{

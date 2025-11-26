@@ -1,12 +1,12 @@
 import http from "@/api/http";
-import { Collection } from "@/types/common";
+import type { Collection, ID } from "@/types/common";
 import { CollectionRes } from "./types";
 import { mapCollectionRes } from "./mappers";
 
 export interface CollectionCreateReq {
   name: string;
   icon?: string | null;
-  parentId?: number | null;
+  parentId?: ID | null;
 }
 
 export interface CollectionUpdateReq {
@@ -15,7 +15,7 @@ export interface CollectionUpdateReq {
 }
 
 export interface CollectionMoveReq {
-  targetParentId: number | null;
+  targetParentId: ID | null;
 }
 
 export interface CollectionReorderReq {
@@ -31,14 +31,14 @@ export async function createCollection(
 }
 
 /** 단건 조회 */
-export async function getCollection(id: number): Promise<Collection> {
+export async function getCollection(id: ID): Promise<Collection> {
   const { data } = await http.get<CollectionRes>(`/collections/${id}`);
   return mapCollectionRes(data);
 }
 
 /** 수정 */
 export async function updateCollection(
-  id: number,
+  id: ID,
   payload: CollectionUpdateReq
 ): Promise<Collection> {
   const { data } = await http.patch<CollectionRes>(
@@ -51,13 +51,13 @@ export async function updateCollection(
 }
 
 /** 삭제 (204 No Content) */
-export async function deleteCollection(id: number): Promise<void> {
+export async function deleteCollection(id: ID): Promise<void> {
   await http.delete(`/collections/${id}`);
 }
 
 /** 자식 목록 조회 */
 export async function listChildren(
-  parentId?: number | null
+  parentId?: ID | null
 ): Promise<Collection[]> {
   const { data } = await http.get<CollectionRes[]>(`/collections`, {
     params: { parentId },
@@ -67,7 +67,7 @@ export async function listChildren(
 
 /** 이동 (204 No Content) */
 export async function moveCollection(
-  id: number,
+  id: ID,
   payload: CollectionMoveReq
 ): Promise<void> {
   await http.patch(`/collections/${id}/move`, payload);
@@ -75,7 +75,7 @@ export async function moveCollection(
 
 /** 정렬 변경 (204 No Content) */
 export async function reorderCollection(
-  id: number,
+  id: ID,
   payload: CollectionReorderReq
 ): Promise<void> {
   await http.patch(`/collections/${id}/order`, payload);

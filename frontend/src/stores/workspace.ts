@@ -29,6 +29,104 @@ function fail(
   target[key] = e instanceof Error && e.message ? e.message : fallbackMsg;
 }
 
+/* ------------ 컬렉션 유틸 (컬렉션 트리 관련) ------------ */
+// 트리에서 특정 id를 가진 노드를 부분 업데이트
+function updateNodeInTree(
+  nodes: Collection[],
+  id: ID,
+  updated: Collection
+): Collection[] {
+  return nodes.map((node) => {
+    if (node.id === id) {
+      const {
+        childCount: _ignoredCount,
+        children: _ignoredChildren,
+        ...rest
+      } = updated;
+
+      return {
+        ...node,
+        ...rest,
+        children: node.children,
+        childCount: node.childCount,
+      };
+    }
+
+    if (node.children?.length) {
+      return {
+        ...node,
+        children: updateNodeInTree(node.children, id, updated),
+      };
+    }
+    return node;
+  });
+}
+// 트리에서 특정 id를 가진 노드를 삭제
+function removeNodeFromTree(nodes: Collection[], id: ID): Collection[] {
+  return nodes
+    .filter((node) => node.id !== id)
+    .map((node) => {
+      if (node.children?.length) {
+        const nextChildren = removeNodeFromTree(node.children, id);
+
+        return {
+          ...node,
+          children: nextChildren,
+          childCount: nextChildren.length,
+        };
+      }
+      return node;
+    });
+}
+// 트리에서 특정 id를 가진 노드의 children을 교체
+function updateChildrenInTree(
+  nodes: Collection[],
+  id: ID,
+  children: Collection[]
+): Collection[] {
+  return nodes.map((node) => {
+    if (node.id === id) {
+      return {
+        ...node,
+        children,
+        childCount: children.length,
+      };
+    }
+
+    if (node.children?.length) {
+      return {
+        ...node,
+        children: updateChildrenInTree(node.children, id, children),
+      };
+    }
+    return node;
+  });
+}
+// 트리에서 특정 parentId를 가진 노드에 자식을 추가
+function addChildToTree(
+  nodes: Collection[],
+  parentId: ID,
+  child: Collection
+): Collection[] {
+  return nodes.map((node) => {
+    if (node.id === parentId) {
+      return {
+        ...node,
+        children: [...(node.children ?? []), child],
+        childCount: (node.childCount ?? 0) + 1,
+      };
+    }
+
+    if (node.children?.length) {
+      return {
+        ...node,
+        children: addChildToTree(node.children, parentId, child),
+      };
+    }
+    return node;
+  });
+}
+
 export const useWorkspaceStore = defineStore("workspace", {
   state: (): WorkspaceState => ({
     collections: [],
@@ -51,7 +149,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.selectedCollectionId = id;
     },
 
-    // 컬렉션
+    /* ------------ 컬렉션 ------------ */
     async createCollection(payload: {
       name: string;
       icon?: string | null;
@@ -60,21 +158,16 @@ export const useWorkspaceStore = defineStore("workspace", {
       setLoading(this.isLoading, "collections", true);
       try {
         const created = await CollectionApi.createCollection(payload);
+        const parentId = payload.parentId ?? null;
 
-        if (created.parentId === null) {
+        if (parentId === null) {
+          // 루트 컬렉션 추가
           this.collections.push(created);
           return;
         }
 
-        const parent = this.collections.find((c) => c.id === created.parentId);
-        if (parent) {
-          parent.children = [...(parent.children ?? []), created];
-        } else {
-          console.warn(
-            "[createCollection] parent collection not found:",
-            created
-          );
-        }
+        // 하위 컬렉션 추가
+        this.collections = addChildToTree(this.collections, parentId, created);
       } catch (e) {
         fail(this.error, "collections", e, "컬렉션 생성에 실패했습니다.");
       } finally {
@@ -86,8 +179,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       setLoading(this.isLoading, "collections", true);
       try {
         const collection = await CollectionApi.getCollection(id);
-        const idx = this.collections.findIndex((c) => c.id === id);
-        if (idx >= 0) this.collections.splice(idx, 1, collection); // 목록에 있다면 최신 상태로 교체
+        this.collections = updateNodeInTree(this.collections, id, collection);
       } catch (e) {
         fail(
           this.error,
@@ -107,8 +199,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       setLoading(this.isLoading, "collections", true);
       try {
         const updated = await CollectionApi.updateCollection(id, payload);
-        const idx = this.collections.findIndex((c) => c.id === id);
-        if (idx >= 0) this.collections.splice(idx, 1, updated);
+        this.collections = updateNodeInTree(this.collections, id, updated);
       } catch (e) {
         fail(this.error, "collections", e, "컬렉션 수정에 실패했습니다.");
       } finally {
@@ -120,8 +211,13 @@ export const useWorkspaceStore = defineStore("workspace", {
       setLoading(this.isLoading, "collections", true);
       try {
         await CollectionApi.deleteCollection(id);
-        this.collections = this.collections.filter((c) => c.id !== id);
-        if (this.selectedCollectionId === id) this.selectedCollectionId = null; // 선택된 컬렉션을 제거한 경우
+        this.collections = removeNodeFromTree(this.collections, id);
+
+        // 선택된 컬렉션을 제거한 경우
+        if (this.selectedCollectionId === id) {
+          this.selectedCollectionId = null;
+          this.bookmarks = [];
+        }
       } catch (e) {
         fail(this.error, "collections", e, "컬렉션 삭제에 실패했습니다.");
       } finally {
@@ -132,8 +228,18 @@ export const useWorkspaceStore = defineStore("workspace", {
     async fetchCollections(parentId?: ID | null) {
       setLoading(this.isLoading, "collections", true);
       try {
-        const pid = parentId ?? this.selectedCollectionId ?? null;
-        this.collections = await CollectionApi.listChildren(pid);
+        const pid = parentId ?? null;
+        const children = await CollectionApi.listChildren(pid);
+
+        if (pid === null) {
+          this.collections = children;
+        } else {
+          this.collections = updateChildrenInTree(
+            this.collections,
+            pid,
+            children
+          );
+        }
       } catch (e) {
         fail(
           this.error,
@@ -150,12 +256,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       setLoading(this.isLoading, "collections", true);
       try {
         const children = await CollectionApi.listChildren(id);
-        const collection = this.collections.find((c) => c.id === id);
-        if (collection) {
-          collection.children = children;
-        } else {
-          console.warn("[fetchChildCollection] collection not found:", id);
-        }
+        this.collections = updateChildrenInTree(this.collections, id, children);
       } catch (e) {
         fail(
           this.error,
@@ -172,7 +273,9 @@ export const useWorkspaceStore = defineStore("workspace", {
       setLoading(this.isLoading, "collections", true);
       try {
         await CollectionApi.moveCollection(id, { targetParentId });
-        await this.fetchCollections(this.selectedCollectionId ?? null);
+
+        // TODO: 현재 전체 트리를 다시 가져오는 방식으로 수정
+        await this.fetchCollections(null);
       } catch (e) {
         fail(this.error, "collections", e, "컬렉션 이동에 실패했습니다.");
       } finally {
@@ -180,11 +283,11 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    async reorderCollection(id: ID, newOrder: number) {
+    async reorderCollection(id: ID, parentId: ID | null, newOrder: number) {
       setLoading(this.isLoading, "collections", true);
       try {
         await CollectionApi.reorderCollection(id, { newOrder });
-        await this.fetchCollections(this.selectedCollectionId ?? null);
+        await this.fetchCollections(parentId);
       } catch (e) {
         fail(this.error, "collections", e, "컬렉션 정렬에 실패했습니다.");
       } finally {
@@ -192,7 +295,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    // 북마크
+    /* ------------ 북마크 ------------ */
     async createBookmark(payload: {
       collectionId: ID;
       url: string;

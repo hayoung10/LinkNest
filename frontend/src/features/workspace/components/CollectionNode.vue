@@ -74,8 +74,8 @@
           :editing-id="editingId"
           :draft-name="draftName"
           :is-renaming="isRenaming"
-          @open-all="() => {}"
-          @add-sub="() => {}"
+          @open-all="$emit('open-all', $event)"
+          @add-collection="$emit('add-collection', $event)"
           @start-rename="$emit('start-rename', $event)"
           @delete="$emit('delete-collection', node.id)"
         />
@@ -92,12 +92,14 @@
           :node="child"
           :depth="depth + 1"
           :expanded-ids="expandedIds"
-          :selected-id="selectedCollectionId"
+          :selected-collection-id="selectedCollectionId"
           :count-mode="countMode"
           :editing-id="editingId"
           :draft-name="draftName"
           :is-renaming="isRenaming"
           @toggle="$emit('toggle', $event)"
+          @add-collection="$emit('add-collection', $event)"
+          @open-all="$emit('open-all', $event)"
           @select-collection="$emit('select-collection', $event)"
           @delete-collection="$emit('delete-collection', $event)"
           @start-rename="$emit('start-rename', $event)"
@@ -125,12 +127,12 @@ const props = withDefaults(
   defineProps<{
     node: Collection;
     depth?: number;
-    expandedIds: Set<number>;
+    expandedIds: Set<ID>;
     countMode?: CountMode;
-    selectedCollectionId?: number | null;
+    selectedCollectionId?: ID | null;
 
     // 이름 변경에 대한 상태
-    editingId?: number | null;
+    editingId?: ID | null;
     draftName?: string;
     isRenaming?: boolean;
   }>(),
@@ -145,7 +147,9 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: "toggle", id: number): void;
+  (e: "toggle", id: ID): void;
+  (e: "add-collection", parentId: ID): void;
+  (e: "open-all", id: ID): void;
   (e: "select-collection", c: Collection): void;
   (e: "delete-collection", id: ID): void;
 

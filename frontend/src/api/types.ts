@@ -1,7 +1,9 @@
+import type { ID } from "@/types/common";
+
 /** === 백엔드 응답 DTO (Res) === */
 export interface BookmarkRes {
-  id: number;
-  collectionId: number;
+  id: ID;
+  collectionId: ID;
   url: string;
   title: string;
   description: string;
@@ -10,10 +12,10 @@ export interface BookmarkRes {
 }
 
 export interface CollectionRes {
-  id: number;
+  id: ID;
   name: string;
   icon: string | null;
-  parentId: number | null;
+  parentId: ID | null;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;

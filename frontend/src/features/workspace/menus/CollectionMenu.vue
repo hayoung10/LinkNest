@@ -42,7 +42,7 @@
         <button
           class="menu-item"
           role="menuitem"
-          @click="emitAndClose('add-sub', collection.id)"
+          @click="emitAndClose('add-collection', collection.id)"
         >
           <svg
             class="menu-icon"
@@ -131,7 +131,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   (e: "open-all", id: ID): void;
-  (e: "add-sub", id: ID): void;
+  (e: "add-collection", id: ID): void;
   (e: "start-rename", payload: { id: ID; name: string }): void;
   (e: "delete", id: ID): void;
 }>();
@@ -212,9 +212,9 @@ onBeforeUnmount(() => {
   document.removeEventListener("click", onDocClick, { capture: true });
 });
 
-function emitAndClose(e: "open-all" | "add-sub", id: ID) {
+function emitAndClose(e: "open-all" | "add-collection", id: ID) {
   if (e === "open-all") emit("open-all", id);
-  else emit("add-sub", id);
+  else emit("add-collection", id);
   closeMenu();
 }
 
