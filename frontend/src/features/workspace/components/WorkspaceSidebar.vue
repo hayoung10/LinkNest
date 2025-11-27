@@ -19,7 +19,7 @@
     </header>
 
     <!-- 컬렉션 리스트 -->
-    <nav class="flex-1 overflow-y-auto p-2 text-sm">
+    <nav class="flex-1 min-h-0 overflow-y-auto p-2 text-sm">
       <div class="flex items-center justify-between px-2 py-2">
         <div class="text-muted-foreground font-medium">컬렉션</div>
         <button
