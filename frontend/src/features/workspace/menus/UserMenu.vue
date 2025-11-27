@@ -61,27 +61,13 @@
 
         <div class="divider" />
 
-        <!-- 마이페이지 -->
+        <!-- 설정 -->
         <button
           ref="firstItemRef"
           class="menu-item"
           role="menuitem"
-          @click="handleProfile"
+          @click="handleOpenSettings"
         >
-          <svg
-            class="menu-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          마이페이지
-        </button>
-
-        <!-- 계정 설정 -->
-        <button class="menu-item" role="menuitem" @click="handleSettings">
           <svg
             class="menu-icon"
             viewBox="0 0 24 24"
@@ -93,7 +79,7 @@
               d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0A1.65 1.65 0 0 0 20.91 11H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
             />
           </svg>
-          계정 설정
+          설정
         </button>
 
         <div class="divider" />
@@ -125,6 +111,8 @@
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import type { CSSProperties } from "vue";
+
+const emit = defineEmits<{ (e: "open-settings"): void; (e: "logout"): void }>();
 
 const user = { name: "홍길동", email: "hong@example.com", profileImageUrl: "" }; // 임시 유저
 const initials = computed(() => user.name.charAt(0));
@@ -207,14 +195,13 @@ onBeforeUnmount(() =>
 );
 
 // 액션 핸들러
-function handleProfile() {
+function handleOpenSettings() {
   closeMenu();
-}
-function handleSettings() {
-  closeMenu();
+  emit("open-settings");
 }
 function handleLogout() {
   closeMenu();
+  emit("logout");
 }
 </script>
 
