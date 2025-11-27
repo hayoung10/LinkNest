@@ -126,6 +126,29 @@ function addChildToTree(
     return node;
   });
 }
+// 트리에서 특정 collectionId를 가진 노드의 bookmarkCount를 cnt만큼 변경
+function updateBookmarkCountInTree(
+  nodes: Collection[],
+  collectionId: ID,
+  cnt: number
+): Collection[] {
+  return nodes.map((node) => {
+    if (node.id === collectionId) {
+      return {
+        ...node,
+        bookmarkCount: Math.max(0, (node.bookmarkCount ?? 0) + cnt),
+      };
+    }
+
+    if (node.children?.length) {
+      return {
+        ...node,
+        children: updateBookmarkCountInTree(node.children, collectionId, cnt),
+      };
+    }
+    return node;
+  });
+}
 
 export const useWorkspaceStore = defineStore("workspace", {
   state: (): WorkspaceState => ({
@@ -148,8 +171,18 @@ export const useWorkspaceStore = defineStore("workspace", {
     selectCollection(id: ID) {
       this.selectedCollectionId = id;
     },
+    // 북마크 카운트 업데이트
+    updateBookmarkCount(collectionId: ID, cnt: number) {
+      if (!this.collections?.length) return;
 
-    /* ------------ 컬렉션 ------------ */
+      this.collections = updateBookmarkCountInTree(
+        this.collections,
+        collectionId,
+        cnt
+      );
+    },
+
+    /* ------------------------ 컬렉션 ------------------------ */
     async createCollection(payload: {
       name: string;
       icon?: string | null;
@@ -295,7 +328,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    /* ------------ 북마크 ------------ */
+    /* ------------------------ 북마크 ------------------------ */
     async createBookmark(payload: {
       collectionId: ID;
       url: string;
@@ -308,6 +341,7 @@ export const useWorkspaceStore = defineStore("workspace", {
         if (this.selectedCollectionId === created.collectionId) {
           this.bookmarks.push(created);
         }
+        this.updateBookmarkCount(created.collectionId, +1);
       } catch (e) {
         fail(this.error, "bookmarks", e, "북마크 생성에 실패했습니다.");
       } finally {
@@ -352,8 +386,10 @@ export const useWorkspaceStore = defineStore("workspace", {
     async deleteBookmark(id: ID) {
       setLoading(this.isLoading, "bookmarks", true);
       try {
+        const target = this.bookmarks.find((b) => b.id === id);
         await BookmarkApi.deleteBookmark(id);
         this.bookmarks = this.bookmarks.filter((b) => b.id !== id);
+        if (target) this.updateBookmarkCount(target.collectionId, -1);
       } catch (e) {
         fail(this.error, "bookmarks", e, "북마크 삭제에 실패했습니다.");
       } finally {
@@ -381,6 +417,8 @@ export const useWorkspaceStore = defineStore("workspace", {
       setLoading(this.isLoading, "bookmarks", true);
       try {
         await BookmarkApi.moveBookmark(id, { targetCollectionId });
+        // TODO: 북마크 이동 시 카운트 변경
+
         if (this.selectedCollectionId != null) {
           await this.fetchBookmarks(this.selectedCollectionId);
         } else {

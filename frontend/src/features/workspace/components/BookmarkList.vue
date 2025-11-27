@@ -1,5 +1,5 @@
 <template>
-  <main class="flex-1 overflow-auto bg-background">
+  <main class="flex-1 flex flex-col bg-background overflow-hidden min-h-0">
     <!-- 선택 없음 -->
     <div
       v-if="!hasSelection"
@@ -30,7 +30,10 @@
     </div>
 
     <!-- 컬렉션 선택됨 -->
-    <div v-else class="max-w-4xl mx-auto p-8 animate-fadeIn">
+    <div
+      v-else
+      class="flex-1 flex flex-col w-full max-w-4xl mx-auto p-8 animate-fadeIn min-h-0"
+    >
       <!-- 헤더 -->
       <header class="flex items-center justify-between mb-2">
         <div class="min-w-0 flex items-center gap-2 pl-3">
@@ -57,60 +60,62 @@
 
       <!-- 북마크 리스트 -->
       <template v-if="hasBookmarks">
-        <ul class="mt-0" role="list" aria-label="북마크 목록">
-          <template v-for="b in bookmarks" :key="b.id">
-            <li
-              class="px-2 py-3 rounded-md cursor-pointer select-none transition-colors"
-              :class="
-                isActive(b)
-                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 ring-1 ring-blue-300'
-                  : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
-              "
-            >
-              <button
-                type="button"
-                class="w-full text-left px-3"
-                @click="onSelect(b)"
-                :title="displayTitle(b)"
+        <div class="flex-1 min-h-0 overflow-y-auto pr-1">
+          <ul class="mt-0" role="list" aria-label="북마크 목록">
+            <template v-for="b in bookmarks" :key="b.id">
+              <li
+                class="px-2 py-3 rounded-md cursor-pointer select-none transition-colors"
+                :class="
+                  isActive(b)
+                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 ring-1 ring-blue-300'
+                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                "
               >
-                <div class="text-sm font-semibold flex items-center gap-2">
-                  <span
-                    class="truncate"
-                    :class="
-                      hasTitle(b)
-                        ? 'text-foreground'
-                        : 'text-neutral-400 dark:text-neutral-500'
-                    "
-                    >{{ displayTitle(b) }}</span
-                  >
-
-                  <!-- 링크 아이콘 -->
-                  <a
-                    :href="b.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
-                    aria-label="링크 새 탭에서 열기"
-                    @click.stop
-                  >
-                    <ExternalLinkIcon :size="16" />
-                  </a>
-                </div>
-                <div
-                  class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2"
+                <button
+                  type="button"
+                  class="w-full text-left px-3"
+                  @click="onSelect(b)"
+                  :title="displayTitle(b)"
                 >
-                  <span class="truncate">{{ domain(b.url) }}</span>
-                  <span aria-hidden="true">·</span>
-                  <time :datetime="b.createdAt || ''">
-                    {{ formatDate(b.createdAt) }}
-                  </time>
-                </div>
-              </button>
-            </li>
+                  <div class="text-sm font-semibold flex items-center gap-2">
+                    <span
+                      class="truncate"
+                      :class="
+                        hasTitle(b)
+                          ? 'text-foreground'
+                          : 'text-neutral-400 dark:text-neutral-500'
+                      "
+                      >{{ displayTitle(b) }}</span
+                    >
 
-            <div class="divider mx-6" />
-          </template>
-        </ul>
+                    <!-- 링크 아이콘 -->
+                    <a
+                      :href="b.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+                      aria-label="링크 새 탭에서 열기"
+                      @click.stop
+                    >
+                      <ExternalLinkIcon :size="16" />
+                    </a>
+                  </div>
+                  <div
+                    class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2"
+                  >
+                    <span class="truncate">{{ domain(b.url) }}</span>
+                    <span aria-hidden="true">·</span>
+                    <time :datetime="b.createdAt || ''">
+                      {{ formatDate(b.createdAt) }}
+                    </time>
+                  </div>
+                </button>
+              </li>
+
+              <div class="divider mx-6" />
+            </template>
+          </ul>
+        </div>
 
         <footer
           class="mt-2 text-xs text-neutral-500 dark:text-neutral-400 text-center select-none"
