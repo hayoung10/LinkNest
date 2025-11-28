@@ -9,6 +9,8 @@
       @rename-collection="onRenameCollection"
       @delete-collection="onDeleteCollection"
       @open-all="onOpenAllBookmarks"
+      @open-settings="onOpenSettings"
+      @logout="onLogout"
     />
 
     <!-- 우측: 메인 콘텐츠 -->
@@ -41,6 +43,7 @@
           @delete-bookmark="onDeleteBookmark"
         />
       </SidePanel>
+
       <!-- 북마크 추가 패널 -->
       <SidePanel
         :open="isAddOpen"
@@ -57,6 +60,16 @@
           @submit="onAddBookmark"
         />
       </SidePanel>
+
+      <!-- 설정 패널 -->
+      <SidePanel
+        :open="isSettingsOpen"
+        width="min(640px, 92vw)"
+        side="right"
+        @close="isSettingsOpen = false"
+      >
+        <Settings @close="isSettingsOpen = false" />
+      </SidePanel>
     </section>
   </div>
 </template>
@@ -69,6 +82,7 @@ import {
   BookmarkDetail,
   AddBookmarkForm,
 } from "@/features/workspace";
+import { Settings } from "@/features/settings";
 import SidePanel from "@/components/overlays/SidePanel.vue";
 import type { Bookmark, Collection, ID } from "@/types/common";
 import { useWorkspaceStore } from "@/stores/workspace";
@@ -89,6 +103,8 @@ const selectedCollection = ref<Collection | null>(null);
 const selectedBookmark = ref<Bookmark | null>(null);
 
 const isAddOpen = ref(false);
+const isSettingsOpen = ref(false);
+
 const addRef = ref<{ focusTitle: () => void } | null>(null);
 const editRef = ref<{ focusTitle: () => void } | null>(null);
 
@@ -103,6 +119,7 @@ async function onSelectCollection(c: Collection) {
 
   selectedBookmark.value = null;
   isAddOpen.value = false;
+  isSettingsOpen.value = false;
 
   await workspace.fetchBookmarks(c.id);
 }
@@ -164,6 +181,7 @@ async function onOpenAllBookmarks(collectionId: ID) {
 
 function onSelectBookmark(b: Bookmark) {
   selectedBookmark.value = b;
+  isSettingsOpen.value = false;
 }
 
 async function onAddBookmark(payload: {
@@ -208,5 +226,16 @@ async function onDeleteBookmark(id: ID) {
   }
 
   selectedBookmark.value = null;
+}
+
+function onOpenSettings() {
+  isAddOpen.value = false;
+  selectedBookmark.value = null;
+  isSettingsOpen.value = true;
+}
+
+function onLogout() {
+  // TODO: store 연동 및 로그아웃 처리
+  console.log("[WorkspaceView] logout");
 }
 </script>

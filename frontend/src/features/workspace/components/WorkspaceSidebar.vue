@@ -59,7 +59,10 @@
 
     <!-- 하단 유저 메뉴 -->
     <footer class="mt-auto border-t border-border px-3 py-3">
-      <UserMenu />
+      <UserMenu
+        @open-settings="$emit('open-settings')"
+        @logout="$emit('logout')"
+      />
     </footer>
   </aside>
 
@@ -141,6 +144,8 @@ const emit = defineEmits<{
   (e: "rename-collection", p: { id: ID; newName: string }): void;
   (e: "delete-collection", id: ID): void;
   (e: "open-all", id: ID): void;
+  (e: "open-settings"): void;
+  (e: "logout"): void;
 }>();
 
 const workspace = useWorkspaceStore();
