@@ -1,54 +1,60 @@
 <template>
-  <section class="h-full flex flex-col bg-card text-card-foreground">
+  <div class="h-full w-full px-6 py-6 flex flex-col">
     <!-- 헤더 -->
-    <header class="sticky top-0 z-10 bg-card border-b border-border">
-      <div class="flex items-center justify-between px-4 py-3">
-        <div class="min-w-0">
-          <h1 class="text-[17px] font-semibold truncate">설정</h1>
-          <p class="mt-0.5 text-xs text-muted-foreground">
-            계정·보안·환경 설정을 한 곳에서 관리하세요.
-          </p>
-        </div>
-
-        <!-- 우측 상단: 닫기 -->
-        <button
-          type="button"
-          class="ml-l p-2 rounded-md hover:bg-accent"
-          aria-label="설정 닫기"
-          @click="$emit('close')"
-        >
-          ✕
-        </button>
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-[17px]">설정</h1>
+        <p class="mt-1 text-sm text-neutral-500">
+          계정·보안·환경 설정을 한 곳에서 관리하세요.
+        </p>
       </div>
 
-      <!-- 탭 -->
-      <div class="px-4 border-t border-border/80 bg-card/90 backdrop-blur">
-        <nav class="flex items-center gap-2 text-sm h-10" aria-label="설정 탭">
-          <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            type="button"
-            class="px-3 py-1.5 rounded-full transition-colors whitespace-nowrap"
-            :class="
-              activeId === tab.id
-                ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                : 'text-muted-foreground hover:bg-accent'
-            "
-            @click="activeId = tab.id"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
-      </div>
+      <!-- 우측 상단: 닫기 -->
+      <button
+        type="button"
+        class="p-2 rounded-md hover:bg-muted transition-colors"
+        aria-label="닫기"
+        @click="$emit('close')"
+      >
+        <CloseIcon :size="20" />
+      </button>
     </header>
 
-    <!-- 본문 -->
-    <div class="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-6">
+    <!-- 탭 버튼 영역 -->
+    <div
+      class="w-full rounded-full bg-zinc-100 border-2 border-zinc-100 px-4 py-2 mb-3"
+    >
+      <!-- 탭 바 -->
+      <nav class="flex items-center gap-3">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          type="button"
+          class="px-4 py-2 rounded-full text-sm font-medium transition-all"
+          :class="
+            activeId === tab.id
+              ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow'
+              : 'text-muted-foreground hover:bg-background hover:text-foreground'
+          "
+          @click="activeId = tab.id"
+        >
+          {{ tab.label }}
+        </button>
+      </nav>
+    </div>
+
+    <!-- 탭 본문 -->
+    <div class="flex-1 overflow-y-auto">
+      <!-- 계정 탭 -->
       <ProfileSection v-if="activeId === 'profile'" />
+
+      <!-- 보안 탭 -->
       <SecuritySection v-else-if="activeId === 'security'" />
+
+      <!-- 환경 설정 탭-->
       <PreferencesSection v-else />
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -56,6 +62,7 @@ import { ref } from "vue";
 import ProfileSection from "./components/ProfileSection.vue";
 import SecuritySection from "./components/SecuritySection.vue";
 import PreferencesSection from "./components/PreferencesSection.vue";
+import CloseIcon from "@/components/icons/CloseIcon.vue";
 
 type TabId = "profile" | "security" | "preferences";
 
