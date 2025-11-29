@@ -5,7 +5,8 @@ import com.linknest.backend.bookmark.dto.BookmarkRes;
 import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface BookmarkMapper {
     // CreateReq -> Entity
     Bookmark toEntity(BookmarkCreateReq createReq);
