@@ -4,7 +4,8 @@ import com.linknest.backend.userpreferences.dto.UserPreferencesRes;
 import com.linknest.backend.userpreferences.dto.UserPreferencesUpdateReq;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface UserPreferencesMapper {
     // UpdateReq -> Entity (null 값은 무시)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

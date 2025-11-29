@@ -5,7 +5,8 @@ import com.linknest.backend.collection.dto.CollectionRes;
 import com.linknest.backend.collection.dto.CollectionUpdateReq;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CollectionMapper {
     // CreateReq -> Entity
     Collection toEntity(CollectionCreateReq createReq);
