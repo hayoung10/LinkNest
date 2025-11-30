@@ -22,3 +22,10 @@ export interface CollectionRes {
   bookmarkCount: number;
   childCount: number;
 }
+
+export interface UserPreferencesRes {
+  defaultBookmarkSort: string;
+  defaultLayout: string;
+  openInNewTab: boolean;
+  keepSignedIn: boolean;
+}
