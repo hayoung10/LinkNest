@@ -1,5 +1,7 @@
 package com.linknest.backend.userpreferences;
 
+import com.linknest.backend.userpreferences.domain.DefaultBookmarkSort;
+import com.linknest.backend.userpreferences.domain.DefaultLayout;
 import com.linknest.backend.userpreferences.dto.UserPreferencesRes;
 import com.linknest.backend.userpreferences.dto.UserPreferencesUpdateReq;
 import org.mapstruct.*;
@@ -8,15 +10,33 @@ import org.mapstruct.*;
         unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface UserPreferencesMapper {
     // UpdateReq -> Entity (null 값은 무시)
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    @Mapping(target = "defaultBookmarkSort",
-            expression = "java(req.defaultBookmarkSort() != null ? com.linknest.backend.userpreferences.domain.DefaultBookmarkSort.valueOf(req.defaultBookmarkSort()) : null)")
-    @Mapping(target = "defaultLayout",
-            expression = "java(req.defaultLayout() != null ? com.linknest.backend.userpreferences.domain.DefaultLayout.valueOf(req.defaultLayout()) : null)")
-    void updateFromDto(UserPreferencesUpdateReq req, @MappingTarget UserPreferences userPreferences);
+    default void updateFromDto(UserPreferencesUpdateReq req, @MappingTarget UserPreferences userPreferences) {
+        if(req.defaultBookmarkSort() != null) {
+            userPreferences.setDefaultBookmarkSort(
+                    DefaultBookmarkSort.valueOf(req.defaultBookmarkSort()));
+        }
+
+        if(req.defaultLayout() != null) {
+            userPreferences.setDefaultLayout(
+                    DefaultLayout.valueOf(req.defaultLayout()));
+        }
+
+        if(req.openInNewTab() != null) {
+            userPreferences.setOpenInNewTab(req.openInNewTab());
+        }
+
+        if(req.keepSignedIn() != null) {
+            userPreferences.setKeepSignedIn(req.keepSignedIn());
+        }
+    }
 
     // Entity -> Res
-    @Mapping(target = "defaultBookmarkSort", expression = "java(userPreferences.getDefaultBookmarkSort().name())")
-    @Mapping(target = "defaultLayout", expression = "java(userPreferences.getDefaultLayout().name())")
-    UserPreferencesRes toRes(UserPreferences userPreferences);
+    default UserPreferencesRes toRes(UserPreferences userPreferences) {
+        return new UserPreferencesRes(
+                userPreferences.getDefaultBookmarkSort().name(),
+                userPreferences.getDefaultLayout().name(),
+                userPreferences.isOpenInNewTab(),
+                userPreferences.isOpenInNewTab()
+        );
+    }
 }

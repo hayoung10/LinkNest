@@ -20,6 +20,7 @@ public class UserPreferencesService {
     private final UserRepository userRepository;
     private final UserPreferencesMapper mapper;
 
+    @Transactional
     public UserPreferencesRes get(Long userId) {
         UserPreferences preferences = preferencesRepository.findByUserId(userId)
                 .orElseGet(() -> createDefault(userId));
