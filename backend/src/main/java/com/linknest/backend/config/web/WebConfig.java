@@ -1,4 +1,4 @@
-package com.linknest.backend.config;
+package com.linknest.backend.config.web;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;

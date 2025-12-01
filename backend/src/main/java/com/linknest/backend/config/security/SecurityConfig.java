@@ -1,4 +1,4 @@
-package com.linknest.backend.config;
+package com.linknest.backend.config.security;
 
 import com.linknest.backend.config.props.JwtProperties;
 import com.linknest.backend.security.handler.OAuth2AuthenticationFailureHandler;
