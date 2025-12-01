@@ -53,3 +53,13 @@ export interface Collection {
   children?: Collection[];
   bookmarks?: Bookmark[];
 }
+
+export type BookmarkSortOption = "NEWEST" | "OLDEST" | "TITLE";
+export type LayoutOption = "CARD" | "LIST";
+
+export interface UserPreferences {
+  defaultBookmarkSort: BookmarkSortOption;
+  defaultLayout: LayoutOption;
+  openInNewTab: boolean;
+  keepSignedIn: boolean;
+}

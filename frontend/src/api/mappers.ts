@@ -1,5 +1,5 @@
-import { Bookmark, Collection } from "@/types/common";
-import { BookmarkRes, CollectionRes } from "./types";
+import { Bookmark, Collection, UserPreferences } from "@/types/common";
+import { BookmarkRes, CollectionRes, UserPreferencesRes } from "./types";
 
 /** === 백엔드 응답 DTO -> 도메인 모델 매핑 === */
 
@@ -26,5 +26,15 @@ export function mapCollectionRes(dto: CollectionRes): Collection {
     updatedAt: dto.updatedAt,
     bookmarkCount: dto.bookmarkCount,
     childCount: dto.childCount,
+  };
+}
+
+export function mapUserPreferences(dto: UserPreferencesRes): UserPreferences {
+  return {
+    defaultBookmarkSort:
+      dto.defaultBookmarkSort as UserPreferences["defaultBookmarkSort"],
+    defaultLayout: dto.defaultLayout as UserPreferences["defaultLayout"],
+    openInNewTab: dto.openInNewTab,
+    keepSignedIn: dto.keepSignedIn,
   };
 }

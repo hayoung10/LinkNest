@@ -88,7 +88,7 @@
           type="button"
           class="relative inline-flex h-6 w-11 items-center rounded-full transition"
           :class="openInNewTab ? 'bg-zinc-900' : 'bg-zinc-300'"
-          @click="toggleOpenInNewTab"
+          @click="updateOpenInNewTab"
         >
           <span
             class="inline-block h-4 w-4 transform rounded-full bg-white transition"
@@ -101,45 +101,115 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
+import * as UserPreferencesApi from "@/api/preferences";
 
-type SortOptionValue = "newest" | "oldest" | "title";
-type LayoutOptionValue = "card" | "list";
+type SortOptionValue = "NEWEST" | "OLDEST" | "TITLE";
+type LayoutOptionValue = "CARD" | "LIST";
 
 // 기본 북마크 정렬 옵션
 const sortOptions: { value: SortOptionValue; label: string }[] = [
-  { value: "newest", label: "최신순" },
-  { value: "oldest", label: "오래된순" },
-  { value: "title", label: "이름순" },
+  { value: "NEWEST", label: "최신순" },
+  { value: "OLDEST", label: "오래된순" },
+  { value: "TITLE", label: "이름순" },
 ];
 
 // 기본 레이아웃 옵션
 const layoutOptions: { value: LayoutOptionValue; label: string }[] = [
-  { value: "card", label: "카드형" },
-  { value: "list", label: "리스트형" },
+  { value: "CARD", label: "카드형" },
+  { value: "LIST", label: "리스트형" },
 ];
 
 // 상태
-const defaultBookmarkSort = ref<SortOptionValue>("newest");
-const defaultLayout = ref<LayoutOptionValue>("card");
+const defaultBookmarkSort = ref<SortOptionValue>("NEWEST");
+const defaultLayout = ref<LayoutOptionValue>("LIST");
 const openInNewTab = ref(true);
 
+// 로딩/저장 상태
+const isLoading = ref(false);
+const isSaving = ref(false);
+
+// 초기 로딩
+const loadPreferences = async () => {
+  isLoading.value = true;
+  try {
+    const preferences = await UserPreferencesApi.getUserPreferences();
+    defaultBookmarkSort.value = preferences.defaultBookmarkSort;
+    defaultLayout.value = preferences.defaultLayout;
+    openInNewTab.value = preferences.openInNewTab;
+  } catch (e) {
+    // TODO: 에러 토스트 알림 연결
+    console.error("환경 설정 불러오기 실패:", e);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  loadPreferences();
+});
+
 // 이벤트 핸들러
-const changeDefaultSort = (value: SortOptionValue) => {
+const changeDefaultSort = async (value: SortOptionValue) => {
+  if (defaultBookmarkSort.value === value) return;
+
+  const prev = defaultBookmarkSort.value;
   defaultBookmarkSort.value = value;
-  // TODO: API 연동
-  console.log("defaultBookmarkSort:", value);
+
+  isSaving.value = true;
+  try {
+    const updated = await UserPreferencesApi.updateUserPreferences({
+      defaultBookmarkSort: value,
+    });
+    defaultBookmarkSort.value = updated.defaultBookmarkSort;
+  } catch (e) {
+    // TODO: 에러 토스트 알림 연결
+    console.error("기본 정렬 업데이트 실패:", e);
+    defaultBookmarkSort.value = prev;
+  } finally {
+    isSaving.value = false;
+  }
 };
 
-const changeDefaultLayout = (value: LayoutOptionValue) => {
+const changeDefaultLayout = async (value: LayoutOptionValue) => {
+  if (defaultLayout.value === value) return;
+
+  const prev = defaultLayout.value;
   defaultLayout.value = value;
-  // TODO: API 연동
-  console.log("defaultLayout:", value);
+
+  isSaving.value = true;
+  try {
+    const updated = await UserPreferencesApi.updateUserPreferences({
+      defaultLayout: value,
+    });
+    defaultLayout.value = updated.defaultLayout;
+  } catch (e) {
+    // TODO: 에러 토스트 알림 연결
+    console.error("기본 레이아웃 업데이트 실패:", e);
+    defaultLayout.value = prev;
+  } finally {
+    isSaving.value = false;
+  }
 };
 
-const toggleOpenInNewTab = () => {
-  openInNewTab.value = !openInNewTab.value;
-  // TODO: API 연동 + 북마크 클릭 로직과 연결
-  console.log("openInNewTab:", openInNewTab);
+const updateOpenInNewTab = async () => {
+  const prev = openInNewTab.value;
+  const next = !openInNewTab.value;
+
+  openInNewTab.value = next;
+
+  isSaving.value = true;
+  try {
+    const updated = await UserPreferencesApi.updateUserPreferences({
+      openInNewTab: next,
+    });
+    openInNewTab.value = updated.openInNewTab;
+  } catch (e) {
+    // TODO: 에러 토스트 알림 연결
+    console.error("새 탭 열기 설정 업데이트 실패:", e);
+    openInNewTab.value = prev;
+  } finally {
+    isSaving.value = false;
+  }
 };
 </script>
