@@ -1,7 +1,25 @@
-import { Bookmark, Collection, UserPreferences } from "@/types/common";
-import { BookmarkRes, CollectionRes, UserPreferencesRes } from "./types";
+import { Bookmark, Collection, User, UserPreferences } from "@/types/common";
+import {
+  BookmarkRes,
+  CollectionRes,
+  UserPreferencesRes,
+  UserRes,
+} from "./types";
 
 /** === 백엔드 응답 DTO -> 도메인 모델 매핑 === */
+export function mapUserRes(dto: UserRes): User {
+  return {
+    id: dto.id,
+    email: dto.email,
+    name: dto.name,
+    profileImageUrl: dto.profileImageUrl,
+    role: dto.role,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
+    bookmarkCount: dto.bookmarkCount,
+    collectionCount: dto.collectionCount,
+  };
+}
 
 export function mapBookmarkRes(dto: BookmarkRes): Bookmark {
   return {
