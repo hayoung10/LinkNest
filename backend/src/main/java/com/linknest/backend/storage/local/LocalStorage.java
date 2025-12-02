@@ -1,9 +1,8 @@
 package com.linknest.backend.storage.local;
 
 import com.linknest.backend.storage.Storage;
+import com.linknest.backend.storage.StorageProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -13,15 +12,15 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 @Slf4j
-@Component
 public class LocalStorage implements Storage {
-    // 로컬 파일 저장 베이스 경로
-    @Value("${storage.local.base-path}")
-    private String basePath;
 
-    // 클라이언트 접근 베이스 URL
-    @Value("${storage.local.base-url}")
-    private String baseUrl;
+    private final String basePath; // 로컬 파일 저장 베이스 경로
+    private final String baseUrl; // 클라이언트 접근 베이스 URL
+
+    public LocalStorage(StorageProperties.Local properites) {
+        this.basePath = properites.getBasePath();
+        this.baseUrl = properites.getBaseUrl();
+    }
 
     @Override
     public String upload(String directory, MultipartFile file) {

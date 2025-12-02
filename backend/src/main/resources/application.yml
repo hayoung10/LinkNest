@@ -35,6 +35,9 @@ app:
     prefix: Bearer
     clock-skew-seconds: 60
 
+storage:
+  provider: local
+
 --- #dev-config
 spring:
   config:
@@ -80,3 +83,9 @@ logging:
     org.hibernate.SQL: warn
     org.hibernate.type: warn
     com.example: info
+
+storage:
+  s3:
+    bucket: linknest-profile-bucket
+    base-url: https://cdn.example.com # TODO: prod에서 실제 CDN 도메인으로 교체
+    region: ap-northeast-2
