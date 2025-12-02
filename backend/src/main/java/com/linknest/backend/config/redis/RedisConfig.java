@@ -1,4 +1,4 @@
-package com.linknest.backend.config;
+package com.linknest.backend.config.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.linknest.backend.auth.token.RefreshTokenEntity;

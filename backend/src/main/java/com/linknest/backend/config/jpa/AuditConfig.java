@@ -1,4 +1,4 @@
-package com.linknest.backend.common.config;
+package com.linknest.backend.config.jpa;
 
 import com.linknest.backend.security.auth.PrincipalUser;
 import org.springframework.context.annotation.Bean;
