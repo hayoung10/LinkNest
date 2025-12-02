@@ -40,8 +40,8 @@ public class UserController {
 
     @DeleteMapping(value = "/profile-image")
     public ResponseEntity<UserRes> deleteProfileImage(@AuthenticationPrincipal(expression = "id") Long userId) {
-        service.deleteProfileImage(userId);
-        return ResponseEntity.noContent().build();
+        UserRes res = service.deleteProfileImage(userId);
+        return ResponseEntity.ok(res);
     }
 
     @DeleteMapping
