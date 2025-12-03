@@ -12,35 +12,72 @@
 
       <!-- 아바타 + 버튼 -->
       <div class="flex items-center gap-6">
-        <!-- 아바타 -->
-        <div
-          class="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-3xl font-semibold text-white"
-        >
-          <span>{{ avatar }}</span>
+        <!-- 아바타 / 프로필 이미지 -->
+        <div class="relative">
+          <div
+            v-if="profileImageUrl"
+            class="h-24 w-24 overflow-hidden rounded-full bg-zinc-100"
+          >
+            <img
+              :src="profileImageUrl"
+              alt="프로필 이미지"
+              class="h-full w-full object-cover"
+            />
+          </div>
+
+          <div
+            v-else
+            class="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-3xl font-semibold text-white"
+          >
+            <span>{{ avatar }}</span>
+          </div>
         </div>
 
-        <!-- 업로드 버튼 -->
+        <!-- 사진 변경 / 삭제 버튼 -->
         <div class="space-y-2">
-          <button
-            type="button"
-            class="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50"
-          >
-            <!-- 업로드 아이콘 -->
-            <span class="flex h-5 w-5 items-center justify-center">
-              <svg class="h-5 w-5" viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M8 3.333 4.667 6.667h2V10h2.666V6.667h2L8 3.333Z"
-                  fill="currentColor"
-                />
-                <path
-                  d="M3.333 11.333h9.334v1.334H3.333z"
-                  fill="currentColor"
-                />
-              </svg>
-            </span>
-            <span>사진 변경</span>
-          </button>
+          <div class="flex items-center gap-4">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50"
+              @click="onClickChangePhoto"
+              :disabled="isPhotoUpdating"
+            >
+              <!-- 업로드 아이콘 -->
+              <span class="flex h-5 w-5 items-center justify-center">
+                <svg class="h-5 w-5" viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M8 3.333 4.667 6.667h2V10h2.666V6.667h2L8 3.333Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M3.333 11.333h9.334v1.334H3.333z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </span>
+              <span>사진 변경</span>
+            </button>
+
+            <button
+              v-if="profileImageUrl"
+              type="button"
+              class="text-xs text-zinc-400 hover:text-zinc-600 underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              @click="onDeletePhoto"
+              :disabled="isPhotoUpdating"
+            >
+              사진 삭제
+            </button>
+          </div>
+
           <p class="text-xs text-zinc-400">JPG, PNG 또는 GIF (최대 5MB)</p>
+
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept="image/*"
+            class="hidden"
+            @change="onFileChange"
+          />
         </div>
       </div>
 
@@ -60,6 +97,7 @@
             <button
               type="submit"
               class="inline-flex items-center justify-center rounded-xl bg-zinc-950 px-5 text-sm font-smibold text-white hover:bg-zinc-900"
+              :disabled="!isNameChanged || isSavingName"
             >
               저장
             </button>
@@ -137,22 +175,118 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { useAuthStore } from "@/stores/auth";
+import { computed, onMounted, ref, watch } from "vue";
+import * as UserApi from "@/api/users";
 
-const user = { name: "홍길동", email: "hong@example.com", profileImageUrl: "" }; // 임시유저
+const auth = useAuthStore();
 
-const editableName = ref(user.name);
+// 이름 편집 상태
+const editableName = ref("");
 
+// 로딩 상태
+const isSavingName = ref(false);
+const isPhotoUpdating = ref(false);
+
+// 파일 input
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
+const profileImageUrl = computed(() => auth.user?.profileImageUrl ?? null);
+const email = computed(() => auth.user?.email ?? "");
+
+// 아바타 이니셜
 const avatar = computed(() => {
-  const n = editableName.value?.trim();
-  return n ? n[0] : "홍";
+  const n = editableName.value?.trim() || auth.user?.name || "";
+  return n ? n[0] : "U";
 });
 
-const email = computed(() => user.email);
+onMounted(() => {
+  if (auth.user) {
+    editableName.value = auth.user.name;
+  }
+});
 
-const onSubmit = () => {
-  user.name = editableName.value.trim();
-  // TODO: API 연동
-  console.log("이름 변경 버튼:", user.name);
+watch(
+  () => auth.user?.name,
+  (newName) => {
+    if (newName && !isSavingName.value) {
+      editableName.value = newName;
+    }
+  }
+);
+
+// 이름 변경 여부
+const isNameChanged = computed(() => {
+  const current = auth.user?.name ?? "";
+  return editableName.value.trim() !== current.trim();
+});
+
+// 이름 저장
+const onSubmit = async () => {
+  if (!auth.user) return;
+  const nextName = editableName.value.trim();
+  if (!nextName || !isNameChanged.value) return;
+
+  isSavingName.value = true;
+  try {
+    const updated = await UserApi.updateUser({ name: nextName });
+    auth.setUser(updated);
+    // TODO: 성공 토스트 알림 연결
+  } catch (e) {
+    console.error("이름 변경 실패:", e);
+    // TODO: 에러 토스트 알림 연결
+  } finally {
+    isSavingName.value = false;
+  }
+};
+
+// 사진 변경 버튼 클릭 시 input 열기
+const onClickChangePhoto = () => {
+  if (isPhotoUpdating.value) return;
+  fileInputRef.value?.click();
+};
+
+// 프로필 이미지 변경
+const onFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  const maxSize = 5 * 1024 * 1024; // 5MB 제한
+  if (file.size > maxSize) {
+    console.error("파일 크기 제한 초과 (최대 5MB)");
+    // TODO: 에러 토스트 알림 연결
+    target.value = "";
+    return;
+  }
+
+  isPhotoUpdating.value = true;
+  try {
+    const updated = await UserApi.updateProfileImage(file);
+    auth.setUser(updated);
+    // TODO: 에러 토스트 알림 연결
+  } catch (e) {
+    console.error("프로필 이미지 업로드 실패:", e);
+    // TODO: 에러 토스트 알림 연결
+  } finally {
+    isPhotoUpdating.value = false;
+    target.value = "";
+  }
+};
+
+// 프로필 이미지 삭제
+const onDeletePhoto = async () => {
+  if (!profileImageUrl.value) return;
+
+  isPhotoUpdating.value = true;
+  try {
+    const updated = await UserApi.deleteProfileImage();
+    auth.setUser(updated);
+  } catch (e) {
+    console.error("프로필 이미지 삭제 실패:", e);
+    // TODO: 에러 토스트 알림 연결
+  } finally {
+    isPhotoUpdating.value = false;
+  }
 };
 </script>
