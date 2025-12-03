@@ -51,6 +51,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/files/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/users/**", "/api/v1/bookmarks/**", "/api/v1/collections/**").authenticated()
                         .anyRequest().authenticated()
