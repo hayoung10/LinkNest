@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import http from "@/api/http";
 import type { User } from "@/types/common";
+import * as UserApi from "@/api/users";
 
 type OAuthProvider = "google" | "kakao" | "naver";
 
@@ -85,7 +86,8 @@ export const useAuthStore = defineStore("auth", {
     /** 사용자 프로필 조회 */
     async fetchProfile(force = false) {
       if (!force && this.user) return;
-      const { data: me } = await http.get<User>("/users/me");
+
+      const me = await UserApi.getMe();
       this.setUser(me);
     },
   },

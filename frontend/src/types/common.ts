@@ -21,13 +21,14 @@ export type Role = "ROLE_USER" | "ROLE_ADMIN";
 
 export interface User {
   id: ID;
+  email: string;
   name: string;
-  profileImageUrl?: string | null;
+  profileImageUrl: string | null;
   role: Role;
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
-  bookmarkCount?: number;
-  collectionCount?: number;
+  bookmarkCount: number;
+  collectionCount: number;
 }
 
 export interface Bookmark {
