@@ -22,12 +22,6 @@ public class TokenService {
     private final JwtProperties jwtProperties;
     private final UserRepository userRepository;
 
-    private static final String RT_PREFIX = "rt:";
-
-    private String rtKey(String jti) {
-        return RT_PREFIX + jti;
-    }
-
     // ---------- 발급 ----------
     public Map<String, String> issueTokens(Long userId, String username, List<String> roles) { // AT/RT 발급
         String jti = UUID.randomUUID().toString();
@@ -43,7 +37,7 @@ public class TokenService {
                 .token(refreshToken)
                 .expiration(Instant.now().plus(ttl))
                 .build();
-        refreshTokenRepository.save(rtKey(jti), entity, ttl);
+        refreshTokenRepository.save(entity, ttl);
 
         return Map.of("accessToken", accessToken, "refreshToken", refreshToken);
     }
@@ -53,7 +47,7 @@ public class TokenService {
         JwtTokenizer.RtClaims rtClaims = jwtTokenizer.parseAndValidateRefresh(refreshToken);
 
         // RT 확인
-        RefreshTokenEntity findEntity = refreshTokenRepository.find(rtKey(rtClaims.jti()))
+        RefreshTokenEntity findEntity = refreshTokenRepository.find(rtClaims.jti())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
         if(!Objects.equals(findEntity.getToken(), refreshToken)) {
             throw new BusinessException(ErrorCode.MISMATCH_REFRESH_TOKEN);
@@ -66,7 +60,7 @@ public class TokenService {
         List<String> roles = List.of(user.getRole().name());
 
         // 기존 RT 폐기
-        refreshTokenRepository.delete(rtKey(rtClaims.jti()));
+        refreshTokenRepository.delete(rtClaims.jti());
 
         // 새 AT/RT 발급
         String newJti = UUID.randomUUID().toString();
@@ -80,7 +74,7 @@ public class TokenService {
                 .token(newRefreshToken)
                 .expiration(Instant.now().plus(ttl))
                 .build();
-        refreshTokenRepository.save(rtKey(newJti), newEntity, ttl);
+        refreshTokenRepository.save(newEntity, ttl);
 
         return Map.of("accessToken", newAccessToken, "refreshToken", newRefreshToken);
     }
@@ -88,6 +82,6 @@ public class TokenService {
     // ---------- 폐기 ----------
     public void revokeToken(String refreshToken) {
         JwtTokenizer.RtClaims rtClaims = jwtTokenizer.parseAndValidateRefresh(refreshToken);
-        refreshTokenRepository.delete(rtKey(rtClaims.jti()));
+        refreshTokenRepository.delete(rtClaims.jti());
     }
 }
