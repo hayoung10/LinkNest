@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -63,6 +65,18 @@ public class TokenController {
         }
 
         // 쿠키 삭제
+        ResponseCookie delCookie = CookieUtils.deleteCookie(RT_COOKIE);
+        response.addHeader(HttpHeaders.SET_COOKIE, delCookie.toString());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/sessions")
+    public ResponseEntity<Void> logoutFromAllDevices(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                     HttpServletResponse response) {
+        tokenService.revokeAllTokens(userId);
+
+        // 현재 브라우저의 쿠키 삭제
         ResponseCookie delCookie = CookieUtils.deleteCookie(RT_COOKIE);
         response.addHeader(HttpHeaders.SET_COOKIE, delCookie.toString());
 

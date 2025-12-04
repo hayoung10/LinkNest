@@ -84,4 +84,8 @@ public class TokenService {
         JwtTokenizer.RtClaims rtClaims = jwtTokenizer.parseAndValidateRefresh(refreshToken);
         refreshTokenRepository.delete(rtClaims.jti());
     }
+
+    public void revokeAllTokens(Long userId) {
+        refreshTokenRepository.deleteAllByUserId(userId);
+    }
 }
