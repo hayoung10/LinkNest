@@ -18,6 +18,15 @@ public class CookieUtils {
                 .build();
     }
 
+    public static ResponseCookie createSessionCookie(String name, String value) {
+        return ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .sameSite("None")
+                .build();
+    }
+
     public static Optional<String> getCookieValue(HttpServletRequest request, String name) {
         if(request.getCookies() == null) {
             return Optional.empty();

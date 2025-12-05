@@ -79,9 +79,20 @@ public class TokenService {
         return Map.of("accessToken", newAccessToken, "refreshToken", newRefreshToken);
     }
 
-    // ---------- 폐기 ----------
+    // ---------- 폐기 (단일 RT) ----------
     public void revokeToken(String refreshToken) {
         JwtTokenizer.RtClaims rtClaims = jwtTokenizer.parseAndValidateRefresh(refreshToken);
         refreshTokenRepository.delete(rtClaims.jti());
+    }
+
+    // ---------- 폐기 (사용자 전체 RT) ----------
+    public void revokeAllTokens(Long userId) {
+        refreshTokenRepository.deleteAllByUserId(userId);
+    }
+
+    // ---------- 헬퍼: userId 추출 ----------
+    public Long getUserIdFromRefresh(String refreshToken) {
+        JwtTokenizer.RtClaims rtClaims = jwtTokenizer.parseAndValidateRefresh(refreshToken);
+        return rtClaims.userId();
     }
 }
