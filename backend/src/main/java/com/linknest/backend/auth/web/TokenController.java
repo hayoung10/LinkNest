@@ -5,6 +5,7 @@ import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.common.utils.CookieUtils;
 import com.linknest.backend.config.props.JwtProperties;
+import com.linknest.backend.userpreferences.UserPreferencesService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import static com.linknest.backend.common.constants.AppConstants.API_PREFIX;
 public class TokenController {
     private final TokenService tokenService;
     private final JwtProperties jwtProperties;
+    private final UserPreferencesService userPreferencesService;
 
     private static final String RT_COOKIE = "refresh_token";
 
@@ -41,17 +43,25 @@ public class TokenController {
         String newAt = tokens.get("accessToken");
         String newRt = tokens.get("refreshToken");
 
+        Long userId = tokenService.getUserIdFromRefresh(refreshToken);
+        var preferences = userPreferencesService.get(userId);
+
+        // RT -> 쿠키
+        ResponseCookie cookie;
+        if(preferences.keepSignedIn()) {
+            int maxAge = (int) Duration.ofDays(jwtProperties.getRefreshExpDays()).toSeconds();
+            cookie = CookieUtils.createCookie(RT_COOKIE, newRt, maxAge);
+        } else {
+            cookie = CookieUtils.createSessionCookie(RT_COOKIE, newRt); // 세션 쿠키
+        }
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
         // AT -> JSON
         Map<String, Object> body = Map.of(
                 "accessToken", newAt,
                 "tokenType", "Bearer",
                 "expiresIn", jwtProperties.getAccessExpMinutes() * 60
         );
-
-        // RT -> 쿠키
-        int maxAge = (int) Duration.ofDays(jwtProperties.getRefreshExpDays()).toSeconds();
-        ResponseCookie cookie = CookieUtils.createCookie(RT_COOKIE, newRt, maxAge);
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         return ResponseEntity.ok(body);
     }
