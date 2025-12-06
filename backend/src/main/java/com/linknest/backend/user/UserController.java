@@ -1,10 +1,14 @@
 package com.linknest.backend.user;
 
+import com.linknest.backend.common.utils.CookieUtils;
 import com.linknest.backend.user.dto.UserRes;
 import com.linknest.backend.user.dto.UserUpdateReq;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -45,8 +49,14 @@ public class UserController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> delete(@AuthenticationPrincipal(expression = "id") Long userId) {
+    public ResponseEntity<Void> delete(@AuthenticationPrincipal(expression = "id") Long userId,
+                                       HttpServletResponse response) {
         service.delete(userId);
+
+        // RT 쿠키 삭제
+        ResponseCookie delCookie = CookieUtils.deleteCookie("refresh_token");
+        response.addHeader(HttpHeaders.SET_COOKIE, delCookie.toString());
+
         return ResponseEntity.noContent().build();
     }
 }
