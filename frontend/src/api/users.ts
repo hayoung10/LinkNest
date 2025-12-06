@@ -38,3 +38,8 @@ export async function deleteProfileImage(): Promise<User> {
   const { data } = await http.delete(`/users/me/profile-image`);
   return mapUserRes(data);
 }
+
+/** 계정 삭제 (204 No Content) */
+export async function deleteAccount(): Promise<void> {
+  await http.delete(`/users/me`);
+}

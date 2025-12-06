@@ -23,6 +23,10 @@ export const useAuthStore = defineStore("auth", {
     setUser(user: User | null) {
       this.user = user;
     },
+    clearSession() {
+      this.accessToken = null;
+      this.user = null;
+    },
 
     /** 소셜 OAuth 시작 */
     startOAuth(provider: OAuthProvider) {
@@ -65,8 +69,18 @@ export const useAuthStore = defineStore("auth", {
       } catch (e) {
         console.warn("logout request failed:", e);
       } finally {
-        this.setAccessToken(null);
-        this.setUser(null);
+        this.clearSession();
+      }
+    },
+
+    /** 모든 기기에서 로그아웃 */
+    async logoutAllSessions() {
+      try {
+        await http.delete("/auth/sessions");
+      } catch (e) {
+        console.warn("logout all sessions request failed:", e);
+      } finally {
+        this.clearSession();
       }
     },
 
@@ -76,8 +90,7 @@ export const useAuthStore = defineStore("auth", {
         await this.refresh();
         await this.fetchProfile();
       } catch {
-        this.setAccessToken(null);
-        this.setUser(null);
+        this.clearSession();
       } finally {
         this.restored = true;
       }
