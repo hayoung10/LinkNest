@@ -13,7 +13,5 @@ public record UserRes(
         Role role,
         AuthProvider provider,
         Instant createdAt,
-        Instant updatedAt,
-        long bookmarkCount,
-        long collectionCount
+        Instant updatedAt
 ) {}
