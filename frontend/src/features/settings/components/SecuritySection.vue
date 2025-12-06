@@ -79,9 +79,14 @@
           </div>
           <button
             type="button"
-            class="relative inline-flex h-6 w-11 items-center rounded-full transition"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition disabled:opacity-60 disabled:cursor-not-allowed"
             :class="keepSignedIn ? 'bg-zinc-900' : 'bg-zinc-300'"
-            @click="toggleKeepSignedIn"
+            @click="onToggleKeepSignedIn"
+            :disabled="
+              isUpdatingKeepSignedIn ||
+              isProcessingAllSessions ||
+              isDeletingAccount
+            "
           >
             <span
               class="inline-block h-4 w-4 transform rounded-full bg-white transition"
@@ -90,23 +95,23 @@
           </button>
         </label>
 
-        <!-- 다른 기기에서 로그아웃 -->
+        <!-- 모든 기기에서 로그아웃 -->
         <div
           class="flex items-start justify-between gap-3 rounded-xl bg-zinc-50 px-4 py-3"
         >
           <div>
             <p class="text-sm font-medium text-zinc-900">
-              다른 모든 기기에서 로그아웃
+              모든 기기에서 로그아웃
             </p>
             <p class="text-xs text-zinc-500">
-              현재 사용 중인 기기를 제외한 모든 기기에서 로그인 상태를
-              해제합니다.
+              사용 중인 모든 기기에서 로그인 상태를 해제합니다.
             </p>
           </div>
           <button
             type="button"
-            class="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100"
-            @click="logoutOtherDevices"
+            class="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-60 disabled:cursor-not-allowed"
+            @click="onLogoutAllDevices"
+            :disabled="isProcessingAllSessions || isDeletingAccount"
           >
             로그아웃
           </button>
@@ -125,8 +130,9 @@
 
       <button
         type="button"
-        class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+        class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
         @click="onDeleteAccount"
+        :disabled="isDeletingAccount || isProcessingAllSessions"
       >
         계정 삭제
       </button>
@@ -135,23 +141,106 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { useAuthStore } from "@/stores/auth";
+import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
+import * as UserPreferencesApi from "@/api/preferences";
+import * as UserApi from "@/api/users";
 
-const keepSignedIn = ref(true);
+const auth = useAuthStore();
+const router = useRouter();
 
-const toggleKeepSignedIn = () => {
-  keepSignedIn.value = !keepSignedIn.value;
-  console.log("keepSignedIn:", keepSignedIn.value);
-  // TODO: API 연동
+// 상태
+const keepSignedIn = ref<boolean>(true);
+const isLoading = ref(false);
+const isUpdatingKeepSignedIn = ref(false);
+const isProcessingAllSessions = ref(false);
+const isDeletingAccount = ref(false);
+
+// 초기 로딩
+const loadPreferences = async () => {
+  isLoading.value = true;
+  try {
+    const preferences = await UserPreferencesApi.getUserPreferences();
+    keepSignedIn.value = preferences.keepSignedIn;
+  } catch (e) {
+    // TODO: 에러 토스트 알림 연결
+    console.error("로그인 설정 불러오기 실패:", e);
+  } finally {
+    isLoading.value = false;
+  }
 };
 
-const logoutOtherDevices = () => {
-  console.log("다른 기기 로그아웃 요청");
-  // TODO: API 호출
+onMounted(() => {
+  loadPreferences();
+});
+
+const onToggleKeepSignedIn = async () => {
+  if (isLoading.value || isUpdatingKeepSignedIn.value) return;
+  const prev = keepSignedIn.value;
+  const next = !prev;
+
+  isUpdatingKeepSignedIn.value = true;
+  try {
+    const updated = await UserPreferencesApi.updateUserPreferences({
+      keepSignedIn: next,
+    });
+    keepSignedIn.value = updated.keepSignedIn;
+
+    await auth.refresh(); // RT 쿠키 갱신
+    // TODO: 성공 토스트 알림 연결
+  } catch (e) {
+    console.error("로그인 상태 유지 설정 변경 실패:", e);
+    keepSignedIn.value = prev;
+    // TODO: 에러 토스트 알림 연결
+  } finally {
+    isUpdatingKeepSignedIn.value = false;
+  }
 };
 
-const onDeleteAccount = () => {
-  console.log("계정 삭제 클릭");
-  // TODO: 계정 삭제 확인 모달 + API 연동
+const onLogoutAllDevices = async () => {
+  if (isProcessingAllSessions.value) return;
+
+  const ok = window.confirm(
+    "정말 모든 기기에서 로그아웃하시겠어요?\n" +
+      "현재 브라우저를 포함해 모든 세션이 해제됩니다."
+  );
+  if (!ok) return;
+
+  isProcessingAllSessions.value = true;
+  try {
+    await auth.logoutAllSessions();
+    // TODO: 성공 토스트 알림 연결
+    router.push("/login");
+  } catch (e) {
+    console.error("모든 기기에서 로그아웃 실패:", e);
+    // TODO: 에러 토스트 알림 연결
+  } finally {
+    isProcessingAllSessions.value = false;
+  }
+};
+
+const onDeleteAccount = async () => {
+  if (isDeletingAccount.value) return;
+
+  const ok = window.confirm(
+    "정말 계정을 삭제하시겠어요?\n" +
+      "모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다."
+  );
+  if (!ok) return;
+
+  isDeletingAccount.value = true;
+  try {
+    await UserApi.deleteAccount();
+    auth.clearSession();
+
+    // TODO: 성공 토스트 알림 연결
+    router.push("/");
+  } catch (e) {
+    console.error("계정 삭제 실패:", e);
+    // TODO: 에러 토스트 알림 연결
+  } finally {
+    isDeletingAccount.value = false;
+  }
 };
 </script>
