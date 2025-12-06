@@ -18,6 +18,7 @@ export type ApiError = {
 };
 
 export type Role = "ROLE_USER" | "ROLE_ADMIN";
+export type Provider = "GOOGLE" | "KAKAO" | "NAVER";
 
 export interface User {
   id: ID;
@@ -25,10 +26,9 @@ export interface User {
   name: string;
   profileImageUrl: string | null;
   role: Role;
+  provider: Provider;
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
-  bookmarkCount: number;
-  collectionCount: number;
 }
 
 export interface Bookmark {

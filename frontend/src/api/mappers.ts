@@ -14,10 +14,9 @@ export function mapUserRes(dto: UserRes): User {
     name: dto.name,
     profileImageUrl: dto.profileImageUrl,
     role: dto.role,
+    provider: dto.provider,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
-    bookmarkCount: dto.bookmarkCount,
-    collectionCount: dto.collectionCount,
   };
 }
 
