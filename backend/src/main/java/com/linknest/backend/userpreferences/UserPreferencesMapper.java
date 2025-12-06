@@ -36,7 +36,7 @@ public interface UserPreferencesMapper {
                 userPreferences.getDefaultBookmarkSort().name(),
                 userPreferences.getDefaultLayout().name(),
                 userPreferences.isOpenInNewTab(),
-                userPreferences.isOpenInNewTab()
+                userPreferences.isKeepSignedIn()
         );
     }
 }
