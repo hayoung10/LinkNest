@@ -25,7 +25,6 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
 
     private static final List<String> EXCLUDE_PATTERNS = List.of(
             "/api/v1/auth/refresh",
-            "/api/v1/auth/logout",
             "/login/oauth2/**",
             "/oauth2/**",
             "/actuator/**",
