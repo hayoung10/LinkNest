@@ -13,7 +13,10 @@ const auth = useAuthStore();
 
 onMounted(async () => {
   if (typeof route.query.error === "string" && route.query.error) {
-    router.replace({ name: "login", query: { error: route.query.error } });
+    await router.replace({
+      name: "login",
+      query: { error: route.query.error },
+    });
     return;
   }
 
@@ -21,10 +24,10 @@ onMounted(async () => {
     await auth.restore();
     const target = resolveRedirectTarget();
     clearOAuthSession();
-    router.replace(target);
+    await router.replace(target);
   } catch {
     await auth.logout();
-    router.replace({ name: "login", query: { error: "oauth_failed" } });
+    await router.replace({ name: "login", query: { error: "oauth_failed" } });
   }
 });
 

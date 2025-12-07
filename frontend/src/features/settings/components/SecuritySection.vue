@@ -226,7 +226,7 @@ const onLogoutAllDevices = async () => {
   try {
     await auth.logoutAllSessions();
     // TODO: 성공 토스트 알림 연결
-    router.push("/login");
+    await router.replace("/login");
   } catch (e) {
     console.error("모든 기기에서 로그아웃 실패:", e);
     // TODO: 에러 토스트 알림 연결
@@ -250,7 +250,7 @@ const onDeleteAccount = async () => {
     auth.clearSession();
 
     // TODO: 성공 토스트 알림 연결
-    router.push("/");
+    await router.push("/");
   } catch (e) {
     console.error("계정 삭제 실패:", e);
     // TODO: 에러 토스트 알림 연결
