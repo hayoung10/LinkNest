@@ -88,6 +88,8 @@ import type { Bookmark, Collection, ID } from "@/types/common";
 import { useWorkspaceStore } from "@/stores/workspace";
 import * as BookmarkApi from "@/api/bookmarks";
 import { storeToRefs } from "pinia";
+import { useAuthStore } from "@/stores/auth";
+import { useRouter } from "vue-router";
 
 type UpdateBookmarkPayload = {
   id: ID;
@@ -98,6 +100,9 @@ type UpdateBookmarkPayload = {
 
 const workspace = useWorkspaceStore();
 const { collections, selectedCollectionId, bookmarks } = storeToRefs(workspace);
+
+const auth = useAuthStore();
+const router = useRouter();
 
 const selectedCollection = ref<Collection | null>(null);
 const selectedBookmark = ref<Bookmark | null>(null);
@@ -234,8 +239,13 @@ function onOpenSettings() {
   isSettingsOpen.value = true;
 }
 
-function onLogout() {
-  // TODO: store 연동 및 로그아웃 처리
-  console.log("[WorkspaceView] logout");
+async function onLogout() {
+  try {
+    await auth.logout();
+    await router.replace("/login");
+  } catch (e) {
+    console.error("[WorkspaceView] 로그아웃 실패:", e);
+    // TODO: 에러 토스트 알림 연결
+  }
 }
 </script>
