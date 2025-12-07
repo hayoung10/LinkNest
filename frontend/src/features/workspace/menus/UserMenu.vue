@@ -14,8 +14,8 @@
         class="size-8 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white grid place-items-center overflow-hidden"
       >
         <img
-          v-if="user.profileImageUrl"
-          :src="user.profileImageUrl"
+          v-if="user?.profileImageUrl"
+          :src="user?.profileImageUrl"
           :alt="user.name"
           class="w-full h-full object-cover"
         />
@@ -24,9 +24,11 @@
 
       <!-- 이름 + 이메일 -->
       <span class="flex flex-col items-start min-w-0 flex-1">
-        <span class="text-sm font-medium truncate w-full">{{ user.name }}</span>
+        <span class="text-sm font-medium truncate w-full">{{
+          user?.name
+        }}</span>
         <span class="text-xs text-muted-foreground truncate w-full">{{
-          user.email
+          user?.email
         }}</span>
       </span>
 
@@ -52,10 +54,10 @@
         <!-- 유저 정보 -->
         <div class="px-4 pt-4 pb-3">
           <p class="text-[15px] font-semibold leading-[22px]">
-            {{ user.name }}
+            {{ user?.name }}
           </p>
           <p class="mt-1 text-xs text-muted-foreground leading-5 truncate">
-            {{ user.email }}
+            {{ user?.email }}
           </p>
         </div>
 
@@ -109,13 +111,20 @@
 
 <script setup lang="ts">
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
+import { useAuthStore } from "@/stores/auth";
+import { storeToRefs } from "pinia";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import type { CSSProperties } from "vue";
 
 const emit = defineEmits<{ (e: "open-settings"): void; (e: "logout"): void }>();
 
-const user = { name: "홍길동", email: "hong@example.com", profileImageUrl: "" }; // 임시 유저
-const initials = computed(() => user.name.charAt(0));
+const authStore = useAuthStore();
+const { user } = storeToRefs(authStore);
+
+const initials = computed(() => {
+  const name = user.value?.name ?? "";
+  return name ? name.charAt(0) : "";
+});
 
 const menuOpen = ref(false);
 const triggerEl = ref<HTMLElement | null>(null);
