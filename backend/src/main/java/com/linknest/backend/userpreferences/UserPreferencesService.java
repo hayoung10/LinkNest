@@ -35,6 +35,13 @@ public class UserPreferencesService {
         return mapper.toRes(preferences);
     }
 
+    public DefaultBookmarkSort getDefaultBookmarkSort(Long userId) {
+        UserPreferences userPreferences = preferencesRepository.findByUserId(userId)
+                .orElseGet(() -> createDefault(userId));
+
+        return userPreferences.getDefaultBookmarkSort();
+    }
+
     private UserPreferences createDefault(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));

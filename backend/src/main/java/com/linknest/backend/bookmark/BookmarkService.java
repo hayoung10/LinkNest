@@ -8,6 +8,8 @@ import com.linknest.backend.collection.CollectionRepository;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.user.UserRepository;
+import com.linknest.backend.userpreferences.UserPreferencesService;
+import com.linknest.backend.userpreferences.domain.DefaultBookmarkSort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ public class BookmarkService {
     private final BookmarkRepository bookmarkRepository;
     private final CollectionRepository collectionRepository;
     private final UserRepository userRepository;
+    private final UserPreferencesService userPreferencesService;
 
     private final BookmarkMapper mapper;
 
@@ -60,8 +63,16 @@ public class BookmarkService {
     public List<BookmarkRes> listByCollection(Long userId, Long collectionId) {
         requireOwnedCollection(userId, collectionId);
 
-        List<Bookmark> list =
-                bookmarkRepository.findAllByUserIdAndCollectionIdOrderByCreatedAtDesc(userId, collectionId);
+        DefaultBookmarkSort sort = userPreferencesService.getDefaultBookmarkSort(userId);
+
+        List<Bookmark> list = switch(sort) {
+            case NEWEST -> bookmarkRepository
+                    .findAllByUserIdAndCollectionIdOrderByCreatedAtDesc(userId, collectionId);
+            case OLDEST -> bookmarkRepository
+                    .findAllByUserIdAndCollectionIdOrderByCreatedAtAsc(userId, collectionId);
+            case TITLE -> bookmarkRepository
+                    .findAllSortedByTitle(userId, collectionId);
+        };
 
         return list.stream().map(mapper::toRes).toList();
     }
