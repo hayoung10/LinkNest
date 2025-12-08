@@ -37,7 +37,8 @@ onMounted(async () => {
     }
   }
   if (auth.isLoggedIn) {
-    router.replace("/");
+    await router.replace("/");
+    return;
   }
 });
 

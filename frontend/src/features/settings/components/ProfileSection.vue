@@ -127,7 +127,7 @@
             </div>
           </div>
           <p class="text-xs text-zinc-400">
-            이메일은 Google 계정과 연동되어 변경할 수 없습니다
+            이메일 주소는 계정에 등록된 정보이며, 변경할 수 없습니다.
           </p>
         </div>
       </form>
@@ -149,19 +149,22 @@
       >
         <div class="flex items-center gap-3">
           <div
-            class="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-100 text-indigo-600"
+            class="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-100 text-zinc-700"
           >
             <!-- 이메일 아이콘 -->
-            <svg class="h-7 w-7" viewBox="0 0 20 20" aria-hidden="true">
+            <ProviderIcon v-if="provider" :provider="provider" :size="22" />
+            <svg v-else class="h-7 w-7" viewBox="0 0 20 20" aria-hidden="true">
               <path
                 d="M3.75 4.5h12.5A1.75 1.75 0 0 1 18 6.25v7.5A1.75 1.75 0 0 1 16.25 15.5H3.75A1.75 1.75 0 0 1 2 13.75v-7.5A1.75 1.75 0 0 1 3.75 4.5Zm0 1.5 6.25 3.75L16.25 6h-12.5Zm0 1.31v6.44h12.5V7.31l-6.06 3.64a.75.75 0 0 1-.78 0L3.75 7.31Z"
                 fill="currentColor"
               />
             </svg>
           </div>
-          <div>
-            <p class="text-sm font-medium text-zinc-900">Google</p>
-            <p class="text-xs text-zinc-500">{{ email }}</p>
+          <div class="space-y-0.5">
+            <p class="text-sm font-medium text-zinc-900">
+              {{ providerLabel }} 로그인
+            </p>
+            <p class="text-xs text-zinc-500">{{ email }} · 계정 이메일</p>
           </div>
         </div>
 
@@ -178,6 +181,8 @@
 import { useAuthStore } from "@/stores/auth";
 import { computed, onMounted, ref, watch } from "vue";
 import * as UserApi from "@/api/users";
+import type { Provider } from "@/types/common";
+import ProviderIcon from "@/components/common/ProviderIcon.vue";
 
 const auth = useAuthStore();
 
@@ -193,6 +198,22 @@ const fileInputRef = ref<HTMLInputElement | null>(null);
 
 const profileImageUrl = computed(() => auth.user?.profileImageUrl ?? null);
 const email = computed(() => auth.user?.email ?? "");
+
+const provider = computed<Provider | null>(() => auth.user?.provider ?? null);
+
+const providerLabel = computed(() => {
+  if (!provider.value) return "이메일";
+  switch (provider.value) {
+    case "GOOGLE":
+      return "Google";
+    case "KAKAO":
+      return "카카오";
+    case "NAVER":
+      return "네이버";
+    default:
+      return "이메일";
+  }
+});
 
 // 아바타 이니셜
 const avatar = computed(() => {

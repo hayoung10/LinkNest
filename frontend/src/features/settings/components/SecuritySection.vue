@@ -21,37 +21,27 @@
               <span
                 class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm"
               >
+                <ProviderIcon v-if="provider" :provider="provider" :size="14" />
                 <svg
+                  v-else
                   class="w-3.5 h-3.5"
                   viewBox="0 0 20 20"
                   fill="none"
                   aria-hidden="true"
                 >
                   <path
-                    d="M19.8055 10.2292C19.8055 9.5542 19.75 8.875 19.6305 8.21875H10.2V12.0188H15.5945C15.3555 13.2917 14.5945 14.4104 13.4945 15.0854V17.5854H16.7945C18.7055 15.8354 19.8055 13.2729 19.8055 10.2292Z"
-                    fill="#4285F4"
-                  />
-                  <path
-                    d="M10.2 20C12.9 20 15.1695 19.1042 16.7945 17.5854L13.4945 15.0854C12.5695 15.6708 11.4055 16.0104 10.2 16.0104C7.59451 16.0104 5.38951 14.2417 4.57451 11.8542H1.17451V14.4292C2.82451 17.7083 6.33951 20 10.2 20Z"
-                    fill="#34A853"
-                  />
-                  <path
-                    d="M4.57451 11.8542C4.15701 10.5812 4.15701 9.41875 4.57451 8.14583V5.57083H1.17451C-0.125488 8.15833 -0.125488 11.8417 1.17451 14.4292L4.57451 11.8542Z"
-                    fill="#FBBC04"
-                  />
-                  <path
-                    d="M10.2 3.98958C11.4805 3.96875 12.7138 4.46875 13.6388 5.35417L16.5638 2.42917C14.0805 0.0729167 10.7055 -0.783333 7.68051 0.554167C6.09801 1.13125 4.69301 2.08958 3.59301 3.34375C2.49301 4.59792 1.73301 6.10833 1.37801 7.72917L4.57451 8.14583C5.38951 5.75833 7.59451 3.98958 10.2 3.98958Z"
-                    fill="#EA4335"
+                    d="M3.75 4.5h12.5A1.75 1.75 0 0 1 18 6.25v7.5A1.75 1.75 0 0 1 16.25 15.5H3.75A1.75 1.75 0 0 1 2 13.75v-7.5A1.75 1.75 0 0 1 3.75 4.5Zm0 1.5 6.25 3.75L16.25 6h-12.5Zm0 1.31v6.44h12.5V7.31l-6.06 3.64a.75.75 0 0 1-.78 0L3.75 7.31Z"
+                    fill="currentColor"
                   />
                 </svg>
               </span>
-              <span>Google 계정</span>
+              <span>{{ providerLabel }} 계정</span>
             </div>
           </div>
         </div>
 
         <p class="text-xs text-zinc-400">
-          비밀번호 관리 및 보안 설정은 Google에서 진행하세요.
+          {{ passwordGuideText }}
         </p>
       </div>
     </div>
@@ -142,13 +132,38 @@
 
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import * as UserPreferencesApi from "@/api/preferences";
 import * as UserApi from "@/api/users";
+import ProviderIcon from "@/components/common/ProviderIcon.vue";
+import type { Provider } from "@/types/common";
 
 const auth = useAuthStore();
 const router = useRouter();
+
+const provider = computed<Provider | null>(() => auth.user?.provider ?? null);
+
+const providerLabel = computed(() => {
+  if (!provider.value) return "이메일";
+  switch (provider.value) {
+    case "GOOGLE":
+      return "Google";
+    case "KAKAO":
+      return "카카오";
+    case "NAVER":
+      return "네이버";
+    default:
+      return "이메일";
+  }
+});
+
+const passwordGuideText = computed(() => {
+  if (!provider.value) {
+    return "비밀번호와 보안 설정은 LinkNest 계정 설정에서 관리할 수 있습니다.";
+  }
+  return `비밀번호 관리 및 보안 설정은 ${providerLabel.value}에서 진행하세요.`;
+});
 
 // 상태
 const keepSignedIn = ref<boolean>(true);
@@ -211,7 +226,7 @@ const onLogoutAllDevices = async () => {
   try {
     await auth.logoutAllSessions();
     // TODO: 성공 토스트 알림 연결
-    router.push("/login");
+    await router.replace("/login");
   } catch (e) {
     console.error("모든 기기에서 로그아웃 실패:", e);
     // TODO: 에러 토스트 알림 연결
@@ -235,7 +250,7 @@ const onDeleteAccount = async () => {
     auth.clearSession();
 
     // TODO: 성공 토스트 알림 연결
-    router.push("/");
+    await router.push("/");
   } catch (e) {
     console.error("계정 삭제 실패:", e);
     // TODO: 에러 토스트 알림 연결

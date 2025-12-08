@@ -1,4 +1,4 @@
-import type { ID, Role } from "@/types/common";
+import type { ID, Provider, Role } from "@/types/common";
 
 /** === 백엔드 응답 DTO (Res) === */
 export interface UserRes {
@@ -7,10 +7,9 @@ export interface UserRes {
   email: string;
   profileImageUrl: string | null;
   role: Role;
+  provider: Provider;
   createdAt: string;
   updatedAt: string;
-  bookmarkCount: number;
-  collectionCount: number;
 }
 
 export interface BookmarkRes {
