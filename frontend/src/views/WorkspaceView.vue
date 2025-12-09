@@ -3,7 +3,6 @@
     <!-- 좌측: 사이드바 -->
     <WorkspaceSidebar
       class="w-64 border-r border-border"
-      :collections="collections"
       @add-collection="onAddCollection"
       @select-collection="onSelectCollection"
       @rename-collection="onRenameCollection"

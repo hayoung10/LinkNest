@@ -138,7 +138,6 @@ import { storeToRefs } from "pinia";
 
 defineOptions({ inheritAttrs: false });
 
-const props = defineProps<{ collections: Collection[] }>();
 const emit = defineEmits<{
   (e: "select-collection", c: Collection): void;
   (e: "add-collection", payload: { name: string; parentId: ID | null }): void;
@@ -152,7 +151,7 @@ const emit = defineEmits<{
 const workspace = useWorkspaceStore();
 
 // 선택된 컬렉션 ID
-const selectedCollectionId = storeToRefs(workspace).selectedCollectionId;
+const { collections, selectedCollectionId } = storeToRefs(workspace);
 
 function handleSelectCollection(c: Collection) {
   workspace.selectCollection(c.id);
