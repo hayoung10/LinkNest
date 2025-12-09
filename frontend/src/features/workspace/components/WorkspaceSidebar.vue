@@ -134,6 +134,7 @@ import type { Collection, ID } from "@/types/common";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import LogoIcon from "@/components/icons/LogoIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
+import { storeToRefs } from "pinia";
 
 defineOptions({ inheritAttrs: false });
 
@@ -151,10 +152,10 @@ const emit = defineEmits<{
 const workspace = useWorkspaceStore();
 
 // 선택된 컬렉션 ID
-const selectedCollectionId = ref<ID | null>(null);
+const selectedCollectionId = storeToRefs(workspace).selectedCollectionId;
 
 function handleSelectCollection(c: Collection) {
-  selectedCollectionId.value = c.id;
+  workspace.selectCollection(c.id);
   emit("select-collection", c);
 }
 
