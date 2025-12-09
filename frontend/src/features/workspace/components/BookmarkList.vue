@@ -157,10 +157,11 @@ import type { Bookmark, Collection, ID } from "@/types/common";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
+import { useWorkspaceStore } from "@/stores/workspace";
+import { storeToRefs } from "pinia";
 
 const props = defineProps<{
   collection: Collection | null;
-  bookmarks: Bookmark[];
   selectedBookmarkId?: ID | null;
 }>();
 
@@ -169,9 +170,12 @@ const emit = defineEmits<{
   (e: "select-bookmark", bookmark: Bookmark): void;
 }>();
 
+const workspace = useWorkspaceStore();
+const { bookmarks } = storeToRefs(workspace);
+
 const selectedCollectionId = computed(() => props.collection?.id ?? null);
 const hasSelection = computed(() => selectedCollectionId.value !== null);
-const bookmarks = computed<Bookmark[]>(() => props.bookmarks ?? []);
+
 const hasBookmarks = computed(() => bookmarks.value.length > 0);
 
 // 유틸
