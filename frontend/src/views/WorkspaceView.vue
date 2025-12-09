@@ -3,7 +3,6 @@
     <!-- 좌측: 사이드바 -->
     <WorkspaceSidebar
       class="w-64 border-r border-border"
-      :collections="collections"
       @add-collection="onAddCollection"
       @select-collection="onSelectCollection"
       @rename-collection="onRenameCollection"
@@ -19,7 +18,6 @@
       <BookmarkList
         :key="selectedCollection?.id || 'none'"
         :collection="selectedCollection"
-        :bookmarks="bookmarks"
         :selected-bookmark-id="selectedBookmark?.id ?? null"
         @open-add="isAddOpen = true"
         @select-bookmark="onSelectBookmark"
@@ -75,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import {
   WorkspaceSidebar,
   BookmarkList,
@@ -104,7 +102,13 @@ const { collections, selectedCollectionId, bookmarks } = storeToRefs(workspace);
 const auth = useAuthStore();
 const router = useRouter();
 
-const selectedCollection = ref<Collection | null>(null);
+const selectedCollection = computed<Collection | null>(() => {
+  if (selectedCollectionId.value == null) return null;
+  return (
+    collections.value.find((c) => c.id === selectedCollectionId.value) ?? null
+  );
+});
+
 const selectedBookmark = ref<Bookmark | null>(null);
 
 const isAddOpen = ref(false);
@@ -119,7 +123,6 @@ onMounted(() => {
 
 // 핸들러
 async function onSelectCollection(c: Collection) {
-  selectedCollection.value = c;
   workspace.selectCollection(c.id);
 
   selectedBookmark.value = null;
@@ -145,7 +148,8 @@ async function onDeleteCollection(id: ID) {
   await workspace.deleteCollection(id);
 
   if (selectedCollectionId.value === id) {
-    selectedCollection.value = null;
+    workspace.selectCollection(null);
+
     selectedBookmark.value = null;
     await workspace.fetchBookmarks();
   }

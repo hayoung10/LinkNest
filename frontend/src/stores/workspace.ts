@@ -168,7 +168,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.isLoading = { collections: false, bookmarks: false };
       this.error = { collections: null, bookmarks: null };
     },
-    selectCollection(id: ID) {
+    selectCollection(id: ID | null) {
       this.selectedCollectionId = id;
     },
     // 북마크 카운트 업데이트
