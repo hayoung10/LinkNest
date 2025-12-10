@@ -16,7 +16,17 @@
     <section class="relative flex-1 flex flex-col overflow-hidden min-h-0">
       <!-- 목록 -->
       <BookmarkList
-        :key="selectedCollection?.id || 'none'"
+        v-if="isListLayout"
+        :key="'list-' + (selectedCollection?.id || 'none')"
+        :collection="selectedCollection"
+        :selected-bookmark-id="selectedBookmark?.id ?? null"
+        @open-add="isAddOpen = true"
+        @select-bookmark="onSelectBookmark"
+      />
+
+      <BookmarkCard
+        v-else
+        :key="'card-' + (selectedCollection?.id || 'none')"
         :collection="selectedCollection"
         :selected-bookmark-id="selectedBookmark?.id ?? null"
         @open-add="isAddOpen = true"
@@ -77,6 +87,7 @@ import { computed, onMounted, ref } from "vue";
 import {
   WorkspaceSidebar,
   BookmarkList,
+  BookmarkCard,
   BookmarkDetail,
   AddBookmarkForm,
 } from "@/features/workspace";
@@ -88,6 +99,7 @@ import * as BookmarkApi from "@/api/bookmarks";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "vue-router";
+import { usePreferencesStore } from "@/stores/preferences";
 
 type UpdateBookmarkPayload = {
   id: ID;
@@ -99,6 +111,9 @@ type UpdateBookmarkPayload = {
 const workspace = useWorkspaceStore();
 const { collections, selectedCollectionId, bookmarks } = storeToRefs(workspace);
 
+const preferences = usePreferencesStore();
+const { defaultLayout } = storeToRefs(preferences);
+
 const auth = useAuthStore();
 const router = useRouter();
 
@@ -108,6 +123,8 @@ const selectedCollection = computed<Collection | null>(() => {
     collections.value.find((c) => c.id === selectedCollectionId.value) ?? null
   );
 });
+
+const isListLayout = computed(() => defaultLayout.value === "LIST");
 
 const selectedBookmark = ref<Bookmark | null>(null);
 
