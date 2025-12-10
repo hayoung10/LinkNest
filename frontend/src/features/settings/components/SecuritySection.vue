@@ -134,13 +134,16 @@
 import { useAuthStore } from "@/stores/auth";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import * as UserPreferencesApi from "@/api/preferences";
 import * as UserApi from "@/api/users";
 import ProviderIcon from "@/components/common/ProviderIcon.vue";
 import type { Provider } from "@/types/common";
+import { usePreferencesStore } from "@/stores/preferences";
+import { storeToRefs } from "pinia";
 
 const auth = useAuthStore();
 const router = useRouter();
+const preferences = usePreferencesStore();
+const { keepSignedIn, loaded } = storeToRefs(preferences);
 
 const provider = computed<Provider | null>(() => auth.user?.provider ?? null);
 
@@ -166,7 +169,6 @@ const passwordGuideText = computed(() => {
 });
 
 // 상태
-const keepSignedIn = ref<boolean>(true);
 const isLoading = ref(false);
 const isUpdatingKeepSignedIn = ref(false);
 const isProcessingAllSessions = ref(false);
@@ -174,10 +176,11 @@ const isDeletingAccount = ref(false);
 
 // 초기 로딩
 const loadPreferences = async () => {
+  if (loaded.value) return;
+
   isLoading.value = true;
   try {
-    const preferences = await UserPreferencesApi.getUserPreferences();
-    keepSignedIn.value = preferences.keepSignedIn;
+    await preferences.load();
   } catch (e) {
     // TODO: 에러 토스트 알림 연결
     console.error("로그인 설정 불러오기 실패:", e);
@@ -196,11 +199,10 @@ const onToggleKeepSignedIn = async () => {
   const next = !prev;
 
   isUpdatingKeepSignedIn.value = true;
+  keepSignedIn.value = next;
+
   try {
-    const updated = await UserPreferencesApi.updateUserPreferences({
-      keepSignedIn: next,
-    });
-    keepSignedIn.value = updated.keepSignedIn;
+    await preferences.update({ keepSignedIn: next });
 
     await auth.refresh(); // RT 쿠키 갱신
     // TODO: 성공 토스트 알림 연결
