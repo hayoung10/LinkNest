@@ -112,7 +112,9 @@
                 </button>
               </li>
 
-              <div class="divider mx-6" />
+              <li aria-hidden="true">
+                <div class="divider mx-6" />
+              </li>
             </template>
           </ul>
         </div>
@@ -174,7 +176,7 @@ const workspace = useWorkspaceStore();
 const { bookmarks } = storeToRefs(workspace);
 
 const selectedCollectionId = computed(() => props.collection?.id ?? null);
-const hasSelection = computed(() => selectedCollectionId.value !== null);
+const hasSelection = computed(() => selectedCollectionId.value != null);
 
 const hasBookmarks = computed(() => bookmarks.value.length > 0);
 
