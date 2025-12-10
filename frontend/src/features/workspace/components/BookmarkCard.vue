@@ -176,8 +176,7 @@ const emit = defineEmits<{
 const workspace = useWorkspaceStore();
 const { bookmarks } = storeToRefs(workspace);
 
-const selectedCollectionId = computed(() => props.collection?.id ?? null);
-const hasSelection = computed(() => selectedCollectionId.value != null);
+const hasSelection = computed(() => props.collection != null);
 
 const hasBookmarks = computed(() => bookmarks.value.length > 0);
 
