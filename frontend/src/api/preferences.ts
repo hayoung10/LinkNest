@@ -1,11 +1,15 @@
 import http from "./http";
-import { UserPreferences } from "@/types/common";
+import {
+  UserPreferences,
+  BookmarkSortOption,
+  LayoutOption,
+} from "@/types/common";
 import { UserPreferencesRes } from "./types";
 import { mapUserPreferences } from "./mappers";
 
 export interface UserPreferencesUpdateReq {
-  defaultBookmarkSort?: string;
-  defaultLayout?: string;
+  defaultBookmarkSort?: BookmarkSortOption;
+  defaultLayout?: LayoutOption;
   openInNewTab?: boolean;
   keepSignedIn?: boolean;
 }
