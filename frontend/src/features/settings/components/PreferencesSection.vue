@@ -101,29 +101,31 @@
 </template>
 
 <script setup lang="ts">
+import { usePreferencesStore } from "@/stores/preferences";
+import { useWorkspaceStore } from "@/stores/workspace";
+import type { BookmarkSortOption, LayoutOption } from "@/types/common";
+import { storeToRefs } from "pinia";
 import { onMounted, ref } from "vue";
-import * as UserPreferencesApi from "@/api/preferences";
-
-type SortOptionValue = "NEWEST" | "OLDEST" | "TITLE";
-type LayoutOptionValue = "CARD" | "LIST";
 
 // 기본 북마크 정렬 옵션
-const sortOptions: { value: SortOptionValue; label: string }[] = [
+const sortOptions: { value: BookmarkSortOption; label: string }[] = [
   { value: "NEWEST", label: "최신순" },
   { value: "OLDEST", label: "오래된순" },
-  { value: "TITLE", label: "이름순" },
+  { value: "TITLE", label: "제목순" },
 ];
 
 // 기본 레이아웃 옵션
-const layoutOptions: { value: LayoutOptionValue; label: string }[] = [
+const layoutOptions: { value: LayoutOption; label: string }[] = [
   { value: "CARD", label: "카드형" },
   { value: "LIST", label: "리스트형" },
 ];
 
-// 상태
-const defaultBookmarkSort = ref<SortOptionValue>("NEWEST");
-const defaultLayout = ref<LayoutOptionValue>("LIST");
-const openInNewTab = ref(true);
+const preferences = usePreferencesStore();
+const workspace = useWorkspaceStore();
+
+const { defaultBookmarkSort, defaultLayout, openInNewTab, loaded } =
+  storeToRefs(preferences);
+const { selectedCollectionId } = storeToRefs(workspace);
 
 // 로딩/저장 상태
 const isLoading = ref(false);
@@ -131,12 +133,11 @@ const isSaving = ref(false);
 
 // 초기 로딩
 const loadPreferences = async () => {
+  if (loaded.value) return;
+
   isLoading.value = true;
   try {
-    const preferences = await UserPreferencesApi.getUserPreferences();
-    defaultBookmarkSort.value = preferences.defaultBookmarkSort;
-    defaultLayout.value = preferences.defaultLayout;
-    openInNewTab.value = preferences.openInNewTab;
+    await preferences.load();
   } catch (e) {
     // TODO: 에러 토스트 알림 연결
     console.error("환경 설정 불러오기 실패:", e);
@@ -150,7 +151,7 @@ onMounted(() => {
 });
 
 // 이벤트 핸들러
-const changeDefaultSort = async (value: SortOptionValue) => {
+const changeDefaultSort = async (value: BookmarkSortOption) => {
   if (defaultBookmarkSort.value === value) return;
 
   const prev = defaultBookmarkSort.value;
@@ -158,10 +159,11 @@ const changeDefaultSort = async (value: SortOptionValue) => {
 
   isSaving.value = true;
   try {
-    const updated = await UserPreferencesApi.updateUserPreferences({
-      defaultBookmarkSort: value,
-    });
-    defaultBookmarkSort.value = updated.defaultBookmarkSort;
+    await preferences.update({ defaultBookmarkSort: value });
+
+    if (selectedCollectionId.value != null) {
+      await workspace.fetchBookmarks(selectedCollectionId.value);
+    }
   } catch (e) {
     // TODO: 에러 토스트 알림 연결
     console.error("기본 정렬 업데이트 실패:", e);
@@ -171,7 +173,7 @@ const changeDefaultSort = async (value: SortOptionValue) => {
   }
 };
 
-const changeDefaultLayout = async (value: LayoutOptionValue) => {
+const changeDefaultLayout = async (value: LayoutOption) => {
   if (defaultLayout.value === value) return;
 
   const prev = defaultLayout.value;
@@ -179,10 +181,7 @@ const changeDefaultLayout = async (value: LayoutOptionValue) => {
 
   isSaving.value = true;
   try {
-    const updated = await UserPreferencesApi.updateUserPreferences({
-      defaultLayout: value,
-    });
-    defaultLayout.value = updated.defaultLayout;
+    await preferences.update({ defaultLayout: value });
   } catch (e) {
     // TODO: 에러 토스트 알림 연결
     console.error("기본 레이아웃 업데이트 실패:", e);
@@ -200,10 +199,7 @@ const updateOpenInNewTab = async () => {
 
   isSaving.value = true;
   try {
-    const updated = await UserPreferencesApi.updateUserPreferences({
-      openInNewTab: next,
-    });
-    openInNewTab.value = updated.openInNewTab;
+    await preferences.update({ openInNewTab: next });
   } catch (e) {
     // TODO: 에러 토스트 알림 연결
     console.error("새 탭 열기 설정 업데이트 실패:", e);
