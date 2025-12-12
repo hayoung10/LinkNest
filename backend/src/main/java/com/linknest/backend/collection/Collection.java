@@ -16,8 +16,8 @@ import java.util.List;
 @Entity @Table(name = "collections",
         indexes = {
                 @Index(name = "idx_collection_parent", columnList = "parent_id"),
-                @Index(name = "inx_collection_user_parent", columnList = "user_id, parent_id"),
-                @Index(name = "inx_collection_user_parent_order", columnList = "user_id, parent_id, sort_order")
+                @Index(name = "idx_collection_user_parent", columnList = "user_id, parent_id"),
+                @Index(name = "idx_collection_user_parent_order", columnList = "user_id, parent_id, sort_order")
         }
 )
 @EntityListeners(AuditingEntityListener.class)
