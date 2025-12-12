@@ -5,7 +5,7 @@ import java.time.Instant;
 public record CollectionRes(
         Long id,
         String name,
-        String icon,
+        String emoji,
         Long parentId,
         int sortOrder,
         Instant createdAt,
