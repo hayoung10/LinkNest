@@ -18,8 +18,5 @@ public record BookmarkUpdateReq(
         @Size(max = 16)
         String emoji,
 
-        @Size(max = 1000)
-        String customImageUrl,
-
         ImageMode imageMode
 ) {}
