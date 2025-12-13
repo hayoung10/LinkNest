@@ -7,9 +7,11 @@ import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -72,5 +74,20 @@ public class BookmarkController {
                                      @RequestBody @Valid BookmarkMoveReq req) {
         service.move(userId, id, req.targetCollectionId());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<BookmarkRes> uploadCover(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                   @PathVariable @Min(1) Long id,
+                                                   @RequestPart("file") MultipartFile coverImage) {
+        BookmarkRes res = service.uploadCover(userId, id, coverImage);
+        return ResponseEntity.ok(res);
+    }
+
+    @DeleteMapping("/{id}/cover")
+    public ResponseEntity<BookmarkRes> removeCover(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                   @PathVariable @Min(1) Long id) {
+        BookmarkRes res = service.removeCover(userId, id);
+        return ResponseEntity.ok(res);
     }
 }

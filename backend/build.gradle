@@ -38,6 +38,9 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
+	//    -------------------------------------------------------------------------------------------- Web Utils
+	implementation 'org.jsoup:jsoup:1.17.2'
+
 	//    -------------------------------------------------------------------------------------------- Security
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'

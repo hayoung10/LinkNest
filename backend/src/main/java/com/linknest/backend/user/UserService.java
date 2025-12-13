@@ -39,7 +39,7 @@ public class UserService {
     @Transactional
     public UserRes updateProfileImage(Long userId, MultipartFile profileImage) {
         if(profileImage == null || profileImage.isEmpty()) {
-            throw new IllegalArgumentException("업로드할 프로필 이미지가 비어있습니다.");
+            throw new BusinessException(ErrorCode.FILE_EMPTY);
         }
 
         User user = findVerifiedUser(userId);
@@ -47,7 +47,12 @@ public class UserService {
         // 기존 프로필 이미지 삭제
         String oldUrl = user.getProfileImageUrl();
         if(oldUrl != null && !oldUrl.isBlank()) {
-            storage.delete(oldUrl);
+            try {
+                storage.delete(oldUrl);
+            } catch (Exception e) {
+                log.warn("User profile image update: failed to delete profile image. userId={}, url={}, reason={}",
+                        userId, oldUrl, e.getMessage(), e);
+            }
         }
 
         // 새 이미지 업로드

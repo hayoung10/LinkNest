@@ -4,11 +4,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record CollectionCreateReq(
-        @NotBlank(message = "이름을 입력하세요.")
-        @Size(min = 1, max = 255)
+        @NotBlank(message = "컬렉션 이름을 입력하세요.")
+        @Size(max = 255)
         String name,
 
-        String icon,
+        @Size(max = 16)
+        String emoji,
 
         Long parentId
 ) {}

@@ -30,7 +30,8 @@ public class Collection {
     @Column(length = 255)
     private String name;
 
-    private String icon;
+    @Column(length = 16)
+    private String emoji;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
