@@ -40,6 +40,19 @@ public class Bookmark {
     @JoinColumn(name = "collection_id", nullable = false)
     private Collection collection;
 
+    @Column(length = 16)
+    private String emoji;
+
+    @Column(name = "auto_image_url", length = 1000)
+    private String autoImageUrl;
+
+    @Column(name = "custom_image_url", length = 1000)
+    private String customImageUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "image_mode", length = 10, nullable = false)
+    private ImageMode imageMode = ImageMode.AUTO;
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
@@ -50,5 +63,9 @@ public class Bookmark {
 
     public void moveTo(Collection target) {
         this.collection = target;
+    }
+
+    public enum ImageMode {
+        AUTO, CUSTOM, NONE
     }
 }
