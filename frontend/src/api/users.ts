@@ -26,8 +26,7 @@ export async function updateProfileImage(file: File): Promise<User> {
 
   const { data } = await http.patch<UserRes>(
     `/users/me/profile-image`,
-    formData,
-    { headers: { "Content-Type": "multipart/form-data" } }
+    formData
   );
 
   return mapUserRes(data);

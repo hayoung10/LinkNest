@@ -5,13 +5,13 @@ import { mapCollectionRes } from "./mappers";
 
 export interface CollectionCreateReq {
   name: string;
-  icon?: string | null;
-  parentId?: ID | null;
+  emoji: string | null;
+  parentId: ID | null;
 }
 
 export interface CollectionUpdateReq {
   name?: string;
-  icon?: string | null;
+  emoji?: string | null;
 }
 
 export interface CollectionMoveReq {
@@ -60,7 +60,7 @@ export async function listChildren(
   parentId?: ID | null
 ): Promise<Collection[]> {
   const { data } = await http.get<CollectionRes[]>(`/collections`, {
-    params: { parentId },
+    params: parentId == null ? {} : { parentId },
   });
   return data.map((r) => mapCollectionRes(r)); // 목록에 bookmarks 포함 X
 }
