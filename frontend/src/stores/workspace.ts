@@ -185,8 +185,8 @@ export const useWorkspaceStore = defineStore("workspace", {
     /* ------------------------ 컬렉션 ------------------------ */
     async createCollection(payload: {
       name: string;
-      icon?: string | null;
-      parentId?: ID | null;
+      emoji: string | null;
+      parentId: ID | null;
     }) {
       setLoading(this.isLoading, "collections", true);
       try {
@@ -227,7 +227,7 @@ export const useWorkspaceStore = defineStore("workspace", {
 
     async updateCollection(
       id: ID,
-      payload: { name?: string; icon?: string | null }
+      payload: { name?: string; emoji?: string | null }
     ) {
       setLoading(this.isLoading, "collections", true);
       try {
@@ -261,15 +261,14 @@ export const useWorkspaceStore = defineStore("workspace", {
     async fetchCollections(parentId?: ID | null) {
       setLoading(this.isLoading, "collections", true);
       try {
-        const pid = parentId ?? null;
-        const children = await CollectionApi.listChildren(pid);
+        const children = await CollectionApi.listChildren(parentId);
 
-        if (pid === null) {
+        if (parentId == null) {
           this.collections = children;
         } else {
           this.collections = updateChildrenInTree(
             this.collections,
-            pid,
+            parentId,
             children
           );
         }
@@ -329,12 +328,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     },
 
     /* ------------------------ 북마크 ------------------------ */
-    async createBookmark(payload: {
-      collectionId: ID;
-      url: string;
-      title?: string;
-      description?: string;
-    }) {
+    async createBookmark(payload: BookmarkApi.BookmarkCreateReq) {
       setLoading(this.isLoading, "bookmarks", true);
       try {
         const created = await BookmarkApi.createBookmark(payload);
@@ -363,14 +357,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    async updateBookmark(
-      id: ID,
-      payload: {
-        url?: string;
-        title?: string | null;
-        description?: string | null;
-      }
-    ) {
+    async updateBookmark(id: ID, payload: BookmarkApi.BookmarkUpdateReq) {
       setLoading(this.isLoading, "bookmarks", true);
       try {
         const updated = await BookmarkApi.updateBookmark(id, payload);

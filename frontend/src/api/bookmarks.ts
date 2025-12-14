@@ -1,19 +1,23 @@
 import http from "@/api/http";
-import type { Bookmark, ID } from "@/types/common";
+import type { Bookmark, ID, ImageMode } from "@/types/common";
 import { BookmarkRes } from "./types";
 import { mapBookmarkRes } from "./mappers";
 
 export interface BookmarkCreateReq {
   collectionId: ID;
   url: string;
-  title?: string;
-  description?: string;
+  title?: string | null;
+  description?: string | null;
+  emoji?: string | null;
+  imageMode?: ImageMode;
 }
 
 export interface BookmarkUpdateReq {
   url?: string;
   title?: string | null;
   description?: string | null;
+  emoji?: string | null;
+  imageMode?: ImageMode;
 }
 
 export interface BookmarkMoveReq {
@@ -51,7 +55,7 @@ export async function deleteBookmark(id: ID): Promise<void> {
 /** 목록 */
 export async function listBookmarks(collectionId?: ID): Promise<Bookmark[]> {
   const { data } = await http.get<BookmarkRes[]>(`/bookmarks`, {
-    params: { collectionId },
+    params: collectionId == null ? {} : { collectionId },
   });
   return data.map(mapBookmarkRes);
 }
@@ -62,4 +66,23 @@ export async function moveBookmark(
   payload: BookmarkMoveReq
 ): Promise<void> {
   await http.patch(`/bookmarks/${id}/move`, payload);
+}
+
+/** 북마크 커버 업로드 */
+export async function uploadCover(id: ID, file: File): Promise<Bookmark> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data } = await http.post<BookmarkRes>(
+    `/bookmarks/${id}/cover`,
+    formData
+  );
+
+  return mapBookmarkRes(data);
+}
+
+/** 북마크 커버 삭제 */
+export async function removeCover(id: ID): Promise<Bookmark> {
+  const { data } = await http.delete<BookmarkRes>(`/bookmarks/${id}/cover`);
+  return mapBookmarkRes(data);
 }

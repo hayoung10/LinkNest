@@ -22,8 +22,8 @@ export type Provider = "GOOGLE" | "KAKAO" | "NAVER";
 
 export interface User {
   id: ID;
-  email: string;
-  name: string;
+  email: string | null;
+  name: string | null;
   profileImageUrl: string | null;
   role: Role;
   provider: Provider;
@@ -31,12 +31,20 @@ export interface User {
   updatedAt: ISODateTime;
 }
 
+export type ImageMode = "AUTO" | "CUSTOM" | "NONE";
+
 export interface Bookmark {
   id: ID;
   collectionId: ID;
   url: string;
-  title?: string | null;
-  description?: string | null;
+  title: string | null;
+  description: string | null;
+
+  emoji: string | null;
+  autoImageUrl: string | null;
+  customImageUrl: string | null;
+  imageMode: ImageMode;
+
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
 }
@@ -44,11 +52,13 @@ export interface Bookmark {
 export interface Collection {
   id: ID;
   name: string;
-  icon?: string | null;
-  parentId?: ID | null;
-  sortOrder?: number;
+  emoji: string | null;
+  parentId: ID | null;
+  sortOrder: number;
+
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
+
   bookmarkCount?: number;
   childCount?: number;
   children?: Collection[];
