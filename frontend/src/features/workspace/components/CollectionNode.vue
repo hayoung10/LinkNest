@@ -30,8 +30,18 @@
       </button>
       <span v-else class="inline-block w-5" aria-hidden="true"></span>
 
-      <!-- 폴더 아이콘 -->
-      <FolderIcon :size="16" class="size-4 text-muted-foreground opacity-80" />
+      <!-- 아이콘 (폴더 / 이모지) -->
+      <span
+        v-if="node.emoji"
+        class="size-4 grid place-items-center text-base leading-none"
+        aria-hidden="true"
+        >{{ node.emoji }}</span
+      >
+      <FolderIcon
+        v-else
+        :size="16"
+        class="size-4 text-muted-foreground opacity-80"
+      />
 
       <!-- 이름 -->
       <div class="flex-1 min-w-0">
