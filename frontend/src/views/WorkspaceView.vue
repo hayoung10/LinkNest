@@ -153,7 +153,7 @@ async function onAddCollection(payload: { name: string; parentId: ID | null }) {
   await workspace.createCollection({
     name: payload.name,
     parentId: payload.parentId,
-    icon: null,
+    emoji: null,
   });
 }
 
@@ -219,8 +219,8 @@ async function onAddBookmark(payload: {
   await workspace.createBookmark({
     collectionId: payload.collectionId,
     url: payload.url,
-    title: payload.title ?? undefined,
-    description: payload.description ?? undefined,
+    title: payload.title ?? null,
+    description: payload.description ?? null,
   });
   await workspace.fetchBookmarks(payload.collectionId);
   isAddOpen.value = false;
