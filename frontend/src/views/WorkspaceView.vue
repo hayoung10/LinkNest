@@ -6,6 +6,7 @@
       @add-collection="onAddCollection"
       @select-collection="onSelectCollection"
       @rename-collection="onRenameCollection"
+      @update-emoji="onUpdateCollectionEmoji"
       @delete-collection="onDeleteCollection"
       @open-all="onOpenAllBookmarks"
       @open-settings="onOpenSettings"
@@ -159,6 +160,13 @@ async function onAddCollection(payload: { name: string; parentId: ID | null }) {
 
 async function onRenameCollection(payload: { id: ID; newName: string }) {
   await workspace.updateCollection(payload.id, { name: payload.newName });
+}
+
+async function onUpdateCollectionEmoji(payload: {
+  id: ID;
+  emoji: string | null;
+}) {
+  await workspace.updateCollectionEmoji(payload.id, { emoji: payload.emoji });
 }
 
 async function onDeleteCollection(id: ID) {
