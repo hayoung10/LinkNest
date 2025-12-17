@@ -49,6 +49,14 @@ public class CollectionController {
         return ResponseEntity.ok(res);
     }
 
+    @PatchMapping("/{id}/emoji")
+    public ResponseEntity<CollectionRes> updateEmoji(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                     @PathVariable @Min(1) Long id,
+                                                     @RequestBody @Valid CollectionEmojiUpdateReq req) {
+        CollectionRes res = service.updateEmoji(userId, id, req);
+        return ResponseEntity.ok(res);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@AuthenticationPrincipal(expression = "id") Long userId,
                                        @PathVariable @Min(1) Long id) {

@@ -2,6 +2,7 @@ package com.linknest.backend.collection;
 
 import com.linknest.backend.bookmark.BookmarkRepository;
 import com.linknest.backend.collection.dto.CollectionCreateReq;
+import com.linknest.backend.collection.dto.CollectionEmojiUpdateReq;
 import com.linknest.backend.collection.dto.CollectionRes;
 import com.linknest.backend.collection.dto.CollectionUpdateReq;
 import com.linknest.backend.common.exception.BusinessException;
@@ -52,6 +53,18 @@ public class CollectionService {
     public CollectionRes update(Long userId, Long id, CollectionUpdateReq req) {
         Collection collection = requireOwnedCollection(userId, id);
         mapper.updateFromDto(req, collection);
+        return mapper.toRes(collection);
+    }
+
+    // ---------- 이모지 수정 ----------
+    @Transactional
+    public CollectionRes updateEmoji(Long userId, Long id, CollectionEmojiUpdateReq req) {
+        Collection collection = requireOwnedCollection(userId, id);
+
+        String next = req.emoji();
+        if(next != null && next.isBlank()) next = null;
+
+        collection.setEmoji(next);
         return mapper.toRes(collection);
     }
 
