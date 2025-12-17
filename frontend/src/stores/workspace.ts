@@ -225,16 +225,30 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    async updateCollection(
-      id: ID,
-      payload: { name?: string; emoji?: string | null }
-    ) {
+    async updateCollection(id: ID, payload: { name?: string }) {
       setLoading(this.isLoading, "collections", true);
       try {
         const updated = await CollectionApi.updateCollection(id, payload);
         this.collections = updateNodeInTree(this.collections, id, updated);
       } catch (e) {
         fail(this.error, "collections", e, "컬렉션 수정에 실패했습니다.");
+      } finally {
+        setLoading(this.isLoading, "collections", false);
+      }
+    },
+
+    async updateCollectionEmoji(id: ID, payload: { emoji: string | null }) {
+      setLoading(this.isLoading, "collections", true);
+      try {
+        const updated = await CollectionApi.updateCollectionEmoji(id, payload);
+        this.collections = updateNodeInTree(this.collections, id, updated);
+      } catch (e) {
+        fail(
+          this.error,
+          "collections",
+          e,
+          "컬렉션 이모지 수정에 실패했습니다."
+        );
       } finally {
         setLoading(this.isLoading, "collections", false);
       }
