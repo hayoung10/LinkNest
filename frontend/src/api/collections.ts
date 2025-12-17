@@ -11,7 +11,6 @@ export interface CollectionCreateReq {
 
 export interface CollectionUpdateReq {
   name?: string;
-  emoji?: string | null;
 }
 
 export interface CollectionMoveReq {
@@ -20,6 +19,10 @@ export interface CollectionMoveReq {
 
 export interface CollectionReorderReq {
   newOrder: number;
+}
+
+export interface CollectionEmojiUpdateReq {
+  emoji: string | null;
 }
 
 /** 생성 */
@@ -47,6 +50,19 @@ export async function updateCollection(
   );
 
   // 북마크(children)는 호출부에서 기존 상태 유지
+  return mapCollectionRes(data);
+}
+
+/** 이모지 수정 */
+export async function updateCollectionEmoji(
+  id: ID,
+  payload: CollectionEmojiUpdateReq
+): Promise<Collection> {
+  const { data } = await http.patch<CollectionRes>(
+    `/collections/${id}/emoji`,
+    payload
+  );
+
   return mapCollectionRes(data);
 }
 

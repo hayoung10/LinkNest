@@ -39,6 +39,35 @@
 
         <div class="divider" />
 
+        <!-- Emoji 섹션 -->
+        <button
+          ref="emojiTriggerEl"
+          class="menu-item"
+          role="menuitem"
+          @click.stop="openEmojiPicker"
+        >
+          <span
+            class="menu-icon grid place-items-center text-base leading-none"
+          >
+            {{ collection.emoji ?? "😊" }}
+          </span>
+          {{ collection.emoji ? "이모지 변경하기" : "이모지 추가하기" }}
+        </button>
+
+        <button
+          v-if="collection.emoji"
+          class="menu-item"
+          role="menuitem"
+          @click="removeEmoji"
+        >
+          <span class="menu-icon grid place-items-center text-base leading-none"
+            >✖️</span
+          >
+          이모지 제거하기
+        </button>
+
+        <div class="divider" />
+
         <button
           class="menu-item"
           role="menuitem"
@@ -71,6 +100,25 @@
           <TrashIcon class="menu-icon" :stroke-width="1" />
           삭제
         </button>
+      </div>
+    </teleport>
+
+    <!-- 이모지 picker popover -->
+    <teleport to="#modals">
+      <div
+        v-if="emojiPickerOpen"
+        class="fixed inset-0 z-[200]"
+        tabindex="-1"
+        @keydown.esc.prevent.stop="closeEmojiPicker(true)"
+      >
+        <div class="absolute inset-0" @click="closeEmojiPicker(false)" />
+        <div
+          :style="emojiPickerStyle"
+          class="absolute w-[360px] rounded-xl border border-border bg-card shadow-lg p-2"
+          @click.stop
+        >
+          <EmojiPicker @select="onEmojiSelected" />
+        </div>
       </div>
     </teleport>
 
@@ -125,6 +173,8 @@ import type { Collection, ID } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import TrashIcon from "@/components/icons/TrashIcon.vue";
 import EditIcon from "@/components/icons/EditIcon.vue";
+import EmojiPicker from "vue3-emoji-picker";
+import "vue3-emoji-picker/css";
 
 const props = defineProps<{
   collection: Collection;
@@ -134,13 +184,13 @@ const emit = defineEmits<{
   (e: "add-collection", id: ID): void;
   (e: "start-rename", payload: { id: ID; name: string }): void;
   (e: "delete", id: ID): void;
+  (e: "update-emoji", payload: { id: ID; emoji: string | null }): void;
 }>();
 
 // 상태
 const menuOpen = ref(false);
 const triggerEl = ref<HTMLElement | null>(null);
 const firstItemRef = ref<HTMLElement | null>(null);
-const showDeleteDialog = ref(false);
 
 const panelId = `collection-menu-${props.collection.id}`;
 const pos = ref({ top: 0, left: 0 });
@@ -154,6 +204,21 @@ const panelStyle = computed<CSSProperties>(() => ({
   width: `${panelWidth}px`,
   zIndex: 60,
   transform: "translateZ(0)",
+}));
+
+const showDeleteDialog = ref(false);
+
+const emojiPickerOpen = ref(false);
+const emojiTriggerEl = ref<HTMLElement | null>(null);
+const emojiPos = ref({ top: 0, left: 0 });
+const emojiPickerWidth = 360;
+const emojiGap = 8;
+
+const emojiPickerStyle = computed<CSSProperties>(() => ({
+  position: "fixed",
+  top: `${emojiPos.value.top}px`,
+  left: `${emojiPos.value.left}px`,
+  zIndex: 70,
 }));
 
 function updatePosition() {
@@ -191,9 +256,7 @@ function closeMenu(returnFocus = true) {
   menuOpen.value = false;
   document.removeEventListener("click", onDocClick, { capture: true });
 
-  if (returnFocus) {
-    requestAnimationFrame(() => triggerEl.value?.focus());
-  }
+  if (returnFocus) requestAnimationFrame(() => triggerEl.value?.focus());
 }
 function toggleMenu() {
   menuOpen.value ? closeMenu() : openMenu();
@@ -208,8 +271,62 @@ function onDocClick(e: MouseEvent) {
   closeMenu();
 }
 
+// emoji picker 함수
+function updateEmojiPickerPosition() {
+  const t = emojiTriggerEl.value?.getBoundingClientRect();
+  if (!t) return;
+
+  const left = Math.min(
+    Math.max(t.left, 8),
+    window.innerWidth - emojiPickerWidth - 8
+  );
+
+  emojiPos.value = {
+    top: Math.round(t.bottom + emojiGap),
+    left: Math.round(left),
+  };
+}
+function onEmojiViewportChange(_e: Event) {
+  if (!emojiPickerOpen.value) return;
+  updateEmojiPickerPosition();
+}
+function openEmojiPicker() {
+  closeMenu(false);
+  emojiPickerOpen.value = true;
+
+  nextTick(() => updateEmojiPickerPosition());
+
+  window.addEventListener("scroll", onEmojiViewportChange, true);
+  window.addEventListener("resize", onEmojiViewportChange);
+}
+function closeEmojiPicker(returnFocus = false) {
+  if (!emojiPickerOpen.value) return;
+  emojiPickerOpen.value = false;
+
+  window.removeEventListener("scroll", onEmojiViewportChange, true);
+  window.removeEventListener("resize", onEmojiViewportChange);
+
+  if (returnFocus) {
+    requestAnimationFrame(() => emojiTriggerEl.value?.focus());
+  }
+}
+function removeEmoji() {
+  emit("update-emoji", { id: props.collection.id, emoji: null });
+  closeMenu(false);
+}
+function onEmojiSelected(emoji: any) {
+  const picked = emoji?.i ?? null;
+  if (!picked) return;
+
+  emit("update-emoji", { id: props.collection.id, emoji: picked });
+  closeEmojiPicker(false);
+  closeMenu(false);
+}
+
 onBeforeUnmount(() => {
   document.removeEventListener("click", onDocClick, { capture: true });
+  window.removeEventListener("scroll", onEmojiViewportChange, true);
+  window.removeEventListener("resize", onEmojiViewportChange);
 });
 
 function emitAndClose(e: "open-all" | "add-collection", id: ID) {

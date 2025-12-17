@@ -30,8 +30,20 @@
       </button>
       <span v-else class="inline-block w-5" aria-hidden="true"></span>
 
-      <!-- 폴더 아이콘 -->
-      <FolderIcon :size="16" class="size-4 text-muted-foreground opacity-80" />
+      <!-- 아이콘 (폴더 / 이모지) -->
+      <span class="inline-flex size-5 items-center justify-center">
+        <span
+          v-if="node.emoji"
+          class="text-base leading-none"
+          aria-hidden="true"
+          >{{ node.emoji }}</span
+        >
+        <FolderIcon
+          v-else
+          :size="16"
+          class="size-4 text-muted-foreground opacity-80"
+        />
+      </span>
 
       <!-- 이름 -->
       <div class="flex-1 min-w-0">
@@ -77,6 +89,7 @@
           @open-all="$emit('open-all', $event)"
           @add-collection="$emit('add-collection', $event)"
           @start-rename="$emit('start-rename', $event)"
+          @update-emoji="$emit('update-emoji', $event)"
           @delete="$emit('delete-collection', node.id)"
         />
       </div>
@@ -101,6 +114,7 @@
           @add-collection="$emit('add-collection', $event)"
           @open-all="$emit('open-all', $event)"
           @select-collection="$emit('select-collection', $event)"
+          @update-emoji="$emit('update-emoji', $event)"
           @delete-collection="$emit('delete-collection', $event)"
           @start-rename="$emit('start-rename', $event)"
           @input-rename="$emit('input-rename', $event)"
@@ -152,6 +166,8 @@ const emit = defineEmits<{
   (e: "open-all", id: ID): void;
   (e: "select-collection", c: Collection): void;
   (e: "delete-collection", id: ID): void;
+
+  (e: "update-emoji", payload: { id: ID; emoji: string | null }): void;
 
   // 이름 변경 이벤트
   (e: "start-rename", payload: { id: ID; name: string }): void;

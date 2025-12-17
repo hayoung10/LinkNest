@@ -48,6 +48,7 @@
           @add-collection="openAddCollectionDialog"
           @open-all="$emit('open-all', $event)"
           @select-collection="handleSelectCollection"
+          @update-emoji="$emit('update-emoji', $event)"
           @delete-collection="$emit('delete-collection', $event)"
           @start-rename="startRename"
           @input-rename="changeDraft"
@@ -142,6 +143,7 @@ const emit = defineEmits<{
   (e: "select-collection", c: Collection): void;
   (e: "add-collection", payload: { name: string; parentId: ID | null }): void;
   (e: "rename-collection", p: { id: ID; newName: string }): void;
+  (e: "update-emoji", payload: { id: ID; emoji: string | null }): void;
   (e: "delete-collection", id: ID): void;
   (e: "open-all", id: ID): void;
   (e: "open-settings"): void;

@@ -6,6 +6,7 @@
       @add-collection="onAddCollection"
       @select-collection="onSelectCollection"
       @rename-collection="onRenameCollection"
+      @update-emoji="onUpdateCollectionEmoji"
       @delete-collection="onDeleteCollection"
       @open-all="onOpenAllBookmarks"
       @open-settings="onOpenSettings"
@@ -153,12 +154,19 @@ async function onAddCollection(payload: { name: string; parentId: ID | null }) {
   await workspace.createCollection({
     name: payload.name,
     parentId: payload.parentId,
-    icon: null,
+    emoji: null,
   });
 }
 
 async function onRenameCollection(payload: { id: ID; newName: string }) {
   await workspace.updateCollection(payload.id, { name: payload.newName });
+}
+
+async function onUpdateCollectionEmoji(payload: {
+  id: ID;
+  emoji: string | null;
+}) {
+  await workspace.updateCollectionEmoji(payload.id, { emoji: payload.emoji });
 }
 
 async function onDeleteCollection(id: ID) {
@@ -219,8 +227,8 @@ async function onAddBookmark(payload: {
   await workspace.createBookmark({
     collectionId: payload.collectionId,
     url: payload.url,
-    title: payload.title ?? undefined,
-    description: payload.description ?? undefined,
+    title: payload.title ?? null,
+    description: payload.description ?? null,
   });
   await workspace.fetchBookmarks(payload.collectionId);
   isAddOpen.value = false;

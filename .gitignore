@@ -57,3 +57,4 @@ frontend/*.tsbuildinfo
 
 # VSCode
 frontend/.vscode/
+frontend/.history/
