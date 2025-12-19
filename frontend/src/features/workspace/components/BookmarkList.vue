@@ -78,6 +78,21 @@
                   :title="displayTitle(b)"
                 >
                   <div class="text-sm font-semibold flex items-center gap-2">
+                    <!-- emoji -->
+                    <span
+                      class="shrink-0 inline-flex items-center justify-center size-5 rounded"
+                      :class="
+                        b.emoji
+                          ? 'text-base'
+                          : 'text-zinc-400/70 dark:text-zinc-500/70'
+                      "
+                      aria-hidden="true"
+                    >
+                      <template v-if="b.emoji">{{ b.emoji }}</template>
+                      <template v-else>•</template></span
+                    >
+
+                    <!-- 제목 -->
                     <span
                       class="truncate"
                       :class="

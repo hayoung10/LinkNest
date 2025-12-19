@@ -107,6 +107,7 @@ type UpdateBookmarkPayload = {
   title?: string | null;
   url: string;
   description?: string | null;
+  emoji?: string | null;
 };
 
 const workspace = useWorkspaceStore();
@@ -222,6 +223,7 @@ async function onAddBookmark(payload: {
   title?: string | null;
   url: string;
   description?: string | null;
+  emoji?: string | null;
   collectionId: ID;
 }) {
   await workspace.createBookmark({
@@ -229,6 +231,7 @@ async function onAddBookmark(payload: {
     url: payload.url,
     title: payload.title ?? null,
     description: payload.description ?? null,
+    emoji: payload.emoji ?? null,
   });
   await workspace.fetchBookmarks(payload.collectionId);
   isAddOpen.value = false;
@@ -239,6 +242,7 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
     url: payload.url,
     title: payload.title,
     description: payload.description,
+    emoji: payload.emoji ?? null,
   });
 
   // 패널 업데이트
