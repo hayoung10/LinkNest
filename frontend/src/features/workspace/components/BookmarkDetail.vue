@@ -73,6 +73,60 @@
     <div class="flex-1 overflow-auto px-5 py-4 space-y-6">
       <!-- 제목 -->
       <div class="space-y-2">
+        <!-- 이모지 -->
+        <div
+          v-if="isEditing || currentBookmark.emoji"
+          class="relative flex items-end gap-2"
+        >
+          <button
+            ref="emojiTriggerEl"
+            type="button"
+            :class="[
+              'relative flex items-center justify-center size-9 rounded-md transition-colors',
+              isEditing && currentBookmark.emoji
+                ? 'hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer'
+                : 'cursor-default',
+            ]"
+            @click="onEmojiStateClick"
+            :aria-label="currentBookmark.emoji ? '이모지 변경' : '이모지 상태'"
+            title="이모지"
+          >
+            <span v-if="currentBookmark.emoji" class="text-2xl leading-none">{{
+              currentBookmark.emoji
+            }}</span>
+            <span v-else class="text-lg leading-none opacity-20">+</span>
+          </button>
+
+          <template v-if="isEditing">
+            <button
+              v-if="!currentBookmark.emoji"
+              type="button"
+              class="mb-0.5 rounded-md px-2 py-1 text-xs leading-none text-muted-foreground/60 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-foreground transition-colors"
+              @click="toggleEmojiPicker"
+            >
+              이모지 추가
+            </button>
+
+            <button
+              v-else
+              type="button"
+              class="mb-0.5 rounded-md px-2 py-1 text-xs leading-none text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+              @click="removeEmoji"
+            >
+              이모지 제거
+            </button>
+          </template>
+
+          <!-- EmojiPicker popover -->
+          <div
+            v-if="emojiPickerOpen"
+            ref="emojiPopoverRef"
+            class="absolute left-0 top-full mt-2 z-50"
+          >
+            <EmojiPicker :native="true" @select="onEmojiSelected" />
+          </div>
+        </div>
+
         <template v-if="isEditing">
           <input
             ref="titleRef"
@@ -219,13 +273,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import type { Bookmark, ID } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import TrashIcon from "@/components/icons/TrashIcon.vue";
 import SaveIcon from "@/components/icons/SaveIcon.vue";
 import CloseIcon from "@/components/icons/CloseIcon.vue";
 import EditIcon from "@/components/icons/EditIcon.vue";
+import EmojiPicker from "vue3-emoji-picker";
+import "vue3-emoji-picker/css";
 
 const props = defineProps<{
   bookmark: Bookmark;
@@ -241,6 +297,7 @@ const emit = defineEmits<{
       title?: string | null;
       url: string;
       description?: string | null;
+      emoji?: string | null;
     }
   ): void;
   (e: "delete-bookmark", id: ID): void;
@@ -261,6 +318,10 @@ const currentBookmark = computed<Bookmark>(
 
 const hasTitle = computed(() => !!props.bookmark.title?.trim());
 const hasDescription = computed(() => !!props.bookmark.description?.trim());
+
+const emojiPickerOpen = ref(false);
+const emojiPopoverRef = ref<HTMLElement | null>(null);
+const emojiTriggerEl = ref<HTMLElement | null>(null);
 
 const isUrlValid = computed(() => {
   const v = (editedBookmark.value?.url ?? "").trim();
@@ -293,10 +354,12 @@ function focusTitle() {
 function handleEdit() {
   editedBookmark.value = { ...props.bookmark };
   isEditing.value = true;
+  closeEmojiPicker();
 }
 function handleCancel() {
   editedBookmark.value = null;
   isEditing.value = false;
+  closeEmojiPicker();
 }
 function handleSave() {
   if (!canSave.value || !editedBookmark.value) return;
@@ -305,6 +368,7 @@ function handleSave() {
     title: normalize(editedBookmark.value.title),
     url: editedBookmark.value.url.trim(),
     description: normalize(editedBookmark.value.description),
+    emoji: editedBookmark.value.emoji ?? null,
   });
   isEditing.value = false;
 }
@@ -316,6 +380,61 @@ function openUrl() {
   const url = currentBookmark.value?.url;
   if (url) window.open(url, "_blank", "noopener,noreferrer");
 }
+
+// emoji picker 함수
+function closeEmojiPicker() {
+  emojiPickerOpen.value = false;
+}
+function toggleEmojiPicker() {
+  if (!isEditing.value) return;
+  emojiPickerOpen.value = !emojiPickerOpen.value;
+}
+function onEmojiStateClick() {
+  if (!isEditing.value) return;
+  if (!currentBookmark.value.emoji) return;
+  toggleEmojiPicker();
+}
+function onEmojiSelected(emoji: any) {
+  const picked = emoji?.i ?? null;
+  if (!picked) return;
+  if (!editedBookmark.value) return;
+
+  editedBookmark.value.emoji = picked;
+  closeEmojiPicker();
+}
+function removeEmoji() {
+  if (!editedBookmark.value) return;
+  editedBookmark.value.emoji = null;
+  closeEmojiPicker();
+}
+
+function onDocPointerDown(e: PointerEvent) {
+  if (!emojiPickerOpen.value) return;
+
+  const target = e.target as Node | null;
+  if (!target) return;
+
+  if (emojiPopoverRef.value?.contains(target)) return;
+  if (emojiTriggerEl.value?.contains(target)) return;
+
+  closeEmojiPicker();
+}
+function onDocKeyDown(e: KeyboardEvent) {
+  if (!emojiPickerOpen.value) return;
+  if (e.key === "Escape") {
+    e.preventDefault();
+    closeEmojiPicker();
+  }
+}
+
+onMounted(() => {
+  document.addEventListener("pointerdown", onDocPointerDown, true);
+  document.addEventListener("keydown", onDocKeyDown);
+});
+onUnmounted(() => {
+  document.removeEventListener("pointerdown", onDocPointerDown, true);
+  document.removeEventListener("keydown", onDocKeyDown);
+});
 
 watch(showDeleteDialog, async (open) => {
   if (open) {
