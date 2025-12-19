@@ -76,14 +76,22 @@
               <!-- 카드 상단: 제목 -->
               <div class="px-4 pt-3 pb-2">
                 <h3
-                  class="text-sm font-semibold leading-snug line-clamp-1"
+                  class="text-sm font-semibold leading-snug line-clamp-1 flex items-center gap-2"
                   :class="
                     hasTitle(b)
                       ? 'text-foreground'
                       : 'text-neutral-400 dark:text-neutral-500'
                   "
                 >
-                  {{ displayTitle(b) }}
+                  <span
+                    v-if="b.emoji"
+                    class="text-base leading-none shrink-0"
+                    aria-hidden="true"
+                    >{{ b.emoji }}</span
+                  >
+                  <span class="min-w-0 truncate">
+                    {{ displayTitle(b) }}
+                  </span>
                 </h3>
 
                 <p
