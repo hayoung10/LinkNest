@@ -71,14 +71,29 @@ public class BookmarkService {
     @Transactional
     public BookmarkRes update(Long userId, Long id, BookmarkUpdateReq req) {
         Bookmark bookmark = requireOwnedBookmark(userId, id);
+
+        String beforeUrl = bookmark.getUrl();
+        ImageMode beforeMode = bookmark.getImageMode();
+
         mapper.updateFromDto(req, bookmark);
 
-        if(bookmark.getImageMode() == ImageMode.NONE) {
+        if(bookmark.getUrl() == null || bookmark.getUrl().isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_BOOKMARK_URL);
+        }
+
+        ImageMode imageMode = bookmark.getImageMode();
+        if(imageMode == null) {
+            imageMode = (beforeMode != null) ? beforeMode : ImageMode.NONE;
+            bookmark.setImageMode(imageMode);
+        }
+
+        if(imageMode == ImageMode.NONE) {
             bookmark.setAutoImageUrl(null);
             bookmark.setCustomImageUrl(null);
-        } else if(bookmark.getImageMode() == ImageMode.AUTO) {
+        } else if(imageMode == ImageMode.AUTO) {
             bookmark.setCustomImageUrl(null);
-            if(bookmark.getAutoImageUrl() == null) {
+
+            if(bookmark.getAutoImageUrl() == null || !beforeUrl.equals(bookmark.getUrl())) {
                 bookmark.setAutoImageUrl(previewService.extractAutoImageUrl(bookmark.getUrl()).orElse(null));
             }
         }

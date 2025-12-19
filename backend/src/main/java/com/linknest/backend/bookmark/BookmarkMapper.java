@@ -12,7 +12,6 @@ public interface BookmarkMapper {
     Bookmark toEntity(BookmarkCreateReq createReq);
 
     // UpdateReq -> Entity
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL)
     void updateFromDto(BookmarkUpdateReq updateReq, @MappingTarget Bookmark target);
 
     // Entity -> Res
