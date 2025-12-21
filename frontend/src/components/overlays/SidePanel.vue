@@ -1,6 +1,6 @@
 <template>
   <teleport :to="teleportTo">
-    <transition name="slide" @after-enter="$emit('after-open')">
+    <transition name="fade" @after-enter="$emit('after-open')">
       <div
         v-if="open"
         class="fixed inset-0"
@@ -110,9 +110,6 @@ watch(
     if (o) {
       // 패널 포커스
       await nextTick();
-      requestAnimationFrame(() => {
-        emit("after-open");
-      });
       window.addEventListener("keydown", onKeydown);
     } else {
       window.removeEventListener("keydown", onKeydown);
