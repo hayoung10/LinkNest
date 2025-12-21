@@ -77,52 +77,96 @@
                   @click="onSelect(b)"
                   :title="displayTitle(b)"
                 >
-                  <div class="text-sm font-semibold flex items-center gap-2">
-                    <!-- emoji -->
+                  <div class="flex items-stretch gap-4 px-3">
+                    <!-- 왼쪽: cover -->
                     <span
-                      class="shrink-0 inline-flex items-center justify-center size-5 rounded"
-                      :class="
-                        b.emoji
-                          ? 'text-base'
-                          : 'text-zinc-400/70 dark:text-zinc-500/70'
-                      "
+                      class="shrink-0 relative h-14 w-14 rounded-xl overflow-hidden border bg-zinc-200/70 dark:bg-zinc-800/70"
+                      :class="[
+                        isActive(b)
+                          ? 'border-blue-400/70 ring-2 ring-blue-300/60 dark:ring-blue-800/50'
+                          : 'border-border/60',
+                      ]"
                       aria-hidden="true"
                     >
-                      <template v-if="b.emoji">{{ b.emoji }}</template>
-                      <template v-else>•</template></span
-                    >
+                      <img
+                        v-if="coverUrl(b)"
+                        :src="coverUrl(b) ?? ''"
+                        alt=""
+                        class="h-full w-full object-cover"
+                        draggable="false"
+                      />
 
-                    <!-- 제목 -->
-                    <span
-                      class="truncate"
-                      :class="
-                        hasTitle(b)
-                          ? 'text-foreground'
-                          : 'text-neutral-400 dark:text-neutral-500'
-                      "
-                      >{{ displayTitle(b) }}</span
-                    >
+                      <span
+                        v-else-if="isAutoPending(b)"
+                        class="h-full w-full grid place-items-center text-zinc-500/70 dark:text-zinc-400/60"
+                        title="커버 이미지 가져오는 중"
+                      >
+                        <span
+                          class="inline-block size-2.5 rounded-full bg-zinc-400/60 animate-pulse"
+                      /></span>
 
-                    <!-- 링크 아이콘 -->
-                    <a
-                      :href="b.url"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
-                      aria-label="링크 새 탭에서 열기"
-                      @click.stop
-                    >
-                      <ExternalLinkIcon :size="16" />
-                    </a>
-                  </div>
-                  <div
-                    class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2"
-                  >
-                    <span class="truncate">{{ domain(b.url) }}</span>
-                    <span aria-hidden="true">·</span>
-                    <time :datetime="b.createdAt || ''">
-                      {{ formatDate(b.createdAt) }}
-                    </time>
+                      <span
+                        v-else
+                        class="h-full w-full grid place-items-center text-zinc-500/70 dark:text-zinc-400/60"
+                        title="커버 없음"
+                      >
+                        <BookmarkIcon :size="16" />
+                      </span>
+                    </span>
+
+                    <!-- 오른쪽: content -->
+                    <div class="min-w-0 flex-1 py-0.5">
+                      <div class="flex items-center gap-2">
+                        <!-- emoji -->
+                        <span
+                          class="shrink-0 inline-flex items-center justify-center size-5 rounded"
+                          :class="[
+                            b.emoji
+                              ? 'text-base'
+                              : 'text-zinc-400/70 dark:text-zinc-500/70',
+                            isActive(b) && !b.emoji
+                              ? 'text-zinc-600 dark:text-zinc-300'
+                              : '',
+                          ]"
+                          aria-hidden="true"
+                        >
+                          <template v-if="b.emoji">{{ b.emoji }}</template>
+                          <template v-else>•</template></span
+                        >
+
+                        <!-- 제목 -->
+                        <span
+                          class="min-w-0 flex-1 truncate text-sm font-semibold"
+                          :class="
+                            hasTitle(b)
+                              ? 'text-foreground'
+                              : 'text-neutral-400 dark:text-neutral-500'
+                          "
+                          >{{ displayTitle(b) }}</span
+                        >
+
+                        <!-- 링크 아이콘 -->
+                        <a
+                          :href="b.url"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="shrink-0 p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+                          aria-label="링크 새 탭에서 열기"
+                          @click.stop
+                        >
+                          <ExternalLinkIcon :size="16" />
+                        </a>
+                      </div>
+                      <div
+                        class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2"
+                      >
+                        <span class="truncate">{{ domain(b.url) }}</span>
+                        <span aria-hidden="true">·</span>
+                        <time :datetime="b.createdAt || ''">
+                          {{ formatDate(b.createdAt) }}
+                        </time>
+                      </div>
+                    </div>
                   </div>
                 </button>
               </li>
@@ -174,6 +218,7 @@ import type { Bookmark, Collection, ID } from "@/types/common";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
+import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 
@@ -227,6 +272,16 @@ function formatDate(iso?: string): string {
   } catch {
     return "-";
   }
+}
+
+function coverUrl(b: Bookmark): string | null {
+  if (b.imageMode === "CUSTOM") return b.customImageUrl ?? null;
+  if (b.imageMode === "AUTO") return b.autoImageUrl ?? null;
+  return null;
+}
+
+function isAutoPending(b: Bookmark): boolean {
+  return b.imageMode === "AUTO" && !b.autoImageUrl;
 }
 
 function onSelect(b: Bookmark) {
