@@ -50,6 +50,7 @@
           @close="selectedBookmarkId = null"
           @update-bookmark="onUpdateBookmark"
           @delete-bookmark="onDeleteBookmark"
+          @replace-bookmark="onReplaceBookmark"
         />
       </SidePanel>
 
@@ -264,6 +265,10 @@ async function onDeleteBookmark(id: ID) {
   }
 
   selectedBookmarkId.value = null;
+}
+
+function onReplaceBookmark(updated: Bookmark) {
+  workspace.replaceBookmark(updated);
 }
 
 function onOpenSettings() {

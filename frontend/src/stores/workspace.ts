@@ -431,5 +431,10 @@ export const useWorkspaceStore = defineStore("workspace", {
         setLoading(this.isLoading, "bookmarks", false);
       }
     },
+
+    replaceBookmark(updated: Bookmark) {
+      const idx = this.bookmarks.findIndex((b) => b.id === updated.id);
+      if (idx >= 0) this.bookmarks.splice(idx, 1, updated);
+    },
   },
 });
