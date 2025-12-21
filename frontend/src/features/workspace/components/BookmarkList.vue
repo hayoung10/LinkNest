@@ -184,7 +184,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "open-add"): void;
-  (e: "select-bookmark", bookmark: Bookmark): void;
+  (e: "select-bookmark", id: ID): void;
 }>();
 
 const workspace = useWorkspaceStore();
@@ -230,7 +230,7 @@ function formatDate(iso?: string): string {
 }
 
 function onSelect(b: Bookmark) {
-  emit("select-bookmark", b);
+  emit("select-bookmark", b.id);
 }
 </script>
 

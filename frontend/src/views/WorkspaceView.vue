@@ -20,7 +20,7 @@
         v-if="isListLayout"
         :key="'list-' + (selectedCollection?.id || 'none')"
         :collection="selectedCollection"
-        :selected-bookmark-id="selectedBookmark?.id ?? null"
+        :selected-bookmark-id="selectedBookmarkId"
         @open-add="isAddOpen = true"
         @select-bookmark="onSelectBookmark"
       />
@@ -29,25 +29,25 @@
         v-else
         :key="'card-' + (selectedCollection?.id || 'none')"
         :collection="selectedCollection"
-        :selected-bookmark-id="selectedBookmark?.id ?? null"
+        :selected-bookmark-id="selectedBookmarkId"
         @open-add="isAddOpen = true"
         @select-bookmark="onSelectBookmark"
       />
 
       <!-- 북마크 상세 패널 -->
       <SidePanel
-        :open="!!selectedBookmark"
+        :open="selectedBookmarkId != null"
         width="min(640px, 92vw)"
         side="right"
         @after-open="editRef?.focusTitle()"
-        @close="selectedBookmark = null"
+        @close="selectedBookmarkId = null"
       >
         <BookmarkDetail
           v-if="selectedBookmark"
           ref="editRef"
           :bookmark="selectedBookmark"
           :collection-name="selectedCollection?.name"
-          @close="selectedBookmark = null"
+          @close="selectedBookmarkId = null"
           @update-bookmark="onUpdateBookmark"
           @delete-bookmark="onDeleteBookmark"
         />
@@ -94,7 +94,7 @@ import {
 } from "@/features/workspace";
 import { Settings } from "@/features/settings";
 import SidePanel from "@/components/overlays/SidePanel.vue";
-import type { Bookmark, Collection, ID } from "@/types/common";
+import type { Bookmark, Collection, ID, ImageMode } from "@/types/common";
 import { useWorkspaceStore } from "@/stores/workspace";
 import * as BookmarkApi from "@/api/bookmarks";
 import { storeToRefs } from "pinia";
@@ -128,7 +128,11 @@ const selectedCollection = computed<Collection | null>(() => {
 
 const isListLayout = computed(() => defaultLayout.value === "LIST");
 
-const selectedBookmark = ref<Bookmark | null>(null);
+const selectedBookmarkId = ref<ID | null>(null);
+const selectedBookmark = computed(() => {
+  if (!selectedBookmarkId.value) return null;
+  return bookmarks.value.find((b) => b.id === selectedBookmarkId.value) ?? null;
+});
 
 const isAddOpen = ref(false);
 const isSettingsOpen = ref(false);
@@ -144,7 +148,7 @@ onMounted(() => {
 async function onSelectCollection(c: Collection) {
   workspace.selectCollection(c.id);
 
-  selectedBookmark.value = null;
+  selectedBookmarkId.value = null;
   isAddOpen.value = false;
   isSettingsOpen.value = false;
 
@@ -176,7 +180,7 @@ async function onDeleteCollection(id: ID) {
   if (selectedCollectionId.value === id) {
     workspace.selectCollection(null);
 
-    selectedBookmark.value = null;
+    selectedBookmarkId.value = null;
     await workspace.fetchBookmarks();
   }
 }
@@ -214,8 +218,8 @@ async function onOpenAllBookmarks(collectionId: ID) {
   }
 }
 
-function onSelectBookmark(b: Bookmark) {
-  selectedBookmark.value = b;
+function onSelectBookmark(id: ID) {
+  selectedBookmarkId.value = id;
   isSettingsOpen.value = false;
 }
 
@@ -224,6 +228,7 @@ async function onAddBookmark(payload: {
   url: string;
   description?: string | null;
   emoji?: string | null;
+  imageMode?: ImageMode;
   collectionId: ID;
 }) {
   await workspace.createBookmark({
@@ -232,6 +237,7 @@ async function onAddBookmark(payload: {
     title: payload.title ?? null,
     description: payload.description ?? null,
     emoji: payload.emoji ?? null,
+    imageMode: payload.imageMode ?? "AUTO",
   });
   await workspace.fetchBookmarks(payload.collectionId);
   isAddOpen.value = false;
@@ -245,12 +251,6 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
     emoji: payload.emoji ?? null,
   });
 
-  // 패널 업데이트
-  const updated = workspace.bookmarks.find((b) => b.id === payload.id);
-  if (updated) {
-    selectedBookmark.value = updated;
-  }
-
   if (selectedCollection.value?.id != null) {
     await workspace.fetchBookmarks(selectedCollection.value.id);
   }
@@ -263,12 +263,12 @@ async function onDeleteBookmark(id: ID) {
     await workspace.fetchBookmarks(selectedCollection.value.id);
   }
 
-  selectedBookmark.value = null;
+  selectedBookmarkId.value = null;
 }
 
 function onOpenSettings() {
   isAddOpen.value = false;
-  selectedBookmark.value = null;
+  selectedBookmarkId.value = null;
   isSettingsOpen.value = true;
 }
 

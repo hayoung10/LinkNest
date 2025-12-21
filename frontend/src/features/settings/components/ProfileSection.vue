@@ -221,19 +221,14 @@ const avatar = computed(() => {
   return n ? n[0] : "U";
 });
 
-onMounted(() => {
-  if (auth.user) {
-    editableName.value = auth.user.name;
-  }
-});
-
 watch(
   () => auth.user?.name,
   (newName) => {
     if (newName && !isSavingName.value) {
-      editableName.value = newName;
+      editableName.value = newName ?? "";
     }
-  }
+  },
+  { immediate: true }
 );
 
 // 이름 변경 여부
