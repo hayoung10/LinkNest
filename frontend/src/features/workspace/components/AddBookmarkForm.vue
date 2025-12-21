@@ -96,6 +96,38 @@
           placeholder="https://example.com"
           :aria-invalid="!isUrlValid"
         />
+
+        <!-- 커버 이미지 토글 -->
+        <div class="flex items-center justify-between mt-2">
+          <label
+            for="auto-cover"
+            class="text-sm text-neutral-500 dark:text-neutral-400 select-none cursor-pointer"
+          >
+            커버 이미지 자동 가져오기
+          </label>
+
+          <button
+            id="auto-cover"
+            type="button"
+            role="switch"
+            :aria-checked="form.imageMode === 'AUTO'"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+            :class="
+              form.imageMode === 'AUTO'
+                ? 'bg-neutral-900 dark:bg-neutral-100'
+                : 'bg-zinc-300 dark:bg-zinc-700'
+            "
+            @click="toggleAutoCover"
+          >
+            <span
+              class="inline-block h-5 w-5 transform rounded-full bg-white dark:bg-zinc-900 transition-transform"
+              :class="
+                form.imageMode === 'AUTO' ? 'translate-x-5' : 'translate-x-1'
+              "
+            />
+          </button>
+        </div>
+
         <p v-if="form.url && !isUrlValid" class="text-xs text-red-500 mt-1">
           올바른 URL 형식이 아닙니다.
         </p>
@@ -142,7 +174,7 @@
 <script setup lang="ts">
 import CloseIcon from "@/components/icons/CloseIcon.vue";
 import SaveIcon from "@/components/icons/SaveIcon.vue";
-import type { ID } from "@/types/common";
+import type { ID, ImageMode } from "@/types/common";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css";
@@ -161,6 +193,7 @@ const emit = defineEmits<{
       url: string;
       description?: string | null;
       emoji?: string | null;
+      imageMode?: ImageMode;
       collectionId: ID;
     }
   ): void;
@@ -173,6 +206,7 @@ const form = ref({
   url: "",
   description: "",
   emoji: null as string | null,
+  imageMode: "AUTO" as ImageMode,
 });
 
 const titleRef = ref<HTMLInputElement | null>(null);
@@ -180,10 +214,6 @@ const uid = Math.random().toString(36).slice(2);
 const titleId = `add-bm-title-${uid}`;
 const urlId = `add-bm-url-${uid}`;
 const descId = `add-bm-desc-${uid}`;
-
-const emojiPickerOpen = ref(false);
-const emojiPopoverRef = ref<HTMLElement | null>(null);
-const emojiTriggerEl = ref<HTMLElement | null>(null);
 
 const isUrlValid = computed(() => {
   const v = (form.value.url ?? "").trim();
@@ -207,7 +237,13 @@ function focusTitle() {
   titleRef.value?.focus();
 }
 function resetForm() {
-  form.value = { title: "", url: "", description: "", emoji: null };
+  form.value = {
+    title: "",
+    url: "",
+    description: "",
+    emoji: null,
+    imageMode: "AUTO",
+  };
   emojiPickerOpen.value = false;
 }
 function handleClose() {
@@ -221,12 +257,22 @@ function handleSubmit() {
     url: form.value.url.trim(),
     description: normalize(form.value.description),
     emoji: form.value.emoji,
+    imageMode: form.value.imageMode,
     collectionId: props.collectionId,
   });
   resetForm();
 }
+function toggleAutoCover() {
+  form.value.imageMode = form.value.imageMode === "AUTO" ? "NONE" : "AUTO";
+}
 
-// emoji picker 함수
+// ------------------------
+// Emoji Picker
+// ------------------------
+const emojiPickerOpen = ref(false);
+const emojiPopoverRef = ref<HTMLElement | null>(null);
+const emojiTriggerEl = ref<HTMLElement | null>(null);
+
 function closeEmojiPicker() {
   emojiPickerOpen.value = false;
 }
@@ -268,6 +314,7 @@ function onDocKeyDown(e: KeyboardEvent) {
   }
 }
 
+// ------------------------
 onMounted(() => {
   document.addEventListener("pointerdown", onDocPointerDown, true);
   document.addEventListener("keydown", onDocKeyDown);

@@ -71,6 +71,109 @@
 
     <!-- 본문 -->
     <div class="flex-1 overflow-auto px-5 py-4 space-y-6">
+      <!-- 커버 이미지 -->
+      <section class="rounded-2xl border border-border/60 bg-muted/20 p-4">
+        <div class="flex items-start gap-4">
+          <!-- 좌: 미리보기 -->
+          <div class="shrink-0">
+            <div
+              class="relative h-20 w-20 rounded-xl overflow-hidden bg-zinc-200/70 dark:bg-zinc-800/70 border border-border/60"
+            >
+              <img
+                v-if="coverPreviewUrl"
+                :src="coverPreviewUrl"
+                alt="커버 이미지 미리보기"
+                class="h-full w-full object-cover"
+                draggable="false"
+              />
+              <div
+                v-else
+                class="h-full w-full grid place-items-center text-zinc-500/70 dark:text-zinc-400/60"
+              >
+                <span class="text-xs select-none"> 없음 </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 우: 설정 -->
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-sm font-semibold text-foreground">커버 이미지</p>
+
+              <!-- 모드 선택 -->
+              <div
+                class="shrink-0 inline-flex rounded-lg border border-border/60 bg-background overflow-hidden"
+              >
+                <button
+                  type="button"
+                  class="px-3 py-1.5 text-xs transition-colors"
+                  :class="
+                    currentBookmark.imageMode === 'AUTO'
+                      ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
+                      : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40'
+                  "
+                  @click="setCoverMode('AUTO')"
+                >
+                  AUTO
+                </button>
+                <button
+                  type="button"
+                  class="px-3 py-1.5 text-xs transition-colors border-l border-border/60"
+                  :class="
+                    hasCustomCover
+                      ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
+                      : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40'
+                  "
+                  @click="onClickChangeCover"
+                >
+                  CUSTOM
+                </button>
+                <button
+                  type="button"
+                  class="px-3 py-1.5 text-xs transition-colors border-l border-border/60"
+                  :class="
+                    currentBookmark.imageMode === 'NONE'
+                      ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
+                      : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40'
+                  "
+                  @click="setCoverMode('NONE')"
+                >
+                  NONE
+                </button>
+              </div>
+            </div>
+
+            <!-- 커스텀 업로드/삭제 -->
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                ref="coverInputRef"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="onCoverFileChange"
+              />
+              <template v-if="currentBookmark.imageMode === 'CUSTOM'">
+                <button
+                  type="button"
+                  class="inline-flex items-center h-9 px-3 rounded-md text-sm border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
+                  @click="onClickChangeCover"
+                >
+                  사진 변경
+                </button>
+                <button
+                  v-if="currentBookmark.customImageUrl"
+                  type="button"
+                  class="inline-flex items-center h-9 px-3 rounded-md text-sm text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
+                  @click="removeCustomCover"
+                >
+                  사진 삭제
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- 제목 -->
       <div class="space-y-2">
         <!-- 이모지 -->
@@ -274,7 +377,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import type { Bookmark, ID } from "@/types/common";
+import type { Bookmark, ID, ImageMode } from "@/types/common";
+import * as BookmarkApi from "@/api/bookmarks";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import TrashIcon from "@/components/icons/TrashIcon.vue";
 import SaveIcon from "@/components/icons/SaveIcon.vue";
@@ -301,6 +405,8 @@ const emit = defineEmits<{
     }
   ): void;
   (e: "delete-bookmark", id: ID): void;
+
+  (e: "replace-bookmark", bookmark: Bookmark): void;
 }>();
 
 defineExpose({ focusTitle });
@@ -318,10 +424,6 @@ const currentBookmark = computed<Bookmark>(
 
 const hasTitle = computed(() => !!props.bookmark.title?.trim());
 const hasDescription = computed(() => !!props.bookmark.description?.trim());
-
-const emojiPickerOpen = ref(false);
-const emojiPopoverRef = ref<HTMLElement | null>(null);
-const emojiTriggerEl = ref<HTMLElement | null>(null);
 
 const isUrlValid = computed(() => {
   const v = (editedBookmark.value?.url ?? "").trim();
@@ -381,7 +483,13 @@ function openUrl() {
   if (url) window.open(url, "_blank", "noopener,noreferrer");
 }
 
-// emoji picker 함수
+// ------------------------
+// Emoji Picker
+// ------------------------
+const emojiPickerOpen = ref(false);
+const emojiPopoverRef = ref<HTMLElement | null>(null);
+const emojiTriggerEl = ref<HTMLElement | null>(null);
+
 function closeEmojiPicker() {
   emojiPickerOpen.value = false;
 }
@@ -427,6 +535,75 @@ function onDocKeyDown(e: KeyboardEvent) {
   }
 }
 
+// ------------------------
+// Cover
+// ------------------------
+const coverInputRef = ref<HTMLInputElement | null>(null);
+const isModeUpdating = ref(false);
+
+const coverPreviewUrl = computed(() => {
+  const b = currentBookmark.value;
+  if (!b) return null;
+
+  if (b.imageMode === "CUSTOM") return b.customImageUrl ?? null;
+  if (b.imageMode === "AUTO") return b.autoImageUrl ?? null;
+  return null;
+});
+
+const hasCustomCover = computed(() => {
+  const b = currentBookmark.value;
+  return b.imageMode === "CUSTOM" && !!b.customImageUrl;
+});
+
+async function setCoverMode(mode: Exclude<ImageMode, "CUSTOM">) {
+  if (isModeUpdating.value) return;
+  if (currentBookmark.value.imageMode === mode) return;
+
+  try {
+    isModeUpdating.value = true;
+
+    const updated = await BookmarkApi.updateImageMode(props.bookmark.id, {
+      imageMode: mode,
+    });
+    emit("replace-bookmark", updated);
+  } catch (e) {
+    console.error("ImageMode 업데이트 실패:", e);
+    // TODO: 에러 토스트 알림 연결
+  } finally {
+    isModeUpdating.value = false;
+  }
+}
+
+function onClickChangeCover() {
+  coverInputRef.value?.click();
+}
+async function onCoverFileChange(event: Event) {
+  const input = event.target as HTMLInputElement | null;
+  const file = input?.files?.[0] ?? null;
+  if (!file) return;
+
+  try {
+    const updated = await BookmarkApi.uploadCover(props.bookmark.id, file);
+    emit("replace-bookmark", updated);
+  } catch (e) {
+    console.error("커버 이미지 업로드 실패:", e);
+    // TODO: 에러 토스트 알림 연결
+  } finally {
+    if (input) input.value = "";
+  }
+}
+async function removeCustomCover() {
+  if (!currentBookmark.value.customImageUrl) return;
+  try {
+    const updated = await BookmarkApi.removeCover(props.bookmark.id);
+    emit("replace-bookmark", updated);
+  } catch (e) {
+    console.error("커버 이미지 삭제 실패:", e);
+    // TODO: 에러 토스트 알림 연결
+  }
+}
+
+// ------------------------
 onMounted(() => {
   document.addEventListener("pointerdown", onDocPointerDown, true);
   document.addEventListener("keydown", onDocKeyDown);

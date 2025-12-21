@@ -73,6 +73,38 @@
               @click="onSelect(b)"
               :title="displayTitle(b)"
             >
+              <!-- 카드 커버 -->
+              <div
+                class="relative h-20 w-full overflow-hidden border-b"
+                :class="isActive(b) ? 'border-blue-300/80' : 'border-border/60'"
+              >
+                <img
+                  v-if="coverUrl(b)"
+                  :src="coverUrl(b)!"
+                  alt=""
+                  class="h-full w-full object-cover"
+                  draggable="false"
+                />
+
+                <div
+                  v-else-if="isAutoPending(b)"
+                  class="h-full w-full grid place-items-center"
+                  title="커버 이미지 가져오는 중"
+                >
+                  <span
+                    class="inline-block size-3 rounded-full bg-zinc-400/60 animate-pulse"
+                  />
+                </div>
+
+                <div
+                  v-else
+                  class="h-full w-full grid place-items-center text-zinc-500/70 dark:text-zinc-400/60"
+                  title="커버 없음"
+                >
+                  <BookmarkIcon :size="18" />
+                </div>
+              </div>
+
               <!-- 카드 상단: 제목 -->
               <div class="px-4 pt-3 pb-2">
                 <h3
@@ -168,6 +200,7 @@ import type { Bookmark, Collection, ID } from "@/types/common";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
+import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 
@@ -221,6 +254,16 @@ function formatDate(iso?: string): string {
   } catch {
     return "-";
   }
+}
+
+function coverUrl(b: Bookmark): string | null {
+  if (b.imageMode === "CUSTOM") return b.customImageUrl ?? null;
+  if (b.imageMode === "AUTO") return b.autoImageUrl ?? null;
+  return null;
+}
+
+function isAutoPending(b: Bookmark): boolean {
+  return b.imageMode === "AUTO" && !b.autoImageUrl;
 }
 
 function onSelect(b: Bookmark) {

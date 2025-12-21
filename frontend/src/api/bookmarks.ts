@@ -17,11 +17,14 @@ export interface BookmarkUpdateReq {
   title?: string | null;
   description?: string | null;
   emoji?: string | null;
-  imageMode?: ImageMode;
 }
 
 export interface BookmarkMoveReq {
   targetCollectionId: ID;
+}
+
+export interface BookmarkImageModeUpdateReq {
+  imageMode: Exclude<ImageMode, "CUSTOM">;
 }
 
 /** 생성 */
@@ -84,5 +87,17 @@ export async function uploadCover(id: ID, file: File): Promise<Bookmark> {
 /** 북마크 커버 삭제 */
 export async function removeCover(id: ID): Promise<Bookmark> {
   const { data } = await http.delete<BookmarkRes>(`/bookmarks/${id}/cover`);
+  return mapBookmarkRes(data);
+}
+
+/** ImageMode 수정 */
+export async function updateImageMode(
+  id: ID,
+  payload: BookmarkImageModeUpdateReq
+): Promise<Bookmark> {
+  const { data } = await http.patch<BookmarkRes>(
+    `/bookmarks/${id}/image-mode`,
+    payload
+  );
   return mapBookmarkRes(data);
 }
