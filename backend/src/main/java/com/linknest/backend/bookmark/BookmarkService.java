@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -47,9 +48,7 @@ public class BookmarkService {
         ImageMode mode = (bookmark.getImageMode() != null) ? bookmark.getImageMode() : ImageMode.AUTO;
         bookmark.setImageMode(mode);
 
-        if(mode == ImageMode.CUSTOM) {
-            throw new BusinessException(ErrorCode.INVALID_IMAGE_MODE);
-        }
+        if(mode == ImageMode.CUSTOM) throw new BusinessException(ErrorCode.INVALID_IMAGE_MODE);
         bookmark.setCustomImageUrl(null);
 
         if(mode == ImageMode.AUTO) {
@@ -72,8 +71,7 @@ public class BookmarkService {
     public BookmarkRes update(Long userId, Long id, BookmarkUpdateReq req) {
         Bookmark bookmark = requireOwnedBookmark(userId, id);
 
-        String beforeUrl = bookmark.getUrl();
-        ImageMode beforeMode = bookmark.getImageMode();
+        final String beforeUrl = bookmark.getUrl();
 
         mapper.updateFromDto(req, bookmark);
 
@@ -83,20 +81,11 @@ public class BookmarkService {
 
         ImageMode imageMode = bookmark.getImageMode();
         if(imageMode == null) {
-            imageMode = (beforeMode != null) ? beforeMode : ImageMode.NONE;
-            bookmark.setImageMode(imageMode);
+            imageMode = ImageMode.NONE;
         }
 
-        if(imageMode == ImageMode.NONE) {
-            bookmark.setAutoImageUrl(null);
-            bookmark.setCustomImageUrl(null);
-        } else if(imageMode == ImageMode.AUTO) {
-            bookmark.setCustomImageUrl(null);
-
-            if(bookmark.getAutoImageUrl() == null || !beforeUrl.equals(bookmark.getUrl())) {
-                bookmark.setAutoImageUrl(previewService.extractAutoImageUrl(bookmark.getUrl()).orElse(null));
-            }
-        }
+        boolean urlChanged = !Objects.equals(beforeUrl, bookmark.getUrl());
+        applyImageMode(bookmark, imageMode, urlChanged);
 
         return mapper.toRes(bookmark);
     }
@@ -172,12 +161,7 @@ public class BookmarkService {
 
         String oldImgUrl = bookmark.getCustomImageUrl();
         if(oldImgUrl != null && !oldImgUrl.isBlank()) {
-            try {
-                storage.delete(oldImgUrl);
-            } catch (Exception e) {
-                log.warn("Bookmark cover delete: failed to delete old cover. userId={}, bookmarkId={}, url={}, reason={}",
-                        userId, id, oldImgUrl, e.getMessage(), e);
-            }
+            deleteStoredCover(id, oldImgUrl);
         }
         bookmark.setCustomImageUrl(null);
         bookmark.setImageMode(ImageMode.AUTO);
@@ -185,6 +169,20 @@ public class BookmarkService {
         if(bookmark.getAutoImageUrl() == null) {
             bookmark.setAutoImageUrl(previewService.extractAutoImageUrl(bookmark.getUrl()).orElse(null));
         }
+
+        return mapper.toRes(bookmark);
+    }
+
+    // ---------- imageMode 수정 ----------
+    @Transactional
+    public BookmarkRes updateImageMode(Long userId, Long id, ImageMode imageMode) {
+        Bookmark bookmark = requireOwnedBookmark(userId, id);
+
+        if(imageMode == null || imageMode == ImageMode.CUSTOM) {
+            throw new BusinessException(ErrorCode.INVALID_IMAGE_MODE);
+        }
+
+        applyImageMode(bookmark, imageMode, false);
 
         return mapper.toRes(bookmark);
     }
@@ -209,5 +207,35 @@ public class BookmarkService {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
         return collection;
+    }
+
+    private void applyImageMode(Bookmark bookmark, ImageMode mode, boolean urlChanged) {
+        if(mode == null) throw new BusinessException(ErrorCode.INVALID_IMAGE_MODE);
+        if(mode == ImageMode.CUSTOM) return;
+
+        final String beforeCustomUrl = bookmark.getCustomImageUrl();
+        if(beforeCustomUrl != null && !beforeCustomUrl.isBlank()) {
+            deleteStoredCover(bookmark.getId(), beforeCustomUrl);
+        }
+
+        bookmark.setImageMode(mode);
+        bookmark.setCustomImageUrl(null);
+
+        if(mode == ImageMode.AUTO) {
+            if(bookmark.getAutoImageUrl() == null || urlChanged) {
+                bookmark.setAutoImageUrl(previewService.extractAutoImageUrl(bookmark.getUrl()).orElse(null));
+            }
+        }
+    }
+
+    private void deleteStoredCover(Long id, String url) {
+        if(url == null || url.isBlank()) return;
+
+        try {
+            storage.delete(url);
+        } catch (Exception e) {
+            log.warn("Bookmark cover delete: failed to delete old cover. bookmarkId={}, url={}, reason={}",
+                    id, url, e.getMessage(), e);
+        }
     }
 }

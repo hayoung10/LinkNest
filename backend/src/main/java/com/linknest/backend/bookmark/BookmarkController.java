@@ -1,9 +1,6 @@
 package com.linknest.backend.bookmark;
 
-import com.linknest.backend.bookmark.dto.BookmarkCreateReq;
-import com.linknest.backend.bookmark.dto.BookmarkMoveReq;
-import com.linknest.backend.bookmark.dto.BookmarkRes;
-import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
+import com.linknest.backend.bookmark.dto.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -88,6 +85,14 @@ public class BookmarkController {
     public ResponseEntity<BookmarkRes> removeCover(@AuthenticationPrincipal(expression = "id") Long userId,
                                                    @PathVariable @Min(1) Long id) {
         BookmarkRes res = service.removeCover(userId, id);
+        return ResponseEntity.ok(res);
+    }
+
+    @PatchMapping("/{id}/image-mode")
+    public ResponseEntity<BookmarkRes> updateImageMode(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                       @PathVariable @Min(1) Long id,
+                                                       @RequestBody @Valid BookmarkImageModeUpdateReq req) {
+        BookmarkRes res = service.updateImageMode(userId, id, req.imageMode());
         return ResponseEntity.ok(res);
     }
 }
