@@ -24,16 +24,36 @@
         <div class="text-muted-foreground font-medium">컬렉션</div>
         <button
           type="button"
-          class="inline-flex items-center justify-center size-7 rounded-md border border-border hover:bg-accent transition-colors"
+          :disabled="isLoadingCollections || hasError"
+          class="inline-flex items-center justify-center size-7 rounded-md border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="새 컬렉션 만들기"
           title="새 컬렉션"
-          @click="openAddCollectionDialog(null)"
+          @click="!isLoadingCollections && openAddCollectionDialog(null)"
         >
           <PlusIcon :size="16" />
         </button>
       </div>
 
-      <ul class="space-y-1">
+      <!-- 상태 분기 -->
+      <BaseError
+        v-if="hasError"
+        title="컬렉션을 불러올 수 없습니다"
+        :description="collectionsError ?? undefined"
+        :onRetry="() => workspace.fetchCollections(null)"
+      />
+
+      <BaseLoading
+        v-else-if="isLoadingCollections"
+        label="컬렉션을 불러오는 중…"
+      />
+
+      <BaseEmpty
+        v-else-if="isEmpty"
+        title="컬렉션이 없습니다."
+        description="위 '+' 버튼으로 새 컬렉션을 추가해보세요."
+      />
+
+      <ul v-else class="space-y-1">
         <CollectionNode
           v-for="c in collections"
           :key="c.id"
@@ -44,6 +64,7 @@
           :editing-id="editingId"
           :draft-name="draftName"
           :is-renaming="isRenaming"
+          :disabled="isLoadingCollections || hasError"
           @toggle="toggleExpand"
           @add-collection="openAddCollectionDialog"
           @open-all="$emit('open-all', $event)"
@@ -136,6 +157,7 @@ import PlusIcon from "@/components/icons/PlusIcon.vue";
 import LogoIcon from "@/components/icons/LogoIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
+import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 
 defineOptions({ inheritAttrs: false });
 
@@ -153,7 +175,18 @@ const emit = defineEmits<{
 const workspace = useWorkspaceStore();
 
 // 선택된 컬렉션 ID
-const { collections, selectedCollectionId } = storeToRefs(workspace);
+const { collections, selectedCollectionId, isLoading, error } =
+  storeToRefs(workspace);
+
+const isLoadingCollections = computed(() => isLoading.value.collections);
+const collectionsError = computed(() => error.value.collections);
+const hasError = computed(() => !!collectionsError.value);
+const isEmpty = computed(
+  () =>
+    !isLoadingCollections.value &&
+    !hasError.value &&
+    collections.value.length === 0
+);
 
 function handleSelectCollection(c: Collection) {
   workspace.selectCollection(c.id);

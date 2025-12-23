@@ -42,8 +42,27 @@
         @after-open="editRef?.focusTitle()"
         @close="selectedBookmarkId = null"
       >
+        <!-- 상태 분기 -->
+        <BaseError
+          v-if="hasBookmarksError"
+          title="북마크를 불러올 수 없습니다"
+          :description="bookmarksError ?? undefined"
+          :onRetry="retryFetchBookmarks"
+        />
+
+        <BaseLoading
+          v-else-if="isDetailPending"
+          label="북마크 정보를 불러오는 중…"
+        />
+
+        <BaseEmpty
+          v-else-if="selectedBookmark == null"
+          title="북마크를 선택해주세요."
+          description="북마크를 선택하면 상세 정보를 볼 수 있습니다."
+        />
+
         <BookmarkDetail
-          v-if="selectedBookmark"
+          v-else
           ref="editRef"
           :bookmark="selectedBookmark"
           :collection-name="selectedCollection?.name"
@@ -102,6 +121,7 @@ import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "vue-router";
 import { usePreferencesStore } from "@/stores/preferences";
+import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 
 type UpdateBookmarkPayload = {
   id: ID;
@@ -112,7 +132,8 @@ type UpdateBookmarkPayload = {
 };
 
 const workspace = useWorkspaceStore();
-const { collections, selectedCollectionId, bookmarks } = storeToRefs(workspace);
+const { collections, selectedCollectionId, bookmarks, isLoading, error } =
+  storeToRefs(workspace);
 
 const preferences = usePreferencesStore();
 const { defaultLayout } = storeToRefs(preferences);
@@ -140,6 +161,21 @@ const isSettingsOpen = ref(false);
 
 const addRef = ref<{ focusTitle: () => void } | null>(null);
 const editRef = ref<{ focusTitle: () => void } | null>(null);
+
+const isLoadingBookmarks = computed(() => isLoading.value.bookmarks);
+const bookmarksError = computed(() => error.value.bookmarks);
+const hasBookmarksError = computed(() => !!bookmarksError.value);
+
+const isDetailOpen = computed(() => selectedBookmarkId.value != null);
+const isDetailPending = computed(() => {
+  // 선택했지만 아직 로딩 중이라 북마크 상세를 못 찾는 상태
+  return (
+    isDetailOpen.value &&
+    selectedBookmark.value == null &&
+    isLoadingBookmarks.value &&
+    !hasBookmarksError.value
+  );
+});
 
 onMounted(() => {
   workspace.fetchCollections();
@@ -284,6 +320,13 @@ async function onLogout() {
   } catch (e) {
     console.error("[WorkspaceView] 로그아웃 실패:", e);
     // TODO: 에러 토스트 알림 연결
+  }
+}
+
+function retryFetchBookmarks() {
+  const cid = selectedCollectionId.value;
+  if (cid != null) {
+    workspace.fetchBookmarks(cid);
   }
 }
 </script>
