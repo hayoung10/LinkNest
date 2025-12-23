@@ -273,6 +273,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     },
 
     async fetchCollections(parentId?: ID | null) {
+      this.error.collections = null;
       setLoading(this.isLoading, "collections", true);
       try {
         const children = await CollectionApi.listChildren(parentId);
@@ -399,6 +400,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     },
 
     async fetchBookmarks(collectionId?: ID) {
+      this.error.bookmarks = null;
       setLoading(this.isLoading, "bookmarks", true);
       try {
         const cid = collectionId ?? this.selectedCollectionId ?? null;
@@ -408,6 +410,7 @@ export const useWorkspaceStore = defineStore("workspace", {
         }
         this.bookmarks = await BookmarkApi.listBookmarks(cid);
       } catch (e) {
+        console.log("fetchBookmarks error:", e);
         fail(this.error, "bookmarks", e, "북마크 목록을 불러오지 못했습니다.");
       } finally {
         setLoading(this.isLoading, "bookmarks", false);
