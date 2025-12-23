@@ -209,6 +209,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     },
 
     async getCollection(id: ID) {
+      this.error.collections = null;
       setLoading(this.isLoading, "collections", true);
       try {
         const collection = await CollectionApi.getCollection(id);
@@ -300,6 +301,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     },
 
     async fetchChildCollections(id: ID) {
+      this.error.collections = null;
       setLoading(this.isLoading, "collections", true);
       try {
         const children = await CollectionApi.listChildren(id);
@@ -359,6 +361,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     },
 
     async getBookmark(id: ID) {
+      this.error.bookmarks = null;
       setLoading(this.isLoading, "bookmarks", true);
       try {
         const bookmark = await BookmarkApi.getBookmark(id);
