@@ -46,7 +46,8 @@
         <div class="flex text-center gap-2 pr-3">
           <button
             type="button"
-            class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 transition-colors"
+            :disabled="isAddDisabled"
+            class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-900"
             aria-label="새 북마크 추가"
             @click="$emit('open-add')"
           >
@@ -58,8 +59,27 @@
 
       <div class="divider" />
 
+      <!-- 상태 분기 -->
+      <BaseError
+        v-if="hasError"
+        title="북마크를 불러올 수 없습니다"
+        :description="bookmarksError ?? undefined"
+        :onRetry="onRetry"
+      />
+
+      <BaseLoading
+        v-else-if="isLoadingBookmarks"
+        label="북마크를 불러오는 중…"
+      />
+
+      <BaseEmpty
+        v-else-if="isEmpty"
+        title="북마크를 추가하세요."
+        description="오른쪽 위 '추가' 버튼으로 링크를 추가하세요."
+      />
+
       <!-- 북마크 리스트 -->
-      <template v-if="hasBookmarks">
+      <template v-else>
         <div class="flex-1 min-h-0 overflow-y-auto pr-1">
           <ul class="mt-0" role="list" aria-label="북마크 목록">
             <template v-for="b in bookmarks" :key="b.id">
@@ -184,30 +204,6 @@
           {{ bookmarks.length }} 북마크
         </footer>
       </template>
-
-      <!-- 빈 컬렉션 -->
-      <div v-else class="text-sm text-muted-foreground py-12">
-        <div class="flex flex-col items-center gap-3">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="size-12 opacity-30"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M3 7h18" />
-            <path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" />
-            <path d="M19 7v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7" />
-            <path d="M12 11v6" />
-            <path d="M9 14h6" />
-          </svg>
-          <p class="text-center">링크를 추가하세요.</p>
-        </div>
-      </div>
     </div>
   </main>
 </template>
@@ -221,6 +217,7 @@ import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
+import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 
 const props = defineProps<{
   collection: Collection | null;
@@ -233,11 +230,26 @@ const emit = defineEmits<{
 }>();
 
 const workspace = useWorkspaceStore();
-const { bookmarks } = storeToRefs(workspace);
+const { selectedCollectionId, bookmarks, isLoading, error } =
+  storeToRefs(workspace);
+
+const isLoadingBookmarks = computed(() => isLoading.value.bookmarks);
+const bookmarksError = computed(() => error.value.bookmarks);
+const hasError = computed(() => !!bookmarksError.value);
+const isEmpty = computed(
+  () =>
+    !isLoadingBookmarks.value && !hasError.value && bookmarks.value.length === 0
+);
 
 const hasSelection = computed(() => props.collection != null);
+const isAddDisabled = computed(
+  () => isLoadingBookmarks.value || hasError.value
+);
 
-const hasBookmarks = computed(() => bookmarks.value.length > 0);
+function onRetry() {
+  const cid = selectedCollectionId.value;
+  if (cid != null) workspace.fetchBookmarks(cid);
+}
 
 // 유틸
 function displayTitle(b: Bookmark): string {

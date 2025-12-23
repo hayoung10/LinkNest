@@ -18,7 +18,8 @@
       <button
         v-if="hasChildren"
         type="button"
-        class="size-5 grid place-items-center text-muted-foreground rounded hover:bg-accent/50"
+        :disabled="isEditing || isRenaming"
+        class="size-5 grid place-items-center text-muted-foreground rounded hover:bg-accent/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         aria-label="하위 항목 토글"
         @click.stop="$emit('toggle', node.id)"
       >
