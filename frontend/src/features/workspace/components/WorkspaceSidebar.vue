@@ -24,11 +24,11 @@
         <div class="text-muted-foreground font-medium">컬렉션</div>
         <button
           type="button"
-          :disabled="isLoadingCollections || hasError"
+          :disabled="isLoadingCollections || hasError || isCollectionMutating"
           class="inline-flex items-center justify-center size-7 rounded-md border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="새 컬렉션 만들기"
           title="새 컬렉션"
-          @click="!isLoadingCollections && openAddCollectionDialog(null)"
+          @click="onClickAddRoot"
         >
           <PlusIcon :size="16" />
         </button>
@@ -39,7 +39,7 @@
         v-if="hasError"
         title="컬렉션을 불러올 수 없습니다"
         :description="collectionsError ?? undefined"
-        :onRetry="() => workspace.fetchCollections(null)"
+        :onRetry="onRetryCollections"
       />
 
       <BaseLoading
@@ -64,7 +64,7 @@
           :editing-id="editingId"
           :draft-name="draftName"
           :is-renaming="isRenaming"
-          :disabled="isLoadingCollections || hasError"
+          :disabled="isLoadingCollections || hasError || isCollectionMutating"
           @toggle="toggleExpand"
           @add-collection="openAddCollectionDialog"
           @open-all="$emit('open-all', $event)"
@@ -137,7 +137,7 @@
           </button>
           <button
             type="submit"
-            :disabled="!canSubmit"
+            :disabled="!canSubmit || isMutating.createCollection"
             :aria-disabled="!canSubmit"
             class="px-4 py-2 rounded-md text-sm bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
           >
@@ -173,9 +173,7 @@ const emit = defineEmits<{
 }>();
 
 const workspace = useWorkspaceStore();
-
-// 선택된 컬렉션 ID
-const { collections, selectedCollectionId, isLoading, error } =
+const { collections, selectedCollectionId, isLoading, error, isMutating } =
   storeToRefs(workspace);
 
 const isLoadingCollections = computed(() => isLoading.value.collections);
@@ -187,16 +185,36 @@ const isEmpty = computed(
     !hasError.value &&
     collections.value.length === 0
 );
+const isCollectionMutating = computed(
+  () =>
+    isMutating.value.createCollection ||
+    isMutating.value.updateCollection ||
+    isMutating.value.updateCollectionEmoji ||
+    isMutating.value.deleteCollection ||
+    isMutating.value.moveCollection ||
+    isMutating.value.reorderCollection
+);
 
 function handleSelectCollection(c: Collection) {
   workspace.selectCollection(c.id);
   emit("select-collection", c);
 }
 
+function onClickAddRoot() {
+  if (isLoadingCollections.value || hasError.value) return;
+  openAddCollectionDialog(null);
+}
+
+function onRetryCollections() {
+  return workspace.fetchCollections(null);
+}
+
 // 확장 상태
 const expandedIds = ref<Set<ID>>(new Set());
 
 async function toggleExpand(id: ID) {
+  if (isLoadingCollections.value || hasError.value) return;
+
   const next = new Set(expandedIds.value);
 
   if (!next.has(id)) {
@@ -240,7 +258,7 @@ function cancelRename() {
   draftName.value = "";
   isRenaming.value = false;
 }
-function submitRename() {
+async function submitRename() {
   const id = editingId.value;
   const next = (draftName.value ?? "").trim();
 
@@ -251,9 +269,12 @@ function submitRename() {
   }
 
   isRenaming.value = true;
-  emit("rename-collection", { id, newName: next });
-  isRenaming.value = false;
-  cancelRename();
+  try {
+    await emit("rename-collection", { id, newName: next });
+  } finally {
+    isRenaming.value = false;
+    cancelRename();
+  }
 }
 
 // 새 컬렉션 추가 다이얼로그
@@ -274,6 +295,8 @@ function closeAddCollectionDialog() {
   showAddCollectionDialog.value = false;
 }
 function openAddCollectionDialog(parentId: ID | null = null) {
+  if (isLoadingCollections || hasError.value) return;
+
   resetAddCollectionForm();
   parentIdRef.value = parentId;
   showAddCollectionDialog.value = true;

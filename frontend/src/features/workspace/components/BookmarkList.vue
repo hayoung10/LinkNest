@@ -230,7 +230,7 @@ const emit = defineEmits<{
 }>();
 
 const workspace = useWorkspaceStore();
-const { selectedCollectionId, bookmarks, isLoading, error } =
+const { selectedCollectionId, bookmarks, isLoading, error, isMutating } =
   storeToRefs(workspace);
 
 const isLoadingBookmarks = computed(() => isLoading.value.bookmarks);
@@ -238,12 +238,19 @@ const bookmarksError = computed(() => error.value.bookmarks);
 const hasError = computed(() => !!bookmarksError.value);
 const isEmpty = computed(
   () =>
-    !isLoadingBookmarks.value && !hasError.value && bookmarks.value.length === 0
+    hasSelection.value &&
+    !isLoadingBookmarks.value &&
+    !hasError.value &&
+    bookmarks.value.length === 0
 );
 
 const hasSelection = computed(() => props.collection != null);
 const isAddDisabled = computed(
-  () => isLoadingBookmarks.value || hasError.value
+  () =>
+    !hasSelection.value ||
+    isLoadingBookmarks.value ||
+    hasError.value ||
+    isMutating.value.createBookmark
 );
 
 function onRetry() {

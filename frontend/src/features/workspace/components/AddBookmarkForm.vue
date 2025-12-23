@@ -7,6 +7,7 @@
 
         <button
           type="button"
+          :disabled="isSaving"
           class="absolute right-2 top-2 p-2 rounded-md hover:bg-accent"
           aria-label="패널 닫기"
           @click="$emit('close')"
@@ -48,7 +49,7 @@
           <button
             v-if="!form.emoji"
             type="button"
-            class="mb-0.5 rounded-md px-2 py-1 text-xs leading-none text-muted-foreground/60 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-foreground transition-colors"
+            class="mb-1.5 rounded-md px-2 py-1 text-xs leading-none text-muted-foreground/60 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-foreground transition-colors"
             @click="toggleEmojiPicker"
           >
             이모지 추가
@@ -56,7 +57,7 @@
           <button
             v-else
             type="button"
-            class="mb-0.5 rounded-md px-2 py-1 text-xs leading-none text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+            class="mb-1.5 rounded-md px-2 py-1 text-xs leading-none text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
             @click="removeEmoji"
           >
             이모지 제거
@@ -152,6 +153,7 @@
     >
       <button
         type="button"
+        :disabled="isSaving"
         class="inline-flex items-center h-9 gap-1.5 px-3 rounded-md hover:bg-accent text-sm"
         @click="handleClose"
       >
@@ -174,7 +176,9 @@
 <script setup lang="ts">
 import CloseIcon from "@/components/icons/CloseIcon.vue";
 import SaveIcon from "@/components/icons/SaveIcon.vue";
+import { useWorkspaceStore } from "@/stores/workspace";
 import type { ID, ImageMode } from "@/types/common";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css";
@@ -198,6 +202,10 @@ const emit = defineEmits<{
     }
   ): void;
 }>();
+
+const { isMutating } = storeToRefs(useWorkspaceStore());
+
+const isSaving = computed(() => isMutating.value.createBookmark);
 
 defineExpose({ focusTitle });
 
@@ -225,7 +233,9 @@ const isUrlValid = computed(() => {
     return false;
   }
 });
-const canSave = computed(() => isUrlValid.value && props.collectionId !== null);
+const canSave = computed(
+  () => isUrlValid.value && props.collectionId !== null && isSaving.value
+);
 
 const normalize = (s?: string | null) => {
   const v = (s ?? "").trim();
@@ -251,6 +261,7 @@ function handleClose() {
   emit("close");
 }
 function handleSubmit() {
+  if (isSaving.value) return;
   if (!canSave.value || props.collectionId === null) return;
   emit("submit", {
     title: normalize(form.value.title),

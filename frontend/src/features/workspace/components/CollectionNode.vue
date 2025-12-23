@@ -10,7 +10,7 @@
       ]"
       role="button"
       :aria-expanded="hasChildren ? expanded : undefined"
-      :tabindex="isEditing ? -1 : 0"
+      :tabindex="isEditing || disabled || isRenaming ? -1 : 0"
       :style="{ paddingLeft: `${depth * 12}px` }"
       v-on="nodeHandlers"
     >
@@ -18,7 +18,7 @@
       <button
         v-if="hasChildren"
         type="button"
-        :disabled="isEditing || isRenaming"
+        :disabled="disabled || isEditing || isRenaming"
         class="size-5 grid place-items-center text-muted-foreground rounded hover:bg-accent/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         aria-label="하위 항목 토글"
         @click.stop="$emit('toggle', node.id)"
@@ -87,6 +87,7 @@
           :editing-id="editingId"
           :draft-name="draftName"
           :is-renaming="isRenaming"
+          :disabled="disabled || isRenaming"
           @open-all="$emit('open-all', $event)"
           @add-collection="$emit('add-collection', $event)"
           @start-rename="$emit('start-rename', $event)"
@@ -111,6 +112,7 @@
           :editing-id="editingId"
           :draft-name="draftName"
           :is-renaming="isRenaming"
+          :disabled="disabled"
           @toggle="$emit('toggle', $event)"
           @add-collection="$emit('add-collection', $event)"
           @open-all="$emit('open-all', $event)"
@@ -146,6 +148,8 @@ const props = withDefaults(
     countMode?: CountMode;
     selectedCollectionId?: ID | null;
 
+    disabled?: boolean;
+
     // 이름 변경에 대한 상태
     editingId?: ID | null;
     draftName?: string;
@@ -155,6 +159,9 @@ const props = withDefaults(
     depth: 0,
     countMode: "aggregate" as CountMode,
     selectedCollectionId: null,
+
+    disabled: false,
+
     editingId: null,
     draftName: "",
     isRenaming: false,
@@ -185,7 +192,7 @@ const isActive = computed(() => props.selectedCollectionId === props.node.id);
 
 // 핸들러 (편집 중일 때 비활성화)
 const nodeHandlers = computed(() => {
-  if (isEditing.value) return {};
+  if (props.disabled || isEditing.value || props.isRenaming) return {};
 
   return {
     click: (e: MouseEvent) => {

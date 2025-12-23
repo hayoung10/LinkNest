@@ -19,6 +19,7 @@
           <template v-if="!isEditing">
             <button
               type="button"
+              :disabled="isBookmarkMutating"
               @click="handleEdit"
               class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm"
             >
@@ -27,6 +28,7 @@
             </button>
             <button
               type="button"
+              :disabled="isBookmarkMutating"
               @click="showDeleteDialog = true"
               class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 text-sm"
             >
@@ -39,6 +41,7 @@
           <template v-else>
             <button
               type="button"
+              :disabled="isBookmarkMutating"
               @click="handleCancel"
               class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm"
             >
@@ -47,7 +50,7 @@
             </button>
             <button
               type="button"
-              :disabled="!canSave"
+              :disabled="isBookmarkMutating || !canSave"
               @click="handleSave"
               class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
@@ -106,9 +109,10 @@
               >
                 <button
                   type="button"
+                  :disabled="isCoverMutating || isEditing"
                   class="px-3 py-1.5 text-xs transition-colors"
                   :class="
-                    currentBookmark.imageMode === 'AUTO'
+                    hasCustomCover
                       ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
                       : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40'
                   "
@@ -118,9 +122,10 @@
                 </button>
                 <button
                   type="button"
+                  :disabled="isCoverMutating || isEditing"
                   class="px-3 py-1.5 text-xs transition-colors border-l border-border/60"
                   :class="
-                    hasCustomCover
+                    currentBookmark.imageMode === 'CUSTOM'
                       ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
                       : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40'
                   "
@@ -130,6 +135,7 @@
                 </button>
                 <button
                   type="button"
+                  :disabled="isCoverMutating || isEditing"
                   class="px-3 py-1.5 text-xs transition-colors border-l border-border/60"
                   :class="
                     currentBookmark.imageMode === 'NONE'
@@ -155,6 +161,7 @@
               <template v-if="currentBookmark.imageMode === 'CUSTOM'">
                 <button
                   type="button"
+                  :disabled="isCoverMutating || isEditing"
                   class="inline-flex items-center h-9 px-3 rounded-md text-sm border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
                   @click="onClickChangeCover"
                 >
@@ -163,6 +170,7 @@
                 <button
                   v-if="currentBookmark.customImageUrl"
                   type="button"
+                  :disabled="isCoverMutating || isEditing"
                   class="inline-flex items-center h-9 px-3 rounded-md text-sm text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
                   @click="removeCustomCover"
                 >
@@ -288,6 +296,7 @@
               </div>
               <button
                 type="button"
+                :disabled="isBookmarkMutating"
                 class="text-xs px-2.5 py-1.5 rounded-md hover:bg-accent shrink-0"
                 @click="openUrl"
               >
@@ -364,6 +373,7 @@
           <button
             ref="confirmBtnRef"
             type="button"
+            :disabled="isMutating.deleteBookmark"
             class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500"
             @click="handleDelete"
           >
@@ -386,6 +396,8 @@ import CloseIcon from "@/components/icons/CloseIcon.vue";
 import EditIcon from "@/components/icons/EditIcon.vue";
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css";
+import { storeToRefs } from "pinia";
+import { useWorkspaceStore } from "@/stores/workspace";
 
 const props = defineProps<{
   bookmark: Bookmark;
@@ -409,6 +421,17 @@ const emit = defineEmits<{
   (e: "replace-bookmark", bookmark: Bookmark): void;
 }>();
 
+const { isMutating } = storeToRefs(useWorkspaceStore());
+
+const isModeUpdating = ref(false);
+
+const isBookmarkMutating = computed(
+  () => isMutating.value.updateBookmark || isMutating.value.deleteBookmark
+);
+const isCoverMutating = computed(
+  () => isBookmarkMutating.value || isModeUpdating.value
+);
+
 defineExpose({ focusTitle });
 
 // 편집 상태
@@ -422,8 +445,10 @@ const currentBookmark = computed<Bookmark>(
   () => (isEditing.value ? editedBookmark.value : props.bookmark) as Bookmark
 );
 
-const hasTitle = computed(() => !!props.bookmark.title?.trim());
-const hasDescription = computed(() => !!props.bookmark.description?.trim());
+const hasTitle = computed(() => !!currentBookmark.value.title?.trim());
+const hasDescription = computed(
+  () => !!currentBookmark.value.description?.trim()
+);
 
 const isUrlValid = computed(() => {
   const v = (editedBookmark.value?.url ?? "").trim();
@@ -473,6 +498,8 @@ function handleSave() {
     emoji: editedBookmark.value.emoji ?? null,
   });
   isEditing.value = false;
+  editedBookmark.value = null;
+  closeEmojiPicker();
 }
 function handleDelete() {
   emit("delete-bookmark", props.bookmark.id);
@@ -539,7 +566,6 @@ function onDocKeyDown(e: KeyboardEvent) {
 // Cover
 // ------------------------
 const coverInputRef = ref<HTMLInputElement | null>(null);
-const isModeUpdating = ref(false);
 
 const coverPreviewUrl = computed(() => {
   const b = currentBookmark.value;

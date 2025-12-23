@@ -3,6 +3,8 @@
     <!-- 트리거 버튼 -->
     <button
       ref="triggerEl"
+      type="button"
+      :disabled="isDisabled"
       class="inline-flex size-6 items-center justify-center rounded hover:bg-accent"
       aria-haspopup="menu"
       :aria-expanded="menuOpen"
@@ -31,6 +33,7 @@
           class="menu-item"
           role="menuitem"
           ref="firstItemRef"
+          :disabled="isDisabled"
           @click="emitAndClose('open-all', collection.id)"
         >
           <ExternalLinkIcon class="menu-icon" :stroke-width="1" />
@@ -44,6 +47,7 @@
           ref="emojiTriggerEl"
           class="menu-item"
           role="menuitem"
+          :disabled="isDisabled"
           @click.stop="openEmojiPicker"
         >
           <span
@@ -58,6 +62,7 @@
           v-if="collection.emoji"
           class="menu-item"
           role="menuitem"
+          :disabled="isDisabled"
           @click="removeEmoji"
         >
           <span class="menu-icon grid place-items-center text-base leading-none"
@@ -71,6 +76,7 @@
         <button
           class="menu-item"
           role="menuitem"
+          :disabled="isDisabled"
           @click="emitAndClose('add-collection', collection.id)"
         >
           <svg
@@ -85,7 +91,12 @@
           하위 컬렉션 만들기
         </button>
 
-        <button class="menu-item" role="menuitem" @click="startRename">
+        <button
+          class="menu-item"
+          role="menuitem"
+          :disabled="isDisabled"
+          @click="startRename"
+        >
           <EditIcon class="menu-icon" :stroke-width="1" />
           이름 변경하기
         </button>
@@ -95,6 +106,7 @@
         <button
           class="menu-item menu-destructive"
           role="menuitem"
+          :disabled="isDisabled"
           @click="openDeleteDialog"
         >
           <TrashIcon class="menu-icon" :stroke-width="1" />
@@ -150,6 +162,7 @@
             </button>
             <button
               class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500"
+              :disabled="isDisabled"
               @click="handleDelete"
             >
               삭제
@@ -167,6 +180,7 @@ import {
   nextTick,
   onBeforeUnmount,
   ref,
+  watch,
   type CSSProperties,
 } from "vue";
 import type { Collection, ID } from "@/types/common";
@@ -175,9 +189,12 @@ import TrashIcon from "@/components/icons/TrashIcon.vue";
 import EditIcon from "@/components/icons/EditIcon.vue";
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css";
+import { storeToRefs } from "pinia";
+import { useWorkspaceStore } from "@/stores/workspace";
 
 const props = defineProps<{
   collection: Collection;
+  disabled?: boolean;
 }>();
 const emit = defineEmits<{
   (e: "open-all", id: ID): void;
@@ -186,6 +203,19 @@ const emit = defineEmits<{
   (e: "delete", id: ID): void;
   (e: "update-emoji", payload: { id: ID; emoji: string | null }): void;
 }>();
+
+const { isMutating } = storeToRefs(useWorkspaceStore());
+
+const isMenuMutating = computed(() => {
+  const m = isMutating.value;
+  return (
+    m.createCollection ||
+    m.updateCollection ||
+    m.updateCollectionEmoji ||
+    m.deleteCollection
+  );
+});
+const isDisabled = computed(() => !!props.disabled || isMenuMutating.value);
 
 // 상태
 const menuOpen = ref(false);
@@ -241,6 +271,7 @@ function updatePosition() {
 }
 
 function openMenu() {
+  if (isDisabled.value) return;
   if (menuOpen.value) return;
   menuOpen.value = true;
 
@@ -259,6 +290,7 @@ function closeMenu(returnFocus = true) {
   if (returnFocus) requestAnimationFrame(() => triggerEl.value?.focus());
 }
 function toggleMenu() {
+  if (isDisabled.value) return;
   menuOpen.value ? closeMenu() : openMenu();
 }
 
@@ -291,6 +323,7 @@ function onEmojiViewportChange(_e: Event) {
   updateEmojiPickerPosition();
 }
 function openEmojiPicker() {
+  if (isDisabled.value) return;
   closeMenu(false);
   emojiPickerOpen.value = true;
 
@@ -311,10 +344,12 @@ function closeEmojiPicker(returnFocus = false) {
   }
 }
 function removeEmoji() {
+  if (isDisabled.value) return;
   emit("update-emoji", { id: props.collection.id, emoji: null });
   closeMenu(false);
 }
 function onEmojiSelected(emoji: any) {
+  if (isDisabled.value) return;
   const picked = emoji?.i ?? null;
   if (!picked) return;
 
@@ -352,6 +387,14 @@ function handleDelete() {
   emit("delete", props.collection.id);
   showDeleteDialog.value = false;
 }
+
+watch(isDisabled, (w) => {
+  if (w) {
+    closeEmojiPicker(false);
+    closeMenu(false);
+    showDeleteDialog.value = false;
+  }
+});
 </script>
 
 <style scoped>
