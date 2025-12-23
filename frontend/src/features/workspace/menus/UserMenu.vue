@@ -16,7 +16,7 @@
         <img
           v-if="user?.profileImageUrl"
           :src="user?.profileImageUrl"
-          :alt="user.name"
+          :alt="user?.name ?? ''"
           class="w-full h-full object-cover"
         />
         <span v-else class="text-sm font-medium">{{ initials }}</span>
@@ -54,10 +54,10 @@
         <!-- 유저 정보 -->
         <div class="px-4 pt-4 pb-3">
           <p class="text-[15px] font-semibold leading-[22px]">
-            {{ user?.name }}
+            {{ user?.name ?? "사용자" }}
           </p>
           <p class="mt-1 text-xs text-muted-foreground leading-5 truncate">
-            {{ user?.email }}
+            {{ user?.email ?? "" }}
           </p>
         </div>
 
