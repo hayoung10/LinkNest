@@ -122,6 +122,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useRouter } from "vue-router";
 import { usePreferencesStore } from "@/stores/preferences";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
+import { useToastStore } from "@/stores/toast";
 
 type UpdateBookmarkPayload = {
   id: ID;
@@ -131,11 +132,12 @@ type UpdateBookmarkPayload = {
   emoji?: string | null;
 };
 
+const toast = useToastStore();
 const workspace = useWorkspaceStore();
+const preferences = usePreferencesStore();
+
 const { collections, selectedCollectionId, bookmarks, isLoading, error } =
   storeToRefs(workspace);
-
-const preferences = usePreferencesStore();
 const { defaultLayout } = storeToRefs(preferences);
 
 const auth = useAuthStore();
@@ -183,42 +185,64 @@ onMounted(() => {
 
 // 핸들러
 async function onSelectCollection(c: Collection) {
-  workspace.selectCollection(c.id);
+  try {
+    workspace.selectCollection(c.id);
 
-  selectedBookmarkId.value = null;
-  isAddOpen.value = false;
-  isSettingsOpen.value = false;
+    selectedBookmarkId.value = null;
+    isAddOpen.value = false;
+    isSettingsOpen.value = false;
 
-  await workspace.fetchBookmarks(c.id);
+    await workspace.fetchBookmarks(c.id);
+  } catch (e) {
+    toast.error("북마크 목록을 불러오지 못했습니다.");
+  }
 }
 
 async function onAddCollection(payload: { name: string; parentId: ID | null }) {
-  await workspace.createCollection({
-    name: payload.name,
-    parentId: payload.parentId,
-    emoji: null,
-  });
+  try {
+    await workspace.createCollection({
+      name: payload.name,
+      parentId: payload.parentId,
+      emoji: null,
+    });
+    toast.success("컬렉션을 추가했습니다.");
+  } catch (e) {
+    toast.error("컬렉션 추가에 실패했습니다.");
+  }
 }
 
 async function onRenameCollection(payload: { id: ID; newName: string }) {
-  await workspace.updateCollection(payload.id, { name: payload.newName });
+  try {
+    await workspace.updateCollection(payload.id, { name: payload.newName });
+  } catch (e) {
+    toast.error("이름 변경에 실패했습니다.");
+  }
 }
 
 async function onUpdateCollectionEmoji(payload: {
   id: ID;
   emoji: string | null;
 }) {
-  await workspace.updateCollectionEmoji(payload.id, { emoji: payload.emoji });
+  try {
+    await workspace.updateCollectionEmoji(payload.id, { emoji: payload.emoji });
+  } catch (e) {
+    toast.error("컬렉션 이모지 설정에 실패했습니다.");
+  }
 }
 
 async function onDeleteCollection(id: ID) {
-  await workspace.deleteCollection(id);
+  try {
+    await workspace.deleteCollection(id);
+    toast.success("컬렉션이 삭제되었습니다.");
 
-  if (selectedCollectionId.value === id) {
-    workspace.selectCollection(null);
+    if (selectedCollectionId.value === id) {
+      workspace.selectCollection(null);
 
-    selectedBookmarkId.value = null;
-    await workspace.fetchBookmarks();
+      selectedBookmarkId.value = null;
+      await workspace.fetchBookmarks();
+    }
+  } catch (e) {
+    toast.error("컬렉션 삭제에 실패했습니다.");
   }
 }
 
@@ -252,6 +276,7 @@ async function onOpenAllBookmarks(collectionId: ID) {
     }
   } catch (e) {
     console.error("[WorkspaceView] failed to open all bookmarks", e);
+    toast.error("북마크를 여는 중 오류가 발생했습니다.");
   }
 }
 
@@ -268,39 +293,53 @@ async function onAddBookmark(payload: {
   imageMode?: ImageMode;
   collectionId: ID;
 }) {
-  await workspace.createBookmark({
-    collectionId: payload.collectionId,
-    url: payload.url,
-    title: payload.title ?? null,
-    description: payload.description ?? null,
-    emoji: payload.emoji ?? null,
-    imageMode: payload.imageMode ?? "AUTO",
-  });
-  await workspace.fetchBookmarks(payload.collectionId);
-  isAddOpen.value = false;
+  try {
+    await workspace.createBookmark({
+      collectionId: payload.collectionId,
+      url: payload.url,
+      title: payload.title ?? null,
+      description: payload.description ?? null,
+      emoji: payload.emoji ?? null,
+      imageMode: payload.imageMode ?? "AUTO",
+    });
+    await workspace.fetchBookmarks(payload.collectionId);
+    isAddOpen.value = false;
+  } catch (e) {
+    toast.error("북마크 추가에 실패했습니다.");
+  }
 }
 
 async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
-  await workspace.updateBookmark(payload.id, {
-    url: payload.url,
-    title: payload.title,
-    description: payload.description,
-    emoji: payload.emoji ?? null,
-  });
+  try {
+    await workspace.updateBookmark(payload.id, {
+      url: payload.url,
+      title: payload.title,
+      description: payload.description,
+      emoji: payload.emoji ?? null,
+    });
 
-  if (selectedCollection.value?.id != null) {
-    await workspace.fetchBookmarks(selectedCollection.value.id);
+    if (selectedCollection.value?.id != null) {
+      await workspace.fetchBookmarks(selectedCollection.value.id);
+    }
+  } catch (e) {
+    toast.error("북마크 수정에 실패했습니다.");
   }
 }
 
 async function onDeleteBookmark(id: ID) {
-  await workspace.deleteBookmark(id);
+  try {
+    await workspace.deleteBookmark(id);
 
-  if (selectedCollection.value?.id != null) {
-    await workspace.fetchBookmarks(selectedCollection.value.id);
+    if (selectedCollection.value?.id != null) {
+      await workspace.fetchBookmarks(selectedCollection.value.id);
+    }
+
+    selectedBookmarkId.value = null;
+
+    toast.success("북마크가 삭제되었습니다.");
+  } catch (e) {
+    toast.error("북마크 삭제에 실패했습니다.");
   }
-
-  selectedBookmarkId.value = null;
 }
 
 function onReplaceBookmark(updated: Bookmark) {
@@ -316,10 +355,14 @@ function onOpenSettings() {
 async function onLogout() {
   try {
     await auth.logout();
-    await router.replace("/login");
+    await router.replace({
+      path: "/login",
+      state: { type: "info", message: "로그아웃되었습니다." },
+    });
+    toast.info("로그아웃 되었습니다.");
   } catch (e) {
     console.error("[WorkspaceView] 로그아웃 실패:", e);
-    // TODO: 에러 토스트 알림 연결
+    toast.error("로그아웃에 실패했습니다.");
   }
 }
 

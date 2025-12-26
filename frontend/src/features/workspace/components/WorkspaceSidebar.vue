@@ -268,13 +268,8 @@ async function submitRename() {
     return;
   }
 
-  isRenaming.value = true;
-  try {
-    await emit("rename-collection", { id, newName: next });
-  } finally {
-    isRenaming.value = false;
-    cancelRename();
-  }
+  emit("rename-collection", { id, newName: next });
+  cancelRename();
 }
 
 // 새 컬렉션 추가 다이얼로그
@@ -295,7 +290,7 @@ function closeAddCollectionDialog() {
   showAddCollectionDialog.value = false;
 }
 function openAddCollectionDialog(parentId: ID | null = null) {
-  if (isLoadingCollections || hasError.value) return;
+  if (isLoadingCollections.value || hasError.value) return;
 
   resetAddCollectionForm();
   parentIdRef.value = parentId;
