@@ -102,6 +102,7 @@
 
 <script setup lang="ts">
 import { usePreferencesStore } from "@/stores/preferences";
+import { useToastStore } from "@/stores/toast";
 import { useWorkspaceStore } from "@/stores/workspace";
 import type { BookmarkSortOption, LayoutOption } from "@/types/common";
 import { storeToRefs } from "pinia";
@@ -120,6 +121,7 @@ const layoutOptions: { value: LayoutOption; label: string }[] = [
   { value: "LIST", label: "리스트형" },
 ];
 
+const toast = useToastStore();
 const preferences = usePreferencesStore();
 const workspace = useWorkspaceStore();
 
@@ -139,8 +141,8 @@ const loadPreferences = async () => {
   try {
     await preferences.load();
   } catch (e) {
-    // TODO: 에러 토스트 알림 연결
     console.error("환경 설정 불러오기 실패:", e);
+    toast.error("환경 설정을 불러오지 못했습니다.");
   } finally {
     isLoading.value = false;
   }
@@ -165,8 +167,8 @@ const changeDefaultSort = async (value: BookmarkSortOption) => {
       await workspace.fetchBookmarks(selectedCollectionId.value);
     }
   } catch (e) {
-    // TODO: 에러 토스트 알림 연결
     console.error("기본 정렬 업데이트 실패:", e);
+    toast.error("기본 북마크 정렬 설정에 실패했습니다.");
     defaultBookmarkSort.value = prev;
   } finally {
     isSaving.value = false;
@@ -183,8 +185,8 @@ const changeDefaultLayout = async (value: LayoutOption) => {
   try {
     await preferences.update({ defaultLayout: value });
   } catch (e) {
-    // TODO: 에러 토스트 알림 연결
     console.error("기본 레이아웃 업데이트 실패:", e);
+    toast.error("기본 레이아웃 설정에 실패했습니다.");
     defaultLayout.value = prev;
   } finally {
     isSaving.value = false;
@@ -201,8 +203,8 @@ const updateOpenInNewTab = async () => {
   try {
     await preferences.update({ openInNewTab: next });
   } catch (e) {
-    // TODO: 에러 토스트 알림 연결
     console.error("새 탭 열기 설정 업데이트 실패:", e);
+    toast.error("새 탭 열기 설정에 실패했습니다.");
     openInNewTab.value = prev;
   } finally {
     isSaving.value = false;

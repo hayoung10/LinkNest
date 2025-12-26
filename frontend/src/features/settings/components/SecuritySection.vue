@@ -139,10 +139,13 @@ import ProviderIcon from "@/components/common/ProviderIcon.vue";
 import type { Provider } from "@/types/common";
 import { usePreferencesStore } from "@/stores/preferences";
 import { storeToRefs } from "pinia";
+import { ToastType, useToastStore } from "@/stores/toast";
 
+const toast = useToastStore();
 const auth = useAuthStore();
 const router = useRouter();
 const preferences = usePreferencesStore();
+
 const { keepSignedIn, loaded } = storeToRefs(preferences);
 
 const provider = computed<Provider | null>(() => auth.user?.provider ?? null);
@@ -182,8 +185,8 @@ const loadPreferences = async () => {
   try {
     await preferences.load();
   } catch (e) {
-    // TODO: 에러 토스트 알림 연결
     console.error("로그인 설정 불러오기 실패:", e);
+    toast.error("보안 설정을 불러오지 못했습니다.");
   } finally {
     isLoading.value = false;
   }
@@ -203,13 +206,15 @@ const onToggleKeepSignedIn = async () => {
 
   try {
     await preferences.update({ keepSignedIn: next });
-
     await auth.refresh(); // RT 쿠키 갱신
-    // TODO: 성공 토스트 알림 연결
+
+    toast.success(
+      next ? "로그인 상태 유지를 켰습니다." : "로그인 상태 유지를 껐습니다."
+    );
   } catch (e) {
     console.error("로그인 상태 유지 설정 변경 실패:", e);
     keepSignedIn.value = prev;
-    // TODO: 에러 토스트 알림 연결
+    toast.error("로그인 설정 변경에 실패했습니다.");
   } finally {
     isUpdatingKeepSignedIn.value = false;
   }
@@ -227,11 +232,18 @@ const onLogoutAllDevices = async () => {
   isProcessingAllSessions.value = true;
   try {
     await auth.logoutAllSessions();
-    // TODO: 성공 토스트 알림 연결
-    await router.replace("/login");
+    await router.replace({
+      path: "/login",
+      state: {
+        toast: {
+          type: "success" as ToastType,
+          message: "모든 기기에서 로그아웃되었습니다.",
+        },
+      },
+    });
   } catch (e) {
     console.error("모든 기기에서 로그아웃 실패:", e);
-    // TODO: 에러 토스트 알림 연결
+    toast.error("전체 로그아웃에 실패했습니다.");
   } finally {
     isProcessingAllSessions.value = false;
   }
@@ -251,11 +263,14 @@ const onDeleteAccount = async () => {
     await UserApi.deleteAccount();
     auth.clearSession();
 
-    // TODO: 성공 토스트 알림 연결
-    await router.push("/");
+    toast.success("계정이 삭제되었습니다.");
+    await router.push({
+      path: "/",
+      state: { toast: { type: "success", message: "계정이 삭제되었습니다." } },
+    });
   } catch (e) {
     console.error("계정 삭제 실패:", e);
-    // TODO: 에러 토스트 알림 연결
+    toast.error("계정 삭제에 실패했습니다.");
   } finally {
     isDeletingAccount.value = false;
   }

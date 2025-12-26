@@ -183,7 +183,9 @@ import { computed, onMounted, ref, watch } from "vue";
 import * as UserApi from "@/api/users";
 import type { Provider } from "@/types/common";
 import ProviderIcon from "@/components/common/ProviderIcon.vue";
+import { useToastStore } from "@/stores/toast";
 
+const toast = useToastStore();
 const auth = useAuthStore();
 
 // 이름 편집 상태
@@ -247,10 +249,10 @@ const onSubmit = async () => {
   try {
     const updated = await UserApi.updateUser({ name: nextName });
     auth.setUser(updated);
-    // TODO: 성공 토스트 알림 연결
+    toast.success("이름이 변경되었습니다.");
   } catch (e) {
     console.error("이름 변경 실패:", e);
-    // TODO: 에러 토스트 알림 연결
+    toast.error("이름 변경에 실패했습니다.");
   } finally {
     isSavingName.value = false;
   }
@@ -271,7 +273,7 @@ const onFileChange = async (event: Event) => {
   const maxSize = 5 * 1024 * 1024; // 5MB 제한
   if (file.size > maxSize) {
     console.error("파일 크기 제한 초과 (최대 5MB)");
-    // TODO: 에러 토스트 알림 연결
+    toast.error("파일이 너무 큽니다. (최대 5MB)");
     target.value = "";
     return;
   }
@@ -280,10 +282,10 @@ const onFileChange = async (event: Event) => {
   try {
     const updated = await UserApi.updateProfileImage(file);
     auth.setUser(updated);
-    // TODO: 에러 토스트 알림 연결
+    toast.success("프로필 이미지가 변경되었습니다.");
   } catch (e) {
     console.error("프로필 이미지 업로드 실패:", e);
-    // TODO: 에러 토스트 알림 연결
+    toast.error("프로필 이미지 업로드에 실패했습니다.");
   } finally {
     isPhotoUpdating.value = false;
     target.value = "";
@@ -298,9 +300,10 @@ const onDeletePhoto = async () => {
   try {
     const updated = await UserApi.deleteProfileImage();
     auth.setUser(updated);
+    toast.success("프로필 이미지가 삭제되었습니다.");
   } catch (e) {
     console.error("프로필 이미지 삭제 실패:", e);
-    // TODO: 에러 토스트 알림 연결
+    toast.error("프로필 이미지 삭제에 실패했습니다.");
   } finally {
     isPhotoUpdating.value = false;
   }
