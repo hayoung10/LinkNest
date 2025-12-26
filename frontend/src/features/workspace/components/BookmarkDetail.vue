@@ -398,6 +398,7 @@ import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css";
 import { storeToRefs } from "pinia";
 import { useWorkspaceStore } from "@/stores/workspace";
+import { useToastStore } from "@/stores/toast";
 
 const props = defineProps<{
   bookmark: Bookmark;
@@ -421,7 +422,10 @@ const emit = defineEmits<{
   (e: "replace-bookmark", bookmark: Bookmark): void;
 }>();
 
-const { isMutating } = storeToRefs(useWorkspaceStore());
+const toast = useToastStore();
+const workspace = useWorkspaceStore();
+
+const { isMutating } = storeToRefs(workspace);
 
 const isModeUpdating = ref(false);
 
@@ -441,9 +445,11 @@ const showDeleteDialog = ref(false);
 const confirmBtnRef = ref<HTMLElement | null>(null);
 const titleRef = ref<HTMLInputElement | null>(null);
 
-const currentBookmark = computed<Bookmark>(
-  () => (isEditing.value ? editedBookmark.value : props.bookmark) as Bookmark
-);
+const currentBookmark = computed<Bookmark>(() => {
+  return isEditing.value && editedBookmark.value
+    ? editedBookmark.value
+    : props.bookmark;
+});
 
 const hasTitle = computed(() => !!currentBookmark.value.title?.trim());
 const hasDescription = computed(
@@ -594,7 +600,7 @@ async function setCoverMode(mode: Exclude<ImageMode, "CUSTOM">) {
     emit("replace-bookmark", updated);
   } catch (e) {
     console.error("ImageMode 업데이트 실패:", e);
-    // TODO: 에러 토스트 알림 연결
+    toast.error("커버 설정 변경에 실패했습니다.");
   } finally {
     isModeUpdating.value = false;
   }
@@ -604,28 +610,33 @@ function onClickChangeCover() {
   coverInputRef.value?.click();
 }
 async function onCoverFileChange(event: Event) {
+  if (isCoverMutating.value) return;
+
   const input = event.target as HTMLInputElement | null;
   const file = input?.files?.[0] ?? null;
   if (!file) return;
 
   try {
     const updated = await BookmarkApi.uploadCover(props.bookmark.id, file);
+    updated.imageMode = "CUSTOM";
     emit("replace-bookmark", updated);
   } catch (e) {
     console.error("커버 이미지 업로드 실패:", e);
-    // TODO: 에러 토스트 알림 연결
+    toast.error("커버 이미지 업로드에 실패했습니다.");
   } finally {
     if (input) input.value = "";
   }
 }
 async function removeCustomCover() {
+  if (isCoverMutating.value) return;
   if (!currentBookmark.value.customImageUrl) return;
+
   try {
     const updated = await BookmarkApi.removeCover(props.bookmark.id);
     emit("replace-bookmark", updated);
   } catch (e) {
     console.error("커버 이미지 삭제 실패:", e);
-    // TODO: 에러 토스트 알림 연결
+    toast.error("커버 이미지 삭제에 실패했습니다.");
   }
 }
 
