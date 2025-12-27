@@ -73,6 +73,7 @@
             :class="keepSignedIn ? 'bg-zinc-900' : 'bg-zinc-300'"
             @click="onToggleKeepSignedIn"
             :disabled="
+              !loaded ||
               isUpdatingKeepSignedIn ||
               isProcessingAllSessions ||
               isDeletingAccount
@@ -132,7 +133,7 @@
 
 <script setup lang="ts">
 import { useAuthStore } from "@/stores/auth";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import * as UserApi from "@/api/users";
 import ProviderIcon from "@/components/common/ProviderIcon.vue";
@@ -172,32 +173,12 @@ const passwordGuideText = computed(() => {
 });
 
 // 상태
-const isLoading = ref(false);
 const isUpdatingKeepSignedIn = ref(false);
 const isProcessingAllSessions = ref(false);
 const isDeletingAccount = ref(false);
 
-// 초기 로딩
-const loadPreferences = async () => {
-  if (loaded.value) return;
-
-  isLoading.value = true;
-  try {
-    await preferences.load();
-  } catch (e) {
-    console.error("로그인 설정 불러오기 실패:", e);
-    toast.error("보안 설정을 불러오지 못했습니다.");
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-onMounted(() => {
-  loadPreferences();
-});
-
 const onToggleKeepSignedIn = async () => {
-  if (isLoading.value || isUpdatingKeepSignedIn.value) return;
+  if (!loaded.value || isUpdatingKeepSignedIn.value) return;
   const prev = keepSignedIn.value;
   const next = !prev;
 

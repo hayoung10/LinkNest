@@ -23,6 +23,7 @@
             v-for="option in sortOptions"
             :key="option.value"
             type="button"
+            :disabled="!loaded || isSaving"
             class="flex items-center justify-center rounded-xl border px-3 py-2 text-sm transition"
             :class="
               option.value === defaultBookmarkSort
@@ -50,6 +51,7 @@
             v-for="layout in layoutOptions"
             :key="layout.value"
             type="button"
+            :disabled="!loaded || isSaving"
             class="flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm transition"
             :class="
               layout.value === defaultLayout
@@ -89,6 +91,7 @@
           class="relative inline-flex h-6 w-11 items-center rounded-full transition"
           :class="openInNewTab ? 'bg-zinc-900' : 'bg-zinc-300'"
           @click="updateOpenInNewTab"
+          :disabled="!loaded || isSaving"
         >
           <span
             class="inline-block h-4 w-4 transform rounded-full bg-white transition"
@@ -106,7 +109,7 @@ import { useToastStore } from "@/stores/toast";
 import { useWorkspaceStore } from "@/stores/workspace";
 import type { BookmarkSortOption, LayoutOption } from "@/types/common";
 import { storeToRefs } from "pinia";
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 
 // 기본 북마크 정렬 옵션
 const sortOptions: { value: BookmarkSortOption; label: string }[] = [
@@ -130,30 +133,11 @@ const { defaultBookmarkSort, defaultLayout, openInNewTab, loaded } =
 const { selectedCollectionId } = storeToRefs(workspace);
 
 // 로딩/저장 상태
-const isLoading = ref(false);
 const isSaving = ref(false);
-
-// 초기 로딩
-const loadPreferences = async () => {
-  if (loaded.value) return;
-
-  isLoading.value = true;
-  try {
-    await preferences.load();
-  } catch (e) {
-    console.error("환경 설정 불러오기 실패:", e);
-    toast.error("환경 설정을 불러오지 못했습니다.");
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-onMounted(() => {
-  loadPreferences();
-});
 
 // 이벤트 핸들러
 const changeDefaultSort = async (value: BookmarkSortOption) => {
+  if (!loaded.value || isSaving.value) return;
   if (defaultBookmarkSort.value === value) return;
 
   const prev = defaultBookmarkSort.value;
@@ -176,6 +160,7 @@ const changeDefaultSort = async (value: BookmarkSortOption) => {
 };
 
 const changeDefaultLayout = async (value: LayoutOption) => {
+  if (!loaded.value || isSaving.value) return;
   if (defaultLayout.value === value) return;
 
   const prev = defaultLayout.value;
@@ -194,6 +179,7 @@ const changeDefaultLayout = async (value: LayoutOption) => {
 };
 
 const updateOpenInNewTab = async () => {
+  if (!loaded.value || isSaving.value) return;
   const prev = openInNewTab.value;
   const next = !openInNewTab.value;
 
