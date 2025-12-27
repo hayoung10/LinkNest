@@ -270,6 +270,14 @@ const onFileChange = async (event: Event) => {
   const file = target.files?.[0];
   if (!file) return;
 
+  // 파일 타입 체크
+  if (!file.type || !file.type.startsWith("image/")) {
+    toast.error("이미지 파일만 업로드할 수 있습니다.");
+    target.value = "";
+    return;
+  }
+
+  // 파일 크기 체크
   const maxSize = 5 * 1024 * 1024; // 5MB 제한
   if (file.size > maxSize) {
     console.error("파일 크기 제한 초과 (최대 5MB)");

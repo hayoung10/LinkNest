@@ -620,10 +620,26 @@ async function onCoverFileChange(event: Event) {
   const file = input?.files?.[0] ?? null;
   if (!file) return;
 
+  // 파일 타입 체크
+  if (!file.type.startsWith("image/")) {
+    toast.error("이미지 파일만 업로드할 수 있습니다.");
+    if (input) input.value = "";
+    return;
+  }
+
+  // 파일 크기 체크 (최대 5MB)
+  const maxSize = 5 * 1024 * 1024;
+  if (file.size > maxSize) {
+    toast.error("파일이 너무 큽니다. (최대 5MB)");
+    if (input) input.value = "";
+    return;
+  }
+
   try {
     const updated = await BookmarkApi.uploadCover(props.bookmark.id, file);
     updated.imageMode = "CUSTOM";
     emit("replace-bookmark", updated);
+    toast.success("커버 이미지가 변경되었습니다.");
   } catch (e) {
     console.error("커버 이미지 업로드 실패:", e);
     toast.error("커버 이미지 업로드에 실패했습니다.");
