@@ -65,6 +65,7 @@
           :draft-name="draftName"
           :is-renaming="isRenaming"
           :disabled="isLoadingCollections || hasError || isCollectionMutating"
+          :loading-child-collection-ids="loadingChildCollectionIds"
           @toggle="toggleExpand"
           @add-collection="openAddCollectionDialog"
           @open-all="$emit('open-all', $event)"
@@ -173,8 +174,14 @@ const emit = defineEmits<{
 }>();
 
 const workspace = useWorkspaceStore();
-const { collections, selectedCollectionId, isLoading, error, isMutating } =
-  storeToRefs(workspace);
+const {
+  collections,
+  selectedCollectionId,
+  isLoading,
+  error,
+  isMutating,
+  loadingChildCollectionIds,
+} = storeToRefs(workspace);
 
 const isLoadingCollections = computed(() => isLoading.value.collections);
 const collectionsError = computed(() => error.value.collections);

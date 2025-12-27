@@ -25,6 +25,7 @@ interface WorkspaceState {
   error: Record<LoadKey, string | null>;
   isMutating: Record<MutateKey, boolean>;
   mutateError: Record<MutateKey, string | null>;
+  loadingChildCollectionIds: Set<ID>;
 }
 
 function setLoading(
@@ -202,6 +203,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       deleteBookmark: null,
       moveBookmark: null,
     },
+    loadingChildCollectionIds: new Set<ID>(),
   }),
 
   actions: {
@@ -394,7 +396,12 @@ export const useWorkspaceStore = defineStore("workspace", {
 
     async fetchChildCollections(id: ID) {
       this.error.collections = null;
-      setLoading(this.isLoading, "collections", true);
+
+      if (this.loadingChildCollectionIds.has(id)) return;
+      this.loadingChildCollectionIds = new Set(
+        this.loadingChildCollectionIds
+      ).add(id);
+
       try {
         const children = await CollectionApi.listChildren(id);
         this.collections = updateChildrenInTree(this.collections, id, children);
@@ -407,7 +414,9 @@ export const useWorkspaceStore = defineStore("workspace", {
         );
         throw e;
       } finally {
-        setLoading(this.isLoading, "collections", false);
+        const next = new Set(this.loadingChildCollectionIds);
+        next.delete(id);
+        this.loadingChildCollectionIds = next;
       }
     },
 
