@@ -112,7 +112,7 @@
                   :disabled="isCoverMutating || isEditing"
                   class="px-3 py-1.5 text-xs transition-colors"
                   :class="
-                    hasCustomCover
+                    currentBookmark.imageMode === 'AUTO'
                       ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
                       : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40'
                   "
@@ -168,7 +168,7 @@
                   사진 변경
                 </button>
                 <button
-                  v-if="currentBookmark.customImageUrl"
+                  v-if="hasCustomCover"
                   type="button"
                   :disabled="isCoverMutating || isEditing"
                   class="inline-flex items-center h-9 px-3 rounded-md text-sm text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
