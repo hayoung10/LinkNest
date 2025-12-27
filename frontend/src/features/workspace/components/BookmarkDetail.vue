@@ -112,7 +112,7 @@
                   :disabled="isCoverMutating || isEditing"
                   class="px-3 py-1.5 text-xs transition-colors"
                   :class="
-                    hasCustomCover
+                    currentBookmark.imageMode === 'AUTO'
                       ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
                       : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40'
                   "
@@ -168,7 +168,7 @@
                   사진 변경
                 </button>
                 <button
-                  v-if="currentBookmark.customImageUrl"
+                  v-if="hasCustomCover"
                   type="button"
                   :disabled="isCoverMutating || isEditing"
                   class="inline-flex items-center h-9 px-3 rounded-md text-sm text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
@@ -266,6 +266,7 @@
         <template v-if="isEditing">
           <label class="block text-sm text-foreground">링크 *</label>
           <input
+            ref="urlRef"
             v-model="editedBookmark!.url"
             type="url"
             class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
@@ -280,15 +281,17 @@
         </template>
         <template v-else>
           <label class="block text-sm text-foreground">링크</label>
-          <div class="border rounded-lg p-4 bg-muted/30">
+          <div
+            class="border rounded-lg p-4 bg-white hover:bg-muted/20 transition-colors"
+          >
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="min-w-0 flex items-center gap-2">
-                <ExternalLinkIcon class="size-4 shrink-0" />
+                <ExternalLinkIcon class="size-4 shrink-0 text-primary" />
                 <a
                   :href="currentBookmark.url"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-primary hover:underline truncate"
+                  class="text-primary font-medium hover:underline truncate"
                   :title="currentBookmark.url"
                 >
                   {{ currentBookmark.url }}
@@ -436,14 +439,14 @@ const isCoverMutating = computed(
   () => isBookmarkMutating.value || isModeUpdating.value
 );
 
-defineExpose({ focusTitle });
+defineExpose({ focusUrl });
 
 // 편집 상태
 const isEditing = ref(false);
 const editedBookmark = ref<Bookmark | null>(null);
 const showDeleteDialog = ref(false);
 const confirmBtnRef = ref<HTMLElement | null>(null);
-const titleRef = ref<HTMLInputElement | null>(null);
+const urlRef = ref<HTMLInputElement | null>(null);
 
 const currentBookmark = computed<Bookmark>(() => {
   return isEditing.value && editedBookmark.value
@@ -481,13 +484,16 @@ const normalize = (s?: string | null) => {
 };
 
 // 핸들러
-function focusTitle() {
-  titleRef.value?.focus();
+function focusUrl() {
+  urlRef.value?.focus();
 }
-function handleEdit() {
+async function handleEdit() {
   editedBookmark.value = { ...props.bookmark };
   isEditing.value = true;
   closeEmojiPicker();
+
+  await nextTick();
+  focusUrl();
 }
 function handleCancel() {
   editedBookmark.value = null;
@@ -616,10 +622,26 @@ async function onCoverFileChange(event: Event) {
   const file = input?.files?.[0] ?? null;
   if (!file) return;
 
+  // 파일 타입 체크
+  if (!file.type.startsWith("image/")) {
+    toast.error("이미지 파일만 업로드할 수 있습니다.");
+    if (input) input.value = "";
+    return;
+  }
+
+  // 파일 크기 체크 (최대 5MB)
+  const maxSize = 5 * 1024 * 1024;
+  if (file.size > maxSize) {
+    toast.error("파일이 너무 큽니다. (최대 5MB)");
+    if (input) input.value = "";
+    return;
+  }
+
   try {
     const updated = await BookmarkApi.uploadCover(props.bookmark.id, file);
     updated.imageMode = "CUSTOM";
     emit("replace-bookmark", updated);
+    toast.success("커버 이미지가 변경되었습니다.");
   } catch (e) {
     console.error("커버 이미지 업로드 실패:", e);
     toast.error("커버 이미지 업로드에 실패했습니다.");

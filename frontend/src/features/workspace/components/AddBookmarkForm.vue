@@ -76,7 +76,6 @@
         <!-- 제목 입력 -->
         <input
           :id="titleId"
-          ref="titleRef"
           v-model="form.title"
           type="text"
           class="w-full border-0 border-b border-border/70 bg-transparent px-3 py-2.5 text-xl font-semibold placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/40"
@@ -91,6 +90,7 @@
         >
         <input
           :id="urlId"
+          ref="urlRef"
           v-model.trim="form!.url"
           type="url"
           class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
@@ -207,7 +207,7 @@ const { isMutating } = storeToRefs(useWorkspaceStore());
 
 const isSaving = computed(() => isMutating.value.createBookmark);
 
-defineExpose({ focusTitle });
+defineExpose({ focusUrl });
 
 const form = ref({
   title: "",
@@ -217,7 +217,8 @@ const form = ref({
   imageMode: "AUTO" as ImageMode,
 });
 
-const titleRef = ref<HTMLInputElement | null>(null);
+const urlRef = ref<HTMLInputElement | null>(null);
+
 const uid = Math.random().toString(36).slice(2);
 const titleId = `add-bm-title-${uid}`;
 const urlId = `add-bm-url-${uid}`;
@@ -234,7 +235,7 @@ const isUrlValid = computed(() => {
   }
 });
 const canSave = computed(
-  () => isUrlValid.value && props.collectionId !== null && isSaving.value
+  () => isUrlValid.value && props.collectionId !== null && !isSaving.value
 );
 
 const normalize = (s?: string | null) => {
@@ -243,8 +244,8 @@ const normalize = (s?: string | null) => {
 };
 
 // 핸들러
-function focusTitle() {
-  titleRef.value?.focus();
+function focusUrl() {
+  urlRef.value?.focus();
 }
 function resetForm() {
   form.value = {

@@ -39,7 +39,6 @@
         :open="selectedBookmarkId != null"
         width="min(640px, 92vw)"
         side="right"
-        @after-open="editRef?.focusTitle()"
         @close="selectedBookmarkId = null"
       >
         <!-- 상태 분기 -->
@@ -63,7 +62,6 @@
 
         <BookmarkDetail
           v-else
-          ref="editRef"
           :bookmark="selectedBookmark"
           :collection-name="selectedCollection?.name"
           @close="selectedBookmarkId = null"
@@ -78,7 +76,7 @@
         :open="isAddOpen"
         width="min(640px, 92vw)"
         side="right"
-        @after-open="addRef?.focusTitle()"
+        @after-open="addRef?.focusUrl()"
         @close="isAddOpen = false"
       >
         <AddBookmarkForm
@@ -161,8 +159,7 @@ const selectedBookmark = computed(() => {
 const isAddOpen = ref(false);
 const isSettingsOpen = ref(false);
 
-const addRef = ref<{ focusTitle: () => void } | null>(null);
-const editRef = ref<{ focusTitle: () => void } | null>(null);
+const addRef = ref<{ focusUrl: () => void } | null>(null);
 
 const isLoadingBookmarks = computed(() => isLoading.value.bookmarks);
 const bookmarksError = computed(() => error.value.bookmarks);
