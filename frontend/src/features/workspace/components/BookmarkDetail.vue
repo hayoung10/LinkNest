@@ -266,6 +266,7 @@
         <template v-if="isEditing">
           <label class="block text-sm text-foreground">링크 *</label>
           <input
+            ref="urlRef"
             v-model="editedBookmark!.url"
             type="url"
             class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
@@ -436,14 +437,14 @@ const isCoverMutating = computed(
   () => isBookmarkMutating.value || isModeUpdating.value
 );
 
-defineExpose({ focusTitle });
+defineExpose({ focusUrl });
 
 // 편집 상태
 const isEditing = ref(false);
 const editedBookmark = ref<Bookmark | null>(null);
 const showDeleteDialog = ref(false);
 const confirmBtnRef = ref<HTMLElement | null>(null);
-const titleRef = ref<HTMLInputElement | null>(null);
+const urlRef = ref<HTMLInputElement | null>(null);
 
 const currentBookmark = computed<Bookmark>(() => {
   return isEditing.value && editedBookmark.value
@@ -481,13 +482,16 @@ const normalize = (s?: string | null) => {
 };
 
 // 핸들러
-function focusTitle() {
-  titleRef.value?.focus();
+function focusUrl() {
+  urlRef.value?.focus();
 }
-function handleEdit() {
+async function handleEdit() {
   editedBookmark.value = { ...props.bookmark };
   isEditing.value = true;
   closeEmojiPicker();
+
+  await nextTick();
+  focusUrl();
 }
 function handleCancel() {
   editedBookmark.value = null;
