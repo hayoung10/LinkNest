@@ -281,15 +281,17 @@
         </template>
         <template v-else>
           <label class="block text-sm text-foreground">링크</label>
-          <div class="border rounded-lg p-4 bg-muted/30">
+          <div
+            class="border rounded-lg p-4 bg-white hover:bg-muted/20 transition-colors"
+          >
             <div class="flex items-center justify-between gap-3 text-sm">
               <div class="min-w-0 flex items-center gap-2">
-                <ExternalLinkIcon class="size-4 shrink-0" />
+                <ExternalLinkIcon class="size-4 shrink-0 text-primary" />
                 <a
                   :href="currentBookmark.url"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-primary hover:underline truncate"
+                  class="text-primary font-medium hover:underline truncate"
                   :title="currentBookmark.url"
                 >
                   {{ currentBookmark.url }}
