@@ -219,6 +219,31 @@ function onRetryCollections() {
 // 확장 상태
 const expandedIds = ref<Set<ID>>(new Set());
 
+function removeExpanded(node: Collection, expanded: Set<ID>) {
+  for (const child of node.children ?? []) {
+    expanded.delete(child.id);
+    if (child.children?.length) {
+      removeExpanded(child, expanded);
+    }
+  }
+}
+
+function closeChildCollections(
+  parentId: ID,
+  expanded: Set<ID>,
+  nodes: Collection[]
+) {
+  for (const node of nodes) {
+    if (node.id === parentId) {
+      removeExpanded(node, expanded);
+      return;
+    }
+    if (node.children?.length) {
+      closeChildCollections(parentId, expanded, node.children);
+    }
+  }
+}
+
 async function toggleExpand(id: ID) {
   if (isLoadingCollections.value || hasError.value) return;
 
@@ -230,6 +255,7 @@ async function toggleExpand(id: ID) {
     next.add(id);
   } else {
     next.delete(id);
+    closeChildCollections(id, next, collections.value);
   }
 
   expandedIds.value = next;
