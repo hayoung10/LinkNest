@@ -18,14 +18,17 @@
 
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
-import { useAuthStore } from "./stores/auth";
 import { RouterView, useRoute } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import { ToastType, useToastStore } from "@/stores/toast";
+import { usePreferencesStore } from "@/stores/preferences";
 import Toast from "@/components/ui/Toast.vue";
-import { ToastType, useToastStore } from "./stores/toast";
 
 const route = useRoute();
+
 const toast = useToastStore();
 const auth = useAuthStore();
+const preferences = usePreferencesStore();
 
 const ready = ref(false);
 
@@ -33,6 +36,10 @@ onMounted(async () => {
   try {
     if (!auth.restored) {
       await auth.restore();
+    }
+
+    if (auth.isLoggedIn) {
+      await preferences.load();
     }
   } finally {
     ready.value = true; // 복원 성공/실패와 무관하게 화면은 진행

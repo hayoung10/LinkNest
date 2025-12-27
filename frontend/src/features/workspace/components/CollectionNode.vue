@@ -18,16 +18,24 @@
       <button
         v-if="hasChildren"
         type="button"
-        :disabled="disabled || isEditing || isRenaming"
+        :disabled="disabled || isEditing || isRenaming || isLoadingChildren"
         class="size-5 grid place-items-center text-muted-foreground rounded hover:bg-accent/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         aria-label="하위 항목 토글"
         @click.stop="$emit('toggle', node.id)"
       >
-        <ChevronIcon
-          :size="16"
-          :direction="expanded ? 'down' : 'right'"
-          class="size-4 transition-transform duration-150"
-        />
+        <span class="relative inline-block size-4">
+          <span
+            v-show="isLoadingChildren"
+            class="absolute inset-0 m-auto size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+            aria-label="하위 컬렉션 로딩 중"
+          />
+          <ChevronIcon
+            v-show="!isLoadingChildren"
+            :size="16"
+            :direction="expanded ? 'down' : 'right'"
+            class="absolute inset-0 m-auto size-4 transition-transform duration-150"
+          />
+        </span>
       </button>
       <span v-else class="inline-block w-5" aria-hidden="true"></span>
 
@@ -113,6 +121,7 @@
           :draft-name="draftName"
           :is-renaming="isRenaming"
           :disabled="disabled"
+          :loading-child-collection-ids="loadingChildCollectionIds"
           @toggle="$emit('toggle', $event)"
           @add-collection="$emit('add-collection', $event)"
           @open-all="$emit('open-all', $event)"
@@ -150,6 +159,8 @@ const props = withDefaults(
 
     disabled?: boolean;
 
+    loadingChildCollectionIds?: Set<ID>;
+
     // 이름 변경에 대한 상태
     editingId?: ID | null;
     draftName?: string;
@@ -161,6 +172,8 @@ const props = withDefaults(
     selectedCollectionId: null,
 
     disabled: false,
+
+    loadingChildCollectionIds: () => new Set<ID>(),
 
     editingId: null,
     draftName: "",
@@ -189,6 +202,10 @@ const hasChildren = computed(() => (props.node.childCount ?? 0) > 0);
 const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
 const isEditing = computed(() => props.editingId === props.node.id);
 const isActive = computed(() => props.selectedCollectionId === props.node.id);
+
+const isLoadingChildren = computed(() =>
+  props.loadingChildCollectionIds?.has(props.node.id)
+);
 
 // 핸들러 (편집 중일 때 비활성화)
 const nodeHandlers = computed(() => {

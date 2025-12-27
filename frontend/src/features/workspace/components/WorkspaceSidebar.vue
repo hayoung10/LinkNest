@@ -65,6 +65,7 @@
           :draft-name="draftName"
           :is-renaming="isRenaming"
           :disabled="isLoadingCollections || hasError || isCollectionMutating"
+          :loading-child-collection-ids="loadingChildCollectionIds"
           @toggle="toggleExpand"
           @add-collection="openAddCollectionDialog"
           @open-all="$emit('open-all', $event)"
@@ -173,8 +174,14 @@ const emit = defineEmits<{
 }>();
 
 const workspace = useWorkspaceStore();
-const { collections, selectedCollectionId, isLoading, error, isMutating } =
-  storeToRefs(workspace);
+const {
+  collections,
+  selectedCollectionId,
+  isLoading,
+  error,
+  isMutating,
+  loadingChildCollectionIds,
+} = storeToRefs(workspace);
 
 const isLoadingCollections = computed(() => isLoading.value.collections);
 const collectionsError = computed(() => error.value.collections);
@@ -212,6 +219,31 @@ function onRetryCollections() {
 // 확장 상태
 const expandedIds = ref<Set<ID>>(new Set());
 
+function removeExpanded(node: Collection, expanded: Set<ID>) {
+  for (const child of node.children ?? []) {
+    expanded.delete(child.id);
+    if (child.children?.length) {
+      removeExpanded(child, expanded);
+    }
+  }
+}
+
+function closeChildCollections(
+  parentId: ID,
+  expanded: Set<ID>,
+  nodes: Collection[]
+) {
+  for (const node of nodes) {
+    if (node.id === parentId) {
+      removeExpanded(node, expanded);
+      return;
+    }
+    if (node.children?.length) {
+      closeChildCollections(parentId, expanded, node.children);
+    }
+  }
+}
+
 async function toggleExpand(id: ID) {
   if (isLoadingCollections.value || hasError.value) return;
 
@@ -223,6 +255,7 @@ async function toggleExpand(id: ID) {
     next.add(id);
   } else {
     next.delete(id);
+    closeChildCollections(id, next, collections.value);
   }
 
   expandedIds.value = next;

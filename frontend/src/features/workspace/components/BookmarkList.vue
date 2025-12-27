@@ -39,7 +39,7 @@
         <div class="min-w-0 flex items-center gap-2 pl-3">
           <FolderIcon size="28" class="text-muted-foreground opacity-80" />
           <h2 class="text-xl font-semibold text-foreground truncate">
-            {{ collection?.name }}
+            {{ collection?.name ?? "컬렉션" }}
           </h2>
         </div>
 
@@ -244,7 +244,7 @@ const isEmpty = computed(
     bookmarks.value.length === 0
 );
 
-const hasSelection = computed(() => props.collection != null);
+const hasSelection = computed(() => selectedCollectionId.value != null);
 const isAddDisabled = computed(
   () =>
     !hasSelection.value ||
