@@ -5,6 +5,7 @@ import com.linknest.backend.collection.dto.CollectionCreateReq;
 import com.linknest.backend.collection.dto.CollectionEmojiUpdateReq;
 import com.linknest.backend.collection.dto.CollectionRes;
 import com.linknest.backend.collection.dto.CollectionUpdateReq;
+import com.linknest.backend.common.dto.IdCount;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.user.UserRepository;
@@ -13,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -84,7 +87,25 @@ public class CollectionService {
                 ? collectionRepository.findAllByUserIdAndParentIsNullOrderBySortOrderAscCreatedAtAsc(userId)
                 : collectionRepository.findAllByUserIdAndParentIdOrderBySortOrderAscCreatedAtAsc(userId, parentId);
 
-        return list.stream().map(c -> buildResWithCount(userId, c)).toList();
+        if(list.isEmpty()) return List.of();
+
+        List<Long> collectionIds = list.stream().map(Collection::getId).toList();
+
+        // 북마크 개수 배치 집계
+        Map<Long, Long> bookmarkCounts = bookmarkRepository.countByCollectionIds(collectionIds).stream()
+                .collect(Collectors.toMap(IdCount::id, IdCount::count));
+
+        // 자식 컬렉션 개수 배치 집계
+        Map<Long, Long> childCounts = collectionRepository.countChildrenByParentIds(userId, collectionIds).stream()
+                .collect(Collectors.toMap(IdCount::id, IdCount::count));
+
+        return list.stream()
+                .map(c -> mapper.toResWithCount(
+                        c,
+                        bookmarkCounts.getOrDefault(c.getId(), 0L),
+                        childCounts.getOrDefault(c.getId(), 0L)
+                ))
+                .toList();
     }
 
     // ---------- 이동 (경로 변경) ----------
@@ -137,12 +158,8 @@ public class CollectionService {
     // ==========================================================
 
     private Collection requireOwnedCollection(Long userId, Long id) {
-        Collection collection =  collectionRepository.findById(id)
+        return collectionRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COLLECTION_NOT_FOUND));
-        if(!collection.getUser().getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        }
-        return collection;
     }
 
     private void validateMoveTarget(Collection collection, Collection newParent) {
