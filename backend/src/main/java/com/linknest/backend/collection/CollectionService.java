@@ -110,25 +110,23 @@ public class CollectionService {
     @Transactional
     public void reorder(Long userId, Long id, int newOrder) {
         Collection collection = requireOwnedCollection(userId, id);
-        Long parentId = (collection.getParent() == null)
-                ? null : collection.getParent().getId();
+        Long parentId = (collection.getParent() == null) ? null : collection.getParent().getId();
 
         List<Collection> siblings = (parentId == null)
                 ? collectionRepository.findAllByUserIdAndParentIsNullOrderBySortOrderAscCreatedAtAsc(userId)
                 : collectionRepository.findAllByUserIdAndParentIdOrderBySortOrderAscCreatedAtAsc(userId, parentId);
 
-        int oldIdx = siblings.indexOf(collection);
-        if(oldIdx < 0) {
-            throw new BusinessException(ErrorCode.COLLECTION_NOT_FOUND);
-        }
+        int oldIdx = requireIndexById(siblings, id);
+
+        int targetIdx = resolveTargetIndex(newOrder, siblings.size() - 1);
+        if(oldIdx == targetIdx) return;
 
         // 재배치
         Collection moving = siblings.remove(oldIdx);
-        int idx = Math.max(0, Math.min(newOrder, siblings.size()));
-        siblings.add(idx, moving);
+        siblings.add(targetIdx, moving);
 
         // sortOrder 재정렬
-        int from = Math.min(oldIdx, idx);
+        int from = Math.min(oldIdx, targetIdx);
         for(int i = from; i < siblings.size(); i++) {
             siblings.get(i).setSortOrder(i);
         }
@@ -190,5 +188,12 @@ public class CollectionService {
                 throw new BusinessException(ErrorCode.COLLECTION_CYCLE_DETECTED);
             }
         }
+    }
+
+    // requestedOrder를 0~maxIndex 범위로 보정
+    private int resolveTargetIndex(int requestedOrder, int maxIndex) {
+        if(maxIndex < 0) return 0;
+        if(requestedOrder < 0) return 0;
+        return Math.min(requestedOrder, maxIndex);
     }
 }
