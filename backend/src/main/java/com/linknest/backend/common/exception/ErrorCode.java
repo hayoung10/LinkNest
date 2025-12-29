@@ -26,6 +26,8 @@ public enum ErrorCode {
 
     // collection
     COLLECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "컬렉션을 찾을 수 없습니다."),
+    COLLECTION_PARENT_SELF(HttpStatus.BAD_REQUEST, "컬렉션을 자기 자신으로 이동할 수 없습니다."),
+    COLLECTION_CYCLE_DETECTED(HttpStatus.BAD_REQUEST, "컬렉션 이동으로 인해 순환 구조가 발생합니다."),
 
     // refresh token
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다."),

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface CollectionRepository extends JpaRepository<Collection, Long> {
     // 루트 컬렉션 자식 목록
@@ -23,4 +24,6 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
     Integer findMaxSortOrderByUserIdAndParentId(@Param("userId") Long userId, @Param("parentId") Long parentId);
 
     long countByUserIdAndParentId(Long userId, Long parentId);
+
+    Optional<Collection> findByIdAndUserId(Long id, Long userId);
 }
