@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -77,6 +78,8 @@ public class CollectionService {
 
     // ---------- 하위 컬렉션 목록 조회 ----------
     public List<CollectionRes> listChildren(Long userId, Long parentId) {
+        if(parentId != null) requireOwnedCollection(userId, parentId);
+
         List<Collection> list = (parentId == null)
                 ? collectionRepository.findAllByUserIdAndParentIsNullOrderBySortOrderAscCreatedAtAsc(userId)
                 : collectionRepository.findAllByUserIdAndParentIdOrderBySortOrderAscCreatedAtAsc(userId, parentId);
@@ -87,13 +90,13 @@ public class CollectionService {
     // ---------- 이동 (경로 변경) ----------
     @Transactional
     public void move(Long userId, Long id, Long targetParentId) {
-        Collection newParent = (targetParentId == null) ? null : requireOwnedCollection(userId, targetParentId);
         Collection collection = requireOwnedCollection(userId, id);
 
-        // 사이클 검사: newParent가 collection의 하위인 경우 -> 사이클 발생
-        if(newParent != null && isDescendant(newParent, collection)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
+        Long currentParentId = (collection.getParent() == null) ? null : collection.getParent().getId();
+        if(Objects.equals(currentParentId, targetParentId)) return;
+
+        Collection newParent = (targetParentId == null) ? null : requireOwnedCollection(userId, targetParentId);
+        validateMoveTarget(collection, newParent);
 
         int nextOrder = (newParent == null)
                 ? nextOrderForRoot(userId)
@@ -114,12 +117,17 @@ public class CollectionService {
                 ? collectionRepository.findAllByUserIdAndParentIsNullOrderBySortOrderAscCreatedAtAsc(userId)
                 : collectionRepository.findAllByUserIdAndParentIdOrderBySortOrderAscCreatedAtAsc(userId, parentId);
 
-        // 재배치
         int oldIdx = siblings.indexOf(collection);
-        siblings.remove(oldIdx);
-        int idx = Math.max(0, Math.min(newOrder, siblings.size()));
-        siblings.add(idx, collection);
+        if(oldIdx < 0) {
+            throw new BusinessException(ErrorCode.COLLECTION_NOT_FOUND);
+        }
 
+        // 재배치
+        Collection moving = siblings.remove(oldIdx);
+        int idx = Math.max(0, Math.min(newOrder, siblings.size()));
+        siblings.add(idx, moving);
+
+        // sortOrder 재정렬
         int from = Math.min(oldIdx, idx);
         for(int i = from; i < siblings.size(); i++) {
             siblings.get(i).setSortOrder(i);
@@ -139,26 +147,48 @@ public class CollectionService {
         return collection;
     }
 
+    private void validateMoveTarget(Collection collection, Collection newParent) {
+        if(newParent == null) return;
+
+        if(newParent.getId().equals(collection.getId())) {
+            throw new BusinessException(ErrorCode.COLLECTION_PARENT_SELF);
+        }
+
+        // 사이클 검사: newParent가 collection의 하위면 사이클 발생
+        assertNoCycle(collection, newParent);
+    }
+
+    private int requireIndexById(List<Collection> list, Long id) {
+        for(int i = 0; i < list.size(); i++) {
+            if(list.get(i).getId().equals(id)) return i;
+        }
+        throw new BusinessException(ErrorCode.COLLECTION_NOT_FOUND);
+    }
+
     private CollectionRes buildResWithCount(Long userId, Collection c) {
         long bookmarkCount = bookmarkRepository.countByCollectionId(c.getId());
         long childCount = collectionRepository.countByUserIdAndParentId(userId, c.getId());
         return mapper.toResWithCount(c, bookmarkCount, childCount);
     }
 
-    private int nextOrderForRoot(Long userId) { // 루트 컬렉션 중 가장 큰 sortOrder + 1 계산
+    // 루트 컬렉션 중 가장 큰 sortOrder + 1 계산
+    private int nextOrderForRoot(Long userId) {
         Integer max = collectionRepository.findMaxSortOrderByUserIdAndParentIsNull(userId);
         return (max == null ? 0 : max + 1);
     }
 
-    private int nextOrderForSiblings(Long userId, Long parentId) { // 부모 컬렉션의 자식들 중 가장 큰 sotOrder + 1 계산
+    // 부모 컬렉션의 자식들 중 가장 큰 sotOrder + 1 계산
+    private int nextOrderForSiblings(Long userId, Long parentId) {
         Integer max = collectionRepository.findMaxSortOrderByUserIdAndParentId(userId, parentId);
         return (max == null ? 0 : max + 1);
     }
 
-    private boolean isDescendant(Collection node, Collection ancestor) { // 자손 검사
-        for(Collection cur = node.getParent(); cur != null; cur = cur.getParent()) {
-            if(cur.getId().equals(ancestor.getId())) return true;
+    // newParent 아래로 collection이 이동했을 때, 순환이 생기는지 검증
+    private void assertNoCycle(Collection collection, Collection newParent) {
+        for(Collection cur = newParent; cur != null; cur = cur.getParent()) {
+            if (cur.getId().equals(collection.getId())) {
+                throw new BusinessException(ErrorCode.COLLECTION_CYCLE_DETECTED);
+            }
         }
-        return false;
     }
 }
