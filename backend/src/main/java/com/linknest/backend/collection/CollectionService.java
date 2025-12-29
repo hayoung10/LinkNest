@@ -158,12 +158,8 @@ public class CollectionService {
     // ==========================================================
 
     private Collection requireOwnedCollection(Long userId, Long id) {
-        Collection collection =  collectionRepository.findById(id)
+        return collectionRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COLLECTION_NOT_FOUND));
-        if(!collection.getUser().getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        }
-        return collection;
     }
 
     private void validateMoveTarget(Collection collection, Collection newParent) {
