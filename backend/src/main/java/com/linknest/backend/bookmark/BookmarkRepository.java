@@ -1,5 +1,6 @@
 package com.linknest.backend.bookmark;
 
+import com.linknest.backend.common.dto.IdCount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,4 +18,10 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     List<Bookmark> findAllSortedByTitle(@Param("userId") Long userId, @Param("collectionId") Long collectionId);
 
     long countByCollectionId(Long collectionId);
+
+    @Query("select new com.linknest.backend.common.dto.IdCount(b.collection.id, count(b)) " +
+            "from Bookmark b " +
+            "where b.collection.id in :collectionIds " +
+            "group by b.collection.id")
+    List<IdCount> countByCollectionIds(@Param("collectionIds") List<Long> collectionIds);
 }
