@@ -10,9 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -172,6 +170,19 @@ public class CollectionService {
                         childCounts.getOrDefault(c.getId(), 0L)
                 ))
                 .toList();
+    }
+
+    // ---------- 컬렉션 경로 조회 ----------
+    public List<CollectionPathRes> getPath(Long userId, Long id) {
+        Collection cur = requireOwnedCollection(userId, id);
+
+        List<CollectionPathRes> path = new ArrayList<>();
+        for(Collection node = cur; node != null; node = node.getParent()) {
+            path.add(new CollectionPathRes(node.getId(), node.getName(), node.getEmoji()));
+        }
+
+        Collections.reverse(path);
+        return path;
     }
 
     // ==========================================================
