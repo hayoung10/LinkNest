@@ -21,7 +21,7 @@
         :key="'list-' + (selectedCollection?.id || 'none')"
         :collection="selectedCollection"
         :selected-bookmark-id="selectedBookmarkId"
-        @open-add="isAddOpen = true"
+        @open-add="openAddPanel"
         @select-bookmark="onSelectBookmark"
       />
 
@@ -30,7 +30,7 @@
         :key="'card-' + (selectedCollection?.id || 'none')"
         :collection="selectedCollection"
         :selected-bookmark-id="selectedBookmarkId"
-        @open-add="isAddOpen = true"
+        @open-add="openAddPanel"
         @select-bookmark="onSelectBookmark"
       />
 
@@ -80,9 +80,10 @@
         @close="isAddOpen = false"
       >
         <AddBookmarkForm
+          v-if="selectedCollection"
           ref="addRef"
           :open="isAddOpen"
-          :collection-id="selectedCollection?.id ?? null"
+          :collection-id="selectedCollection.id"
           @close="isAddOpen = false"
           @submit="onAddBookmark"
         />
@@ -142,10 +143,9 @@ const auth = useAuthStore();
 const router = useRouter();
 
 const selectedCollection = computed<Collection | null>(() => {
-  if (selectedCollectionId.value == null) return null;
-  return (
-    collections.value.find((c) => c.id === selectedCollectionId.value) ?? null
-  );
+  const sid = selectedCollectionId.value;
+  if (sid == null) return null;
+  return findCollectionInTree(collections.value, sid);
 });
 
 const isListLayout = computed(() => defaultLayout.value === "LIST");
@@ -179,6 +179,19 @@ const isDetailPending = computed(() => {
 onMounted(() => {
   workspace.fetchCollections();
 });
+
+function findCollectionInTree(nodes: Collection[], id: ID): Collection | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+
+    const children = (node as any).children as Collection[] | undefined;
+    if (children?.length) {
+      const found = findCollectionInTree(children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 
 // 핸들러
 async function onSelectCollection(c: Collection) {
@@ -236,6 +249,7 @@ async function onDeleteCollection(id: ID) {
       workspace.selectCollection(null);
 
       selectedBookmarkId.value = null;
+      isAddOpen.value = false;
       await workspace.fetchBookmarks();
     }
   } catch (e) {
@@ -280,6 +294,14 @@ async function onOpenAllBookmarks(collectionId: ID) {
 function onSelectBookmark(id: ID) {
   selectedBookmarkId.value = id;
   isSettingsOpen.value = false;
+}
+
+function openAddPanel() {
+  if (!selectedCollection.value?.id) {
+    toast.info("북마크를 추가할 컬렉션을 선택해주세요.");
+    return;
+  }
+  isAddOpen.value = true;
 }
 
 async function onAddBookmark(payload: {
