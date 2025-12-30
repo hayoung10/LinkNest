@@ -1,10 +1,7 @@
 package com.linknest.backend.collection;
 
 import com.linknest.backend.bookmark.BookmarkRepository;
-import com.linknest.backend.collection.dto.CollectionCreateReq;
-import com.linknest.backend.collection.dto.CollectionEmojiUpdateReq;
-import com.linknest.backend.collection.dto.CollectionRes;
-import com.linknest.backend.collection.dto.CollectionUpdateReq;
+import com.linknest.backend.collection.dto.*;
 import com.linknest.backend.common.dto.IdCount;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
@@ -151,6 +148,30 @@ public class CollectionService {
         for(int i = from; i < siblings.size(); i++) {
             siblings.get(i).setSortOrder(i);
         }
+    }
+
+    // ---------- 전체 컬렉션 트리 조회 ----------
+    public List<CollectionNodeRes> listTree(Long userId) {
+        List<Collection> all = collectionRepository
+                .findAllByUserIdOrderByParentIdAscSortOrderAsc(userId);
+
+        if(all.isEmpty()) return List.of();
+
+        List<Long> ids = all.stream().map(Collection::getId).toList();
+
+        Map<Long, Long> bookmarkCounts = bookmarkRepository.countByCollectionIds(ids).stream()
+                .collect(Collectors.toMap(IdCount::id, IdCount::count));
+
+        Map<Long, Long> childCounts = collectionRepository.countChildrenByParentIds(userId, ids).stream()
+                .collect(Collectors.toMap(IdCount::id, IdCount::count));
+
+        return all.stream()
+                .map(c -> mapper.toNodeRes(
+                        c,
+                        bookmarkCounts.getOrDefault(c.getId(), 0L),
+                        childCounts.getOrDefault(c.getId(), 0L)
+                ))
+                .toList();
     }
 
     // ==========================================================

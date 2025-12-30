@@ -1,6 +1,7 @@
 package com.linknest.backend.collection;
 
 import com.linknest.backend.collection.dto.CollectionCreateReq;
+import com.linknest.backend.collection.dto.CollectionNodeRes;
 import com.linknest.backend.collection.dto.CollectionRes;
 import com.linknest.backend.collection.dto.CollectionUpdateReq;
 import org.mapstruct.*;
@@ -25,4 +26,9 @@ public interface CollectionMapper {
     @Mapping(target = "bookmarkCount", expression = "java(bookmarkCount)")
     @Mapping(target = "childCount", expression = "java(childCount)")
     CollectionRes toResWithCount(Collection c, long bookmarkCount, long childCount);
+
+    @Mapping(target = "parentId", expression = "java(c.getParent() == null ? null : c.getParent().getId())")
+    @Mapping(target = "bookmarkCount", expression = "java(bookmarkCount)")
+    @Mapping(target = "childCount", expression = "java(childCount)")
+    CollectionNodeRes toNodeRes(Collection c, long bookmarkCount, long childCount);
 }
