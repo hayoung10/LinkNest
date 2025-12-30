@@ -17,12 +17,12 @@ public interface CollectionMapper {
     void updateFromDto(CollectionUpdateReq updateReq, @MappingTarget Collection collection);
 
     // Entity -> Res
-    @Mapping(target = "bookmarkCount", constant = "0L")
-    @Mapping(target = "childCount", constant = "0L")
-    @Mapping(target = "parentId", source = "parent.id")
-    CollectionRes toRes(Collection collection);
+    @Mapping(target = "bookmarkCount", constant = "java(0L)")
+    @Mapping(target = "childCount", constant = "java(0L)")
+    @Mapping(target = "parentId", expression = "java(c.getParent() == null ? null : c.getParent().getId())")
+    CollectionRes toRes(Collection c);
 
-    @InheritConfiguration(name = "toRes")
+    @Mapping(target = "parentId", expression = "java(c.getParent() == null ? null : c.getParent().getId())")
     @Mapping(target = "bookmarkCount", expression = "java(bookmarkCount)")
     @Mapping(target = "childCount", expression = "java(childCount)")
     CollectionRes toResWithCount(Collection c, long bookmarkCount, long childCount);
