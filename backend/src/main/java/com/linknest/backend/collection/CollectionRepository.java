@@ -30,4 +30,6 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
             "where c.user.id = :userId and c.parent.id in :parentIds " +
             "group by c.parent.id")
     List<IdCount> countChildrenByParentIds(@Param("userId") Long userId, @Param("parentIds") List<Long> parentIds);
+
+    List<Collection> findAllByUserIdOrderByParentIdAscSortOrderAsc(Long userId);
 }

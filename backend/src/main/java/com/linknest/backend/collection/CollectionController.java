@@ -86,4 +86,17 @@ public class CollectionController {
         service.reorder(userId, id, req.newOrder());
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/tree")
+    public ResponseEntity<List<CollectionNodeRes>> tree(@AuthenticationPrincipal(expression = "id") Long userId) {
+        List<CollectionNodeRes> res = service.listTree(userId);
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/{id}/path")
+    public ResponseEntity<List<CollectionPathRes>> path(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                        @PathVariable @Min(1) Long id) {
+        List<CollectionPathRes> res = service.getPath(userId, id);
+        return ResponseEntity.ok(res);
+    }
 }
