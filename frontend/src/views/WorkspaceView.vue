@@ -175,7 +175,7 @@ const isDetailPending = computed(() => {
 });
 
 onMounted(() => {
-  workspace.fetchCollections();
+  workspace.fetchCollections(null);
   workspace.fetchCollectionTree();
 });
 

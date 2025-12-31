@@ -125,30 +125,6 @@ function updateChildrenInTree(
     return node;
   });
 }
-// 트리에서 특정 parentId를 가진 노드에 자식을 추가
-function addChildToTree(
-  nodes: Collection[],
-  parentId: ID,
-  child: Collection
-): Collection[] {
-  return nodes.map((node) => {
-    if (node.id === parentId) {
-      return {
-        ...node,
-        children: [...(node.children ?? []), child],
-        childCount: (node.childCount ?? 0) + 1,
-      };
-    }
-
-    if (node.children?.length) {
-      return {
-        ...node,
-        children: addChildToTree(node.children, parentId, child),
-      };
-    }
-    return node;
-  });
-}
 // 트리에서 특정 collectionId를 가진 노드의 bookmarkCount를 cnt만큼 변경
 function updateBookmarkCountInTree(
   nodes: Collection[],
@@ -284,7 +260,28 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
       if (this.collectionNodes?.length) {
         this.collectionNodes = this.collectionNodes.map((n) =>
-          n.id === collectionId ? { ...n, bookmarkCount: Math.max(cnt, 0) } : n
+          n.id === collectionId
+            ? { ...n, bookmarkCount: Math.max(0, (n.bookmarkCount ?? 0) + cnt) }
+            : n
+        );
+      }
+    },
+    setBookmarkCount(collectionId: ID, count: number) {
+      if (this.collectionNodes?.length) {
+        this.collectionNodes = this.collectionNodes.map((n) =>
+          n.id === collectionId
+            ? { ...n, bookmarkCount: Math.max(0, count) }
+            : n
+        );
+      }
+
+      if (this.collections?.length) {
+        this.collections = updateBookmarkCountInTree(
+          this.collections,
+          collectionId,
+          count -
+            (this.collections.find((c) => c.id === collectionId)
+              ?.bookmarkCount ?? 0)
         );
       }
     },
@@ -298,15 +295,11 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.mutateError.createCollection = null;
       setMutating(this.isMutating, "createCollection", true);
       try {
-        const created = await CollectionApi.createCollection(payload);
-        const parentId = payload.parentId ?? null;
+        await CollectionApi.createCollection(payload);
 
-        if (parentId === null) {
-          this.collections.push(created); // 루트 컬렉션 추가
-          return;
-        }
+        await this.fetchCollections(payload.parentId ?? null);
 
-        this.collections = addChildToTree(this.collections, parentId, created); // 하위 컬렉션 추가
+        await this.fetchCollectionTree();
       } catch (e) {
         fail(
           this.mutateError,
@@ -345,6 +338,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       try {
         const updated = await CollectionApi.updateCollection(id, payload);
         this.collections = updateNodeInTree(this.collections, id, updated);
+        await this.fetchCollectionTree();
       } catch (e) {
         fail(
           this.mutateError,
@@ -364,6 +358,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       try {
         const updated = await CollectionApi.updateCollectionEmoji(id, payload);
         this.collections = updateNodeInTree(this.collections, id, updated);
+        await this.fetchCollectionTree();
       } catch (e) {
         fail(
           this.mutateError,
@@ -383,6 +378,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       try {
         await CollectionApi.deleteCollection(id);
         this.collections = removeNodeFromTree(this.collections, id);
+        await this.fetchCollectionTree();
 
         // 선택된 컬렉션을 제거한 경우
         if (this.selectedCollectionId === id) {
@@ -464,6 +460,7 @@ export const useWorkspaceStore = defineStore("workspace", {
 
         // TODO: 현재 전체 트리를 다시 가져오는 방식으로 수정
         await this.fetchCollections(null);
+        await this.fetchCollectionTree();
       } catch (e) {
         fail(
           this.mutateError,
@@ -483,6 +480,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       try {
         await CollectionApi.reorderCollection(id, { newOrder });
         await this.fetchCollections(parentId);
+        await this.fetchCollectionTree();
       } catch (e) {
         fail(
           this.mutateError,
@@ -608,7 +606,7 @@ export const useWorkspaceStore = defineStore("workspace", {
         const list = await BookmarkApi.listBookmarks(cid);
         this.bookmarks = list;
 
-        this.updateBookmarkCount(cid, list.length);
+        this.setBookmarkCount(cid, list.length);
       } catch (e) {
         fail(this.error, "bookmarks", e, "북마크 목록을 불러오지 못했습니다.");
         throw e;
