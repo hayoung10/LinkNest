@@ -183,7 +183,7 @@ import {
   watch,
   type CSSProperties,
 } from "vue";
-import type { Collection, ID } from "@/types/common";
+import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import TrashIcon from "@/components/icons/TrashIcon.vue";
 import EditIcon from "@/components/icons/EditIcon.vue";
@@ -193,7 +193,7 @@ import { storeToRefs } from "pinia";
 import { useWorkspaceStore } from "@/stores/workspace";
 
 const props = defineProps<{
-  collection: Collection;
+  collection: CollectionNodeModel;
   disabled?: boolean;
 }>();
 const emit = defineEmits<{

@@ -4,7 +4,6 @@
     <WorkspaceSidebar
       class="w-64 border-r border-border"
       @add-collection="onAddCollection"
-      @select-collection="onSelectCollection"
       @rename-collection="onRenameCollection"
       @update-emoji="onUpdateCollectionEmoji"
       @delete-collection="onDeleteCollection"
@@ -18,7 +17,7 @@
       <!-- 목록 -->
       <BookmarkList
         v-if="isListLayout"
-        :key="'list-' + (selectedCollection?.id || 'none')"
+        :key="'list-' + (selectedCollectionId || 'none')"
         :collection="selectedCollection"
         :selected-bookmark-id="selectedBookmarkId"
         @open-add="openAddPanel"
@@ -27,7 +26,7 @@
 
       <BookmarkCard
         v-else
-        :key="'card-' + (selectedCollection?.id || 'none')"
+        :key="'card-' + (selectedCollectionId || 'none')"
         :collection="selectedCollection"
         :selected-bookmark-id="selectedBookmarkId"
         @open-add="openAddPanel"
@@ -80,10 +79,9 @@
         @close="isAddOpen = false"
       >
         <AddBookmarkForm
-          v-if="selectedCollection"
           ref="addRef"
           :open="isAddOpen"
-          :collection-id="selectedCollection.id"
+          :collection-id="selectedCollectionId"
           @close="isAddOpen = false"
           @submit="onAddBookmark"
         />
@@ -103,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import {
   WorkspaceSidebar,
   BookmarkList,
@@ -178,13 +176,14 @@ const isDetailPending = computed(() => {
 
 onMounted(() => {
   workspace.fetchCollections();
+  workspace.fetchCollectionTree();
 });
 
 function findCollectionInTree(nodes: Collection[], id: ID): Collection | null {
   for (const node of nodes) {
     if (node.id === id) return node;
 
-    const children = (node as any).children as Collection[] | undefined;
+    const children = node.children;
     if (children?.length) {
       const found = findCollectionInTree(children, id);
       if (found) return found;
@@ -194,20 +193,6 @@ function findCollectionInTree(nodes: Collection[], id: ID): Collection | null {
 }
 
 // 핸들러
-async function onSelectCollection(c: Collection) {
-  try {
-    workspace.selectCollection(c.id);
-
-    selectedBookmarkId.value = null;
-    isAddOpen.value = false;
-    isSettingsOpen.value = false;
-
-    await workspace.fetchBookmarks(c.id);
-  } catch (e) {
-    toast.error("북마크 목록을 불러오지 못했습니다.");
-  }
-}
-
 async function onAddCollection(payload: { name: string; parentId: ID | null }) {
   try {
     await workspace.createCollection({
@@ -297,7 +282,8 @@ function onSelectBookmark(id: ID) {
 }
 
 function openAddPanel() {
-  if (!selectedCollection.value?.id) {
+  const cid = selectedCollectionId.value;
+  if (cid == null) {
     toast.info("북마크를 추가할 컬렉션을 선택해주세요.");
     return;
   }
@@ -337,8 +323,9 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
       emoji: payload.emoji ?? null,
     });
 
-    if (selectedCollection.value?.id != null) {
-      await workspace.fetchBookmarks(selectedCollection.value.id);
+    const cid = selectedCollectionId.value;
+    if (cid != null) {
+      await workspace.fetchBookmarks(cid);
     }
   } catch (e) {
     toast.error("북마크 수정에 실패했습니다.");
@@ -346,13 +333,14 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
 }
 
 async function onDeleteBookmark(id: ID) {
+  const cid = selectedCollectionId.value;
+
   try {
     await workspace.deleteBookmark(id);
 
-    if (selectedCollection.value?.id != null) {
-      await workspace.fetchBookmarks(selectedCollection.value.id);
+    if (cid != null) {
+      await workspace.fetchBookmarks(cid);
     }
-
     selectedBookmarkId.value = null;
 
     toast.success("북마크가 삭제되었습니다.");
@@ -391,4 +379,27 @@ function retryFetchBookmarks() {
     workspace.fetchBookmarks(cid);
   }
 }
+
+watch(
+  selectedCollectionId,
+  async (cid, prev) => {
+    if (cid === prev) return;
+
+    selectedBookmarkId.value = null;
+    isAddOpen.value = false;
+    isSettingsOpen.value = false;
+
+    try {
+      if (cid == null) {
+        await workspace.fetchBookmarks();
+        return;
+      }
+
+      await workspace.fetchBookmarks(cid);
+    } catch (e) {
+      toast.error("북마크 목록을 불러오지 못했습니다.");
+    }
+  },
+  { immediate: true }
+);
 </script>
