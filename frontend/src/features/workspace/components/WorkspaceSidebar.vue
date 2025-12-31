@@ -55,9 +55,9 @@
 
       <ul v-else class="space-y-1">
         <CollectionNode
-          v-for="c in collections"
-          :key="c.id"
-          :node="c"
+          v-for="id in rootIds"
+          :key="id"
+          :node="collectionById[id]"
           :depth="0"
           :expanded-ids="expandedIds"
           :selected-collection-id="selectedCollectionId"
@@ -65,7 +65,8 @@
           :draft-name="draftName"
           :is-renaming="isRenaming"
           :disabled="isLoadingCollections || hasError || isCollectionMutating"
-          :loading-child-collection-ids="loadingChildCollectionIds"
+          :collection-by-id="collectionById"
+          :children-by-parent="childrenByParent"
           @toggle="toggleExpand"
           @add-collection="openAddCollectionDialog"
           @open-all="$emit('open-all', $event)"
@@ -153,7 +154,11 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import { CollectionNode, UserMenu } from "@/features/workspace";
-import type { Collection, ID } from "@/types/common";
+import type {
+  Collection,
+  ID,
+  CollectionNode as CollectionNodeModel,
+} from "@/types/common";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import LogoIcon from "@/components/icons/LogoIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
@@ -163,7 +168,6 @@ import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 defineOptions({ inheritAttrs: false });
 
 const emit = defineEmits<{
-  (e: "select-collection", c: Collection): void;
   (e: "add-collection", payload: { name: string; parentId: ID | null }): void;
   (e: "rename-collection", p: { id: ID; newName: string }): void;
   (e: "update-emoji", payload: { id: ID; emoji: string | null }): void;
@@ -175,12 +179,13 @@ const emit = defineEmits<{
 
 const workspace = useWorkspaceStore();
 const {
-  collections,
+  collectionNodes,
   selectedCollectionId,
   isLoading,
   error,
   isMutating,
-  loadingChildCollectionIds,
+  collectionById,
+  childrenByParent,
 } = storeToRefs(workspace);
 
 const isLoadingCollections = computed(() => isLoading.value.collections);
@@ -190,7 +195,7 @@ const isEmpty = computed(
   () =>
     !isLoadingCollections.value &&
     !hasError.value &&
-    collections.value.length === 0
+    collectionNodes.value.length === 0
 );
 const isCollectionMutating = computed(
   () =>
@@ -201,10 +206,10 @@ const isCollectionMutating = computed(
     isMutating.value.moveCollection ||
     isMutating.value.reorderCollection
 );
+const rootIds = computed<ID[]>(() => childrenByParent.value["root"] ?? []);
 
-function handleSelectCollection(c: Collection) {
-  workspace.selectCollection(c.id);
-  emit("select-collection", c);
+function handleSelectCollection(node: CollectionNodeModel) {
+  workspace.selectCollection(node.id);
 }
 
 function onClickAddRoot() {
@@ -213,51 +218,17 @@ function onClickAddRoot() {
 }
 
 function onRetryCollections() {
-  return workspace.fetchCollections(null);
+  return workspace.fetchCollectionTree();
 }
 
 // 확장 상태
 const expandedIds = ref<Set<ID>>(new Set());
 
-function removeExpanded(node: Collection, expanded: Set<ID>) {
-  for (const child of node.children ?? []) {
-    expanded.delete(child.id);
-    if (child.children?.length) {
-      removeExpanded(child, expanded);
-    }
-  }
-}
-
-function closeChildCollections(
-  parentId: ID,
-  expanded: Set<ID>,
-  nodes: Collection[]
-) {
-  for (const node of nodes) {
-    if (node.id === parentId) {
-      removeExpanded(node, expanded);
-      return;
-    }
-    if (node.children?.length) {
-      closeChildCollections(parentId, expanded, node.children);
-    }
-  }
-}
-
 async function toggleExpand(id: ID) {
   if (isLoadingCollections.value || hasError.value) return;
 
   const next = new Set(expandedIds.value);
-
-  if (!next.has(id)) {
-    // 펼쳐야 하는 경우
-    await workspace.fetchChildCollections(id);
-    next.add(id);
-  } else {
-    next.delete(id);
-    closeChildCollections(id, next, collections.value);
-  }
-
+  next.has(id) ? next.delete(id) : next.add(id);
   expandedIds.value = next;
 }
 

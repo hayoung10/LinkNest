@@ -1,7 +1,7 @@
 import http from "@/api/http";
-import type { Collection, ID } from "@/types/common";
+import type { Collection, CollectionNode, ID } from "@/types/common";
 import { CollectionRes } from "./types";
-import { mapCollectionRes } from "./mappers";
+import { mapCollectionNodeResList, mapCollectionRes } from "./mappers";
 
 export interface CollectionCreateReq {
   name: string;
@@ -95,4 +95,10 @@ export async function reorderCollection(
   payload: CollectionReorderReq
 ): Promise<void> {
   await http.patch(`/collections/${id}/order`, payload);
+}
+
+/** 트리 조회 */
+export async function listTree(): Promise<CollectionNode[]> {
+  const { data } = await http.get(`/collections/tree`);
+  return mapCollectionNodeResList(data);
 }

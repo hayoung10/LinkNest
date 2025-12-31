@@ -1,6 +1,13 @@
-import { Bookmark, Collection, User, UserPreferences } from "@/types/common";
+import {
+  Bookmark,
+  Collection,
+  CollectionNode,
+  User,
+  UserPreferences,
+} from "@/types/common";
 import {
   BookmarkRes,
+  CollectionNodeRes,
   CollectionRes,
   UserPreferencesRes,
   UserRes,
@@ -52,6 +59,26 @@ export function mapCollectionRes(dto: CollectionRes): Collection {
     bookmarkCount: dto.bookmarkCount,
     childCount: dto.childCount,
   };
+}
+
+export function mapCollectionNodeRes(dto: CollectionNodeRes): CollectionNode {
+  return {
+    id: dto.id,
+    name: dto.name,
+    emoji: dto.emoji,
+    parentId: dto.parentId,
+    sortOrder: dto.sortOrder,
+
+    bookmarkCount: dto.bookmarkCount,
+    childCount: dto.childCount,
+  };
+}
+
+export function mapCollectionNodeResList(
+  list: CollectionNodeRes[] | null | undefined
+): CollectionNode[] {
+  if (!list?.length) return [];
+  return list.map(mapCollectionNodeRes);
 }
 
 export function mapUserPreferences(dto: UserPreferencesRes): UserPreferences {

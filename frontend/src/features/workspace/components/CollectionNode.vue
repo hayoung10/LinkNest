@@ -18,24 +18,16 @@
       <button
         v-if="hasChildren"
         type="button"
-        :disabled="disabled || isEditing || isRenaming || isLoadingChildren"
+        :disabled="disabled || isEditing || isRenaming"
         class="size-5 grid place-items-center text-muted-foreground rounded hover:bg-accent/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
         aria-label="하위 항목 토글"
         @click.stop="$emit('toggle', node.id)"
       >
-        <span class="relative inline-block size-4">
-          <span
-            v-show="isLoadingChildren"
-            class="absolute inset-0 m-auto size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-            aria-label="하위 컬렉션 로딩 중"
-          />
-          <ChevronIcon
-            v-show="!isLoadingChildren"
-            :size="16"
-            :direction="expanded ? 'down' : 'right'"
-            class="absolute inset-0 m-auto size-4 transition-transform duration-150"
-          />
-        </span>
+        <ChevronIcon
+          :size="16"
+          :direction="expanded ? 'down' : 'right'"
+          class="size-4 transition-transform duration-150"
+        />
       </button>
       <span v-else class="inline-block w-5" aria-hidden="true"></span>
 
@@ -108,20 +100,20 @@
     <!-- 내용(하위 컬렉션 + 북마크) -->
     <div v-if="expanded">
       <!-- 재귀: 하위 컬렉션 -->
-      <ul v-if="node.children?.length" class="mt-1 space-y-1">
+      <ul v-if="childIds.length" class="mt-1 space-y-1">
         <CollectionNode
-          v-for="child in node.children || []"
-          :key="child.id"
-          :node="child"
+          v-for="childId in childIds"
+          :key="childId"
+          :node="collectionById[childId]"
           :depth="depth + 1"
           :expanded-ids="expandedIds"
           :selected-collection-id="selectedCollectionId"
-          :count-mode="countMode"
           :editing-id="editingId"
           :draft-name="draftName"
           :is-renaming="isRenaming"
           :disabled="disabled"
-          :loading-child-collection-ids="loadingChildCollectionIds"
+          :collection-by-id="collectionById"
+          :children-by-parent="childrenByParent"
           @toggle="$emit('toggle', $event)"
           @add-collection="$emit('add-collection', $event)"
           @open-all="$emit('open-all', $event)"
@@ -141,25 +133,22 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { CollectionMenu } from "@/features/workspace";
-import type { Collection, ID } from "@/types/common";
+import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 
 defineOptions({ name: "CollectionNode" });
 
-type CountMode = "direct" | "aggregate";
-
 const props = withDefaults(
   defineProps<{
-    node: Collection;
+    node: CollectionNodeModel;
     depth?: number;
     expandedIds: Set<ID>;
-    countMode?: CountMode;
     selectedCollectionId?: ID | null;
-
     disabled?: boolean;
 
-    loadingChildCollectionIds?: Set<ID>;
+    collectionById: Record<ID, CollectionNodeModel>;
+    childrenByParent: Record<string, ID[]>;
 
     // 이름 변경에 대한 상태
     editingId?: ID | null;
@@ -168,13 +157,8 @@ const props = withDefaults(
   }>(),
   {
     depth: 0,
-    countMode: "aggregate" as CountMode,
     selectedCollectionId: null,
-
     disabled: false,
-
-    loadingChildCollectionIds: () => new Set<ID>(),
-
     editingId: null,
     draftName: "",
     isRenaming: false,
@@ -185,9 +169,8 @@ const emit = defineEmits<{
   (e: "toggle", id: ID): void;
   (e: "add-collection", parentId: ID): void;
   (e: "open-all", id: ID): void;
-  (e: "select-collection", c: Collection): void;
+  (e: "select-collection", c: CollectionNodeModel): void;
   (e: "delete-collection", id: ID): void;
-
   (e: "update-emoji", payload: { id: ID; emoji: string | null }): void;
 
   // 이름 변경 이벤트
@@ -203,9 +186,10 @@ const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
 const isEditing = computed(() => props.editingId === props.node.id);
 const isActive = computed(() => props.selectedCollectionId === props.node.id);
 
-const isLoadingChildren = computed(() =>
-  props.loadingChildCollectionIds?.has(props.node.id)
-);
+const childIds = computed<ID[]>(() => {
+  const key = String(props.node.id);
+  return props.childrenByParent[key] ?? [];
+});
 
 // 핸들러 (편집 중일 때 비활성화)
 const nodeHandlers = computed(() => {
