@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { Bookmark, Collection, ID } from "@/types/common";
+import { Bookmark, Collection, CollectionNode, ID } from "@/types/common";
 import * as CollectionApi from "@/api/collections";
 import * as BookmarkApi from "@/api/bookmarks";
 
@@ -19,6 +19,7 @@ type ErrorMap<K extends string> = Record<K, string | null>;
 
 interface WorkspaceState {
   collections: Collection[];
+  collectionNodes: CollectionNode[];
   bookmarks: Bookmark[];
   selectedCollectionId: ID | null;
   isLoading: Record<LoadKey, boolean>;
@@ -175,6 +176,7 @@ function updateBookmarkCountInTree(
 export const useWorkspaceStore = defineStore("workspace", {
   state: (): WorkspaceState => ({
     collections: [],
+    collectionNodes: [],
     bookmarks: [],
     selectedCollectionId: null,
     isLoading: { collections: false, bookmarks: false },
@@ -206,10 +208,39 @@ export const useWorkspaceStore = defineStore("workspace", {
     loadingChildCollectionIds: new Set<ID>(),
   }),
 
+  getters: {
+    collectionById(state): Record<ID, CollectionNode> {
+      const map: Record<ID, CollectionNode> = {};
+
+      for (const node of state.collectionNodes) {
+        map[node.id] = node;
+      }
+
+      return map;
+    },
+    childrenByParent(state): Record<string, ID[]> {
+      const result: Record<string, ID[]> = {};
+
+      for (const node of state.collectionNodes) {
+        const key = node.parentId == null ? "root" : String(node.parentId);
+        (result[key] ??= []).push(node.id);
+      }
+
+      // sortOrder 기준으로 정렬
+      const byId = this.collectionById;
+      for (const key in result) {
+        result[key].sort((a, b) => byId[a].sortOrder - byId[b].sortOrder);
+      }
+
+      return result;
+    },
+  },
+
   actions: {
     // 초기화
     resetAll() {
       this.collections = [];
+      this.collectionNodes = [];
       this.bookmarks = [];
       this.selectedCollectionId = null;
       this.isLoading = { collections: false, bookmarks: false };
@@ -244,13 +275,18 @@ export const useWorkspaceStore = defineStore("workspace", {
     },
     // 북마크 카운트 업데이트
     updateBookmarkCount(collectionId: ID, cnt: number) {
-      if (!this.collections?.length) return;
-
-      this.collections = updateBookmarkCountInTree(
-        this.collections,
-        collectionId,
-        cnt
-      );
+      if (this.collections?.length) {
+        this.collections = updateBookmarkCountInTree(
+          this.collections,
+          collectionId,
+          cnt
+        );
+      }
+      if (this.collectionNodes?.length) {
+        this.collectionNodes = this.collectionNodes.map((n) =>
+          n.id === collectionId ? { ...n, bookmarkCount: Math.max(cnt, 0) } : n
+        );
+      }
     },
 
     /* ------------------------ 컬렉션 ------------------------ */
@@ -460,6 +496,26 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
+    async fetchCollectionTree() {
+      this.error.collections = null;
+      setLoading(this.isLoading, "collections", true);
+
+      try {
+        const nodes = await CollectionApi.listTree();
+        this.collectionNodes = nodes;
+      } catch (e) {
+        fail(
+          this.error,
+          "collections",
+          e,
+          "컬렉션 트리를 불러오지 못했습니다."
+        );
+        throw e;
+      } finally {
+        setLoading(this.isLoading, "collections", false);
+      }
+    },
+
     /* ------------------------ 북마크 ------------------------ */
     async createBookmark(payload: BookmarkApi.BookmarkCreateReq) {
       this.mutateError.createBookmark = null;
@@ -549,7 +605,10 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.bookmarks = [];
           return;
         }
-        this.bookmarks = await BookmarkApi.listBookmarks(cid);
+        const list = await BookmarkApi.listBookmarks(cid);
+        this.bookmarks = list;
+
+        this.updateBookmarkCount(cid, list.length);
       } catch (e) {
         fail(this.error, "bookmarks", e, "북마크 목록을 불러오지 못했습니다.");
         throw e;
