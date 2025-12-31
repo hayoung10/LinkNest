@@ -49,6 +49,17 @@ export interface CollectionRes {
   childCount: number;
 }
 
+export interface CollectionNodeRes {
+  id: ID;
+  name: string;
+  emoji: string | null;
+  parentId: ID | null;
+  sortOrder: number;
+
+  bookmarkCount: number;
+  childCount: number;
+}
+
 export interface UserPreferencesRes {
   defaultBookmarkSort: BookmarkSortOption;
   defaultLayout: LayoutOption;

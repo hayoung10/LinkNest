@@ -65,6 +65,17 @@ export interface Collection {
   bookmarks?: Bookmark[];
 }
 
+export interface CollectionNode {
+  id: ID;
+  name: string;
+  emoji: string | null;
+  parentId: ID | null;
+  sortOrder: number;
+
+  bookmarkCount: number;
+  childCount: number;
+}
+
 export type BookmarkSortOption = "NEWEST" | "OLDEST" | "TITLE";
 export type LayoutOption = "CARD" | "LIST";
 
