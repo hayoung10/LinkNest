@@ -111,7 +111,7 @@ import {
 } from "@/features/workspace";
 import { Settings } from "@/features/settings";
 import SidePanel from "@/components/overlays/SidePanel.vue";
-import type { Bookmark, Collection, ID, ImageMode } from "@/types/common";
+import type { Bookmark, CollectionNode, ID, ImageMode } from "@/types/common";
 import { useWorkspaceStore } from "@/stores/workspace";
 import * as BookmarkApi from "@/api/bookmarks";
 import { storeToRefs } from "pinia";
@@ -133,17 +133,17 @@ const toast = useToastStore();
 const workspace = useWorkspaceStore();
 const preferences = usePreferencesStore();
 
-const { collections, selectedCollectionId, bookmarks, isLoading, error } =
+const { selectedCollectionId, bookmarks, isLoading, error, collectionById } =
   storeToRefs(workspace);
 const { defaultLayout } = storeToRefs(preferences);
 
 const auth = useAuthStore();
 const router = useRouter();
 
-const selectedCollection = computed<Collection | null>(() => {
+const selectedCollection = computed<CollectionNode | null>(() => {
   const sid = selectedCollectionId.value;
   if (sid == null) return null;
-  return findCollectionInTree(collections.value, sid);
+  return collectionById.value[sid] ?? null;
 });
 
 const isListLayout = computed(() => defaultLayout.value === "LIST");
@@ -175,22 +175,8 @@ const isDetailPending = computed(() => {
 });
 
 onMounted(() => {
-  workspace.fetchCollections(null);
   workspace.fetchCollectionTree();
 });
-
-function findCollectionInTree(nodes: Collection[], id: ID): Collection | null {
-  for (const node of nodes) {
-    if (node.id === id) return node;
-
-    const children = node.children;
-    if (children?.length) {
-      const found = findCollectionInTree(children, id);
-      if (found) return found;
-    }
-  }
-  return null;
-}
 
 // 핸들러
 async function onAddCollection(payload: { name: string; parentId: ID | null }) {
@@ -232,9 +218,9 @@ async function onDeleteCollection(id: ID) {
 
     if (selectedCollectionId.value === id) {
       workspace.selectCollection(null);
-
       selectedBookmarkId.value = null;
       isAddOpen.value = false;
+
       await workspace.fetchBookmarks();
     }
   } catch (e) {
@@ -246,7 +232,7 @@ async function onOpenAllBookmarks(collectionId: ID) {
   try {
     let target = bookmarks.value;
 
-    if (selectedCollection.value?.id !== collectionId) {
+    if (selectedCollectionId.value !== collectionId) {
       target = await BookmarkApi.listBookmarks(collectionId);
     }
 
@@ -267,9 +253,7 @@ async function onOpenAllBookmarks(collectionId: ID) {
 
     // 탭 열기 시도 + 차단된 개수 카운트
     let blockedCount = 0;
-    for (const url of urls) {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
+    for (const url of urls) window.open(url, "_blank", "noopener,noreferrer");
   } catch (e) {
     console.error("[WorkspaceView] failed to open all bookmarks", e);
     toast.error("북마크를 여는 중 오류가 발생했습니다.");
@@ -282,8 +266,7 @@ function onSelectBookmark(id: ID) {
 }
 
 function openAddPanel() {
-  const cid = selectedCollectionId.value;
-  if (cid == null) {
+  if (selectedCollectionId.value == null) {
     toast.info("북마크를 추가할 컬렉션을 선택해주세요.");
     return;
   }
@@ -324,9 +307,7 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
     });
 
     const cid = selectedCollectionId.value;
-    if (cid != null) {
-      await workspace.fetchBookmarks(cid);
-    }
+    if (cid != null) await workspace.fetchBookmarks(cid);
   } catch (e) {
     toast.error("북마크 수정에 실패했습니다.");
   }
@@ -338,10 +319,11 @@ async function onDeleteBookmark(id: ID) {
   try {
     await workspace.deleteBookmark(id);
 
-    if (cid != null) {
-      await workspace.fetchBookmarks(cid);
+    if (cid != null) await workspace.fetchBookmarks(cid);
+
+    if (selectedBookmarkId.value === id) {
+      selectedBookmarkId.value = null;
     }
-    selectedBookmarkId.value = null;
 
     toast.success("북마크가 삭제되었습니다.");
   } catch (e) {

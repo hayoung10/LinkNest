@@ -210,7 +210,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { Bookmark, Collection, ID } from "@/types/common";
+import type { Bookmark, CollectionNode, ID } from "@/types/common";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
@@ -220,7 +220,7 @@ import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 
 const props = defineProps<{
-  collection: Collection | null;
+  collection: CollectionNode | null;
   selectedBookmarkId?: ID | null;
 }>();
 
@@ -233,6 +233,8 @@ const workspace = useWorkspaceStore();
 const { selectedCollectionId, bookmarks, isLoading, error, isMutating } =
   storeToRefs(workspace);
 
+const hasSelection = computed(() => selectedCollectionId.value != null);
+
 const isLoadingBookmarks = computed(() => isLoading.value.bookmarks);
 const bookmarksError = computed(() => error.value.bookmarks);
 const hasError = computed(() => !!bookmarksError.value);
@@ -244,7 +246,6 @@ const isEmpty = computed(
     bookmarks.value.length === 0
 );
 
-const hasSelection = computed(() => selectedCollectionId.value != null);
 const isAddDisabled = computed(
   () =>
     !hasSelection.value ||

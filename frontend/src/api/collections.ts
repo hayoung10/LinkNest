@@ -71,16 +71,6 @@ export async function deleteCollection(id: ID): Promise<void> {
   await http.delete(`/collections/${id}`);
 }
 
-/** 자식 목록 조회 */
-export async function listChildren(
-  parentId?: ID | null
-): Promise<Collection[]> {
-  const { data } = await http.get<CollectionRes[]>(`/collections`, {
-    params: parentId == null ? {} : { parentId },
-  });
-  return data.map((r) => mapCollectionRes(r)); // 목록에 bookmarks 포함 X
-}
-
 /** 이동 (204 No Content) */
 export async function moveCollection(
   id: ID,

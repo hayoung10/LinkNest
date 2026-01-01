@@ -154,11 +154,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import { CollectionNode, UserMenu } from "@/features/workspace";
-import type {
-  Collection,
-  ID,
-  CollectionNode as CollectionNodeModel,
-} from "@/types/common";
+import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import LogoIcon from "@/components/icons/LogoIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
@@ -188,8 +184,8 @@ const {
   childrenByParent,
 } = storeToRefs(workspace);
 
-const isLoadingCollections = computed(() => isLoading.value.collections);
-const collectionsError = computed(() => error.value.collections);
+const isLoadingCollections = computed(() => isLoading.value.collectionTree);
+const collectionsError = computed(() => error.value.collectionTree);
 const hasError = computed(() => !!collectionsError.value);
 const isEmpty = computed(
   () =>
@@ -206,7 +202,11 @@ const isCollectionMutating = computed(
     isMutating.value.moveCollection ||
     isMutating.value.reorderCollection
 );
-const rootIds = computed<ID[]>(() => childrenByParent.value["root"] ?? []);
+const rootIds = computed<ID[]>(() =>
+  (childrenByParent.value["root"] ?? []).filter(
+    (id) => !!collectionById.value[id]
+  )
+);
 
 function handleSelectCollection(node: CollectionNodeModel) {
   workspace.selectCollection(node.id);
@@ -267,13 +267,16 @@ async function submitRename() {
   const next = (draftName.value ?? "").trim();
 
   if (id == null) return;
-  if (!next || next === originalName.value) {
-    cancelRename();
-    return;
-  }
+  if (!next || next === originalName.value) return cancelRename();
+  if (isRenaming.value) return;
 
-  emit("rename-collection", { id, newName: next });
-  cancelRename();
+  isRenaming.value = true;
+  try {
+    emit("rename-collection", { id, newName: next });
+    cancelRename();
+  } finally {
+    isRenaming.value = false;
+  }
 }
 
 // 새 컬렉션 추가 다이얼로그
@@ -316,4 +319,17 @@ watch(showAddCollectionDialog, async (open) => {
     nameInputRef.value?.focus();
   }
 });
+
+watch(
+  collectionNodes,
+  (nodes) => {
+    const alive = new Set(nodes.map((n) => n.id));
+    const next = new Set([...expandedIds.value].filter((id) => alive.has(id)));
+
+    if (next.size !== expandedIds.value.size) expandedIds.value = next;
+
+    if (editingId.value != null && !alive.has(editingId.value)) cancelRename();
+  },
+  { deep: false }
+);
 </script>
