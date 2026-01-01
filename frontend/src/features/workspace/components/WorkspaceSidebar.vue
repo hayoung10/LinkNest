@@ -139,7 +139,7 @@
           </button>
           <button
             type="submit"
-            :disabled="!canSubmit || isMutating.createCollection"
+            :disabled="!canSubmit || isMutating.createCollection || isAdding"
             :aria-disabled="!canSubmit"
             class="px-4 py-2 rounded-md text-sm bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
           >
@@ -154,11 +154,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import { CollectionNode, UserMenu } from "@/features/workspace";
-import type {
-  Collection,
-  ID,
-  CollectionNode as CollectionNodeModel,
-} from "@/types/common";
+import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import LogoIcon from "@/components/icons/LogoIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
@@ -167,9 +163,12 @@ import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 
 defineOptions({ inheritAttrs: false });
 
+const props = defineProps<{
+  onAddCollection: (p: { name: string; parentId: ID | null }) => Promise<void>;
+  onRenameCollection: (p: { id: ID; newName: string }) => Promise<void>;
+}>();
+
 const emit = defineEmits<{
-  (e: "add-collection", payload: { name: string; parentId: ID | null }): void;
-  (e: "rename-collection", p: { id: ID; newName: string }): void;
   (e: "update-emoji", payload: { id: ID; emoji: string | null }): void;
   (e: "delete-collection", id: ID): void;
   (e: "open-all", id: ID): void;
@@ -188,8 +187,8 @@ const {
   childrenByParent,
 } = storeToRefs(workspace);
 
-const isLoadingCollections = computed(() => isLoading.value.collections);
-const collectionsError = computed(() => error.value.collections);
+const isLoadingCollections = computed(() => isLoading.value.collectionTree);
+const collectionsError = computed(() => error.value.collectionTree);
 const hasError = computed(() => !!collectionsError.value);
 const isEmpty = computed(
   () =>
@@ -206,7 +205,11 @@ const isCollectionMutating = computed(
     isMutating.value.moveCollection ||
     isMutating.value.reorderCollection
 );
-const rootIds = computed<ID[]>(() => childrenByParent.value["root"] ?? []);
+const rootIds = computed<ID[]>(() =>
+  (childrenByParent.value["root"] ?? []).filter(
+    (id) => !!collectionById.value[id]
+  )
+);
 
 function handleSelectCollection(node: CollectionNodeModel) {
   workspace.selectCollection(node.id);
@@ -267,13 +270,16 @@ async function submitRename() {
   const next = (draftName.value ?? "").trim();
 
   if (id == null) return;
-  if (!next || next === originalName.value) {
-    cancelRename();
-    return;
-  }
+  if (!next || next === originalName.value) return cancelRename();
+  if (isRenaming.value) return;
 
-  emit("rename-collection", { id, newName: next });
-  cancelRename();
+  isRenaming.value = true;
+  try {
+    await props.onRenameCollection({ id, newName: next });
+    cancelRename();
+  } finally {
+    isRenaming.value = false;
+  }
 }
 
 // 새 컬렉션 추가 다이얼로그
@@ -284,6 +290,7 @@ const dialogTitleId = "add-collection-title";
 const nameInputId = "add-collection-name";
 const parentIdRef = ref<ID | null>(null);
 
+const isAdding = ref(false);
 const canSubmit = computed(() => newCollection.value.trim().length > 0);
 
 function resetAddCollectionForm() {
@@ -300,13 +307,20 @@ function openAddCollectionDialog(parentId: ID | null = null) {
   parentIdRef.value = parentId;
   showAddCollectionDialog.value = true;
 }
-function handleAdd() {
+async function handleAdd() {
   if (!canSubmit.value) return;
-  emit("add-collection", {
-    name: newCollection.value.trim(),
-    parentId: parentIdRef.value,
-  });
-  closeAddCollectionDialog();
+  if (isAdding.value) return;
+
+  isAdding.value = true;
+  try {
+    await props.onAddCollection({
+      name: newCollection.value.trim(),
+      parentId: parentIdRef.value,
+    });
+    closeAddCollectionDialog();
+  } finally {
+    isAdding.value = false;
+  }
 }
 
 // 다이얼로그 포커스
@@ -316,4 +330,17 @@ watch(showAddCollectionDialog, async (open) => {
     nameInputRef.value?.focus();
   }
 });
+
+watch(
+  collectionNodes,
+  (nodes) => {
+    const alive = new Set(nodes.map((n) => n.id));
+    const next = new Set([...expandedIds.value].filter((id) => alive.has(id)));
+
+    if (next.size !== expandedIds.value.size) expandedIds.value = next;
+
+    if (editingId.value != null && !alive.has(editingId.value)) cancelRename();
+  },
+  { deep: false }
+);
 </script>

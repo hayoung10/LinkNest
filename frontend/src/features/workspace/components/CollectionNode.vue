@@ -181,14 +181,15 @@ const emit = defineEmits<{
 }>();
 
 const expanded = computed(() => props.expandedIds.has(props.node.id));
-const hasChildren = computed(() => (props.node.childCount ?? 0) > 0);
+const hasChildren = computed(() => childIds.value.length > 0);
 const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
 const isEditing = computed(() => props.editingId === props.node.id);
 const isActive = computed(() => props.selectedCollectionId === props.node.id);
 
 const childIds = computed<ID[]>(() => {
   const key = String(props.node.id);
-  return props.childrenByParent[key] ?? [];
+  const ids = props.childrenByParent[key] ?? [];
+  return ids.filter((id) => props.collectionById[id] != null);
 });
 
 // 핸들러 (편집 중일 때 비활성화)
