@@ -139,7 +139,7 @@
           </button>
           <button
             type="submit"
-            :disabled="!canSubmit || isMutating.createCollection"
+            :disabled="!canSubmit || isMutating.createCollection || isAdding"
             :aria-disabled="!canSubmit"
             class="px-4 py-2 rounded-md text-sm bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
           >
@@ -163,9 +163,12 @@ import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 
 defineOptions({ inheritAttrs: false });
 
+const props = defineProps<{
+  onAddCollection: (p: { name: string; parentId: ID | null }) => Promise<void>;
+  onRenameCollection: (p: { id: ID; newName: string }) => Promise<void>;
+}>();
+
 const emit = defineEmits<{
-  (e: "add-collection", payload: { name: string; parentId: ID | null }): void;
-  (e: "rename-collection", p: { id: ID; newName: string }): void;
   (e: "update-emoji", payload: { id: ID; emoji: string | null }): void;
   (e: "delete-collection", id: ID): void;
   (e: "open-all", id: ID): void;
@@ -272,7 +275,7 @@ async function submitRename() {
 
   isRenaming.value = true;
   try {
-    emit("rename-collection", { id, newName: next });
+    await props.onRenameCollection({ id, newName: next });
     cancelRename();
   } finally {
     isRenaming.value = false;
@@ -287,6 +290,7 @@ const dialogTitleId = "add-collection-title";
 const nameInputId = "add-collection-name";
 const parentIdRef = ref<ID | null>(null);
 
+const isAdding = ref(false);
 const canSubmit = computed(() => newCollection.value.trim().length > 0);
 
 function resetAddCollectionForm() {
@@ -303,13 +307,20 @@ function openAddCollectionDialog(parentId: ID | null = null) {
   parentIdRef.value = parentId;
   showAddCollectionDialog.value = true;
 }
-function handleAdd() {
+async function handleAdd() {
   if (!canSubmit.value) return;
-  emit("add-collection", {
-    name: newCollection.value.trim(),
-    parentId: parentIdRef.value,
-  });
-  closeAddCollectionDialog();
+  if (isAdding.value) return;
+
+  isAdding.value = true;
+  try {
+    await props.onAddCollection({
+      name: newCollection.value.trim(),
+      parentId: parentIdRef.value,
+    });
+    closeAddCollectionDialog();
+  } finally {
+    isAdding.value = false;
+  }
 }
 
 // 다이얼로그 포커스

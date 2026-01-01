@@ -3,8 +3,8 @@
     <!-- 좌측: 사이드바 -->
     <WorkspaceSidebar
       class="w-64 border-r border-border"
-      @add-collection="onAddCollection"
-      @rename-collection="onRenameCollection"
+      :on-add-collection="onAddCollection"
+      :on-rename-collection="onRenameCollection"
       @update-emoji="onUpdateCollectionEmoji"
       @delete-collection="onDeleteCollection"
       @open-all="onOpenAllBookmarks"
