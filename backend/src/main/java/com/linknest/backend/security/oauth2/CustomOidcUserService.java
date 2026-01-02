@@ -55,6 +55,7 @@ public class CustomOidcUserService extends OidcUserService {
     private OAuth2UserInfo toUserInfo(String registrationId, Map<String, Object> claims) {
         return switch (registrationId) {
             case "google" -> GoogleUserInfo.from(claims);
+            case "kakao" -> KakaoUserInfo.from(claims);
             default -> throw new OAuth2AuthenticationException(
                     new OAuth2Error("unsupported_provider"),
                     "Unsupported provider: " + registrationId
