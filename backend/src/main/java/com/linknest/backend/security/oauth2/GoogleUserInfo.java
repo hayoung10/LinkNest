@@ -3,6 +3,7 @@ package com.linknest.backend.security.oauth2;
 import com.linknest.backend.user.domain.AuthProvider;
 
 import java.util.Map;
+import java.util.Objects;
 
 public record GoogleUserInfo(
         String sub,
@@ -13,11 +14,12 @@ public record GoogleUserInfo(
 ) implements OAuth2UserInfo {
     public static GoogleUserInfo from(Map<String, Object> attributes) {
         boolean verified = Boolean.TRUE.equals(attributes.get("email_verified"));
+
         return new GoogleUserInfo(
-                (String) attributes.get("sub"),
-                (String) attributes.get("email"),
-                (String) attributes.getOrDefault("name", ""),
-                (String) attributes.getOrDefault("picture", ""),
+                Objects.toString(attributes.get("sub"), null),
+                Objects.toString(attributes.get("email"), null),
+                Objects.toString(attributes.get("name"), ""),
+                Objects.toString(attributes.get("picture"), ""),
                 verified
         );
     }
