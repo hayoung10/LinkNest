@@ -2,11 +2,7 @@
   <main class="min-h-screen flex items-center justify-center bg-indigo-50">
     <section class="w-full px-4">
       <LoginCard title="로그인" description="소셜 계정으로 로그인하세요.">
-        <LoginSocialButtons
-          @google="login('google')"
-          @kakao="login('kakao')"
-          @naver="login('naver')"
-        />
+        <LoginSocialButtons @google="login('google')" @kakao="login('kakao')" />
         <p class="mt-5 text-center text-sm text-gray-500">
           로그인하면 이용약관 및 개인정보처리방침에 동의하게 됩니다
         </p>

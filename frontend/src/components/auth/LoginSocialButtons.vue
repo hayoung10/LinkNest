@@ -21,6 +21,7 @@
     </button>
 
     <!-- Naver -->
+    <!--
     <button
       type="button"
       class="w-full h-14 rounded-xl px-6 flex items-center justify-center gap-3 bg-[#56B86A] text-white hover:bg-[#4EAA60] active:translate-y-[0.5px] focus-visible:ring-4 focus-visible:ring-green-300/30 transition"
@@ -29,13 +30,14 @@
       <NaverIcon :size="18" />
       <span class="font-medium text-[15px]">네이버로 계속하기</span>
     </button>
+    -->
   </div>
 </template>
 
 <script setup lang="ts">
 import GoogleIcon from "@/components/icons/GoogleIcon.vue";
 import KakaoIcon from "@/components/icons/KakaoIcon.vue";
-import NaverIcon from "@/components/icons/NaverIcon.vue";
+// import NaverIcon from "@/components/icons/NaverIcon.vue";
 
-defineEmits(["google", "kakao", "naver"]);
+defineEmits(["google", "kakao"]);
 </script>

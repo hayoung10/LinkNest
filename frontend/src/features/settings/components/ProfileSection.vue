@@ -149,7 +149,10 @@
       >
         <div class="flex items-center gap-3">
           <div
-            class="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-100 text-zinc-700"
+            :class="[
+              'flex h-11 w-11 items-center justify-center rounded-full',
+              providerIconBgClass,
+            ]"
           >
             <!-- 이메일 아이콘 -->
             <ProviderIcon v-if="provider" :provider="provider" :size="22" />
@@ -316,4 +319,11 @@ const onDeletePhoto = async () => {
     isPhotoUpdating.value = false;
   }
 };
+
+const providerIconBgClass = computed(() => {
+  if (provider.value === "KAKAO") {
+    return "bg-[#F2DD4C] text-gray-900";
+  }
+  return "bg-zinc-100 text-zinc-700";
+});
 </script>
