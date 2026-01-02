@@ -36,11 +36,45 @@
     >
       <!-- 헤더 -->
       <header class="flex items-center justify-between mb-2">
-        <div class="min-w-0 flex items-center gap-2 pl-3">
-          <FolderIcon size="28" class="text-muted-foreground opacity-80" />
-          <h2 class="text-xl font-semibold text-foreground truncate">
-            {{ collection?.name ?? "컬렉션" }}
-          </h2>
+        <div class="min-w-0 pl-3">
+          <!-- path -->
+          <div
+            class="mb-1 ml-0.5 min-h-[16px] text-xs text-zinc-500 flex items-center gap-1 min-w-0"
+          >
+            <template v-if="isLoadingPath">
+              <span
+                class="inline-block h-3 w-28 rounded bg-zinc-200/70 animate-pulse"
+              />
+            </template>
+
+            <template v-else-if="cPath.length">
+              <template v-for="(p, idx) in cPath" :key="p.id">
+                <span class="truncate">
+                  <span v-if="p.emoji" class="mr-1">{{ p.emoji }}</span>
+                  {{ p.name }}
+                </span>
+                <span v-if="idx < cPath.length - 1" class="opacity-60">/</span>
+              </template>
+            </template>
+          </div>
+
+          <div class="min-w-0 flex items-center gap-2">
+            <span class="shrink-0 text-muted-foreground opacity-80">
+              <template v-if="collection?.emoji">
+                <span class="text-[20px] leading-none">{{
+                  collection.emoji
+                }}</span>
+              </template>
+              <template v-else>
+                <FolderIcon size="22" />
+              </template>
+            </span>
+
+            <!-- 컬렉션 이름 -->
+            <h2 class="text-xl font-semibold text-foreground truncate">
+              {{ collection?.name ?? "컬렉션" }}
+            </h2>
+          </div>
         </div>
 
         <div class="flex text-center gap-2 pr-3">
@@ -191,7 +225,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import type { Bookmark, CollectionNode, ID } from "@/types/common";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
@@ -200,6 +234,8 @@ import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
+import * as CollectionApi from "@/api/collections";
+import { CollectionPathRes } from "@/api/types";
 
 const props = defineProps<{
   collection: CollectionNode | null;
@@ -212,8 +248,14 @@ const emit = defineEmits<{
 }>();
 
 const workspace = useWorkspaceStore();
-const { selectedCollectionId, bookmarks, isLoading, error, isMutating } =
-  storeToRefs(workspace);
+const {
+  selectedCollectionId,
+  collectionNodes,
+  bookmarks,
+  isLoading,
+  error,
+  isMutating,
+} = storeToRefs(workspace);
 
 const hasSelection = computed(() => selectedCollectionId.value != null);
 
@@ -235,6 +277,10 @@ const isAddDisabled = computed(
     hasError.value ||
     isMutating.value.createBookmark
 );
+
+const path = ref<CollectionPathRes[]>([]);
+const isLoadingPath = ref(false);
+const cPath = computed(() => path.value.slice(0, -1));
 
 function onRetry() {
   const cid = selectedCollectionId.value;
@@ -289,6 +335,24 @@ function isAutoPending(b: Bookmark): boolean {
 function onSelect(b: Bookmark) {
   emit("select-bookmark", b.id);
 }
+
+async function refreshPath(cid: ID | null) {
+  path.value = [];
+  if (cid == null) return;
+
+  isLoadingPath.value = true;
+  try {
+    path.value = await CollectionApi.getPath(cid);
+  } finally {
+    isLoadingPath.value = false;
+  }
+}
+
+watch(
+  [() => selectedCollectionId.value, () => collectionNodes.value],
+  ([cid]) => refreshPath(cid),
+  { immediate: true, deep: true }
+);
 </script>
 
 <style scoped>

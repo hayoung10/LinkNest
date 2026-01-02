@@ -1,6 +1,6 @@
 import http from "@/api/http";
 import type { Collection, CollectionNode, ID } from "@/types/common";
-import { CollectionRes } from "./types";
+import { CollectionNodeRes, CollectionPathRes, CollectionRes } from "./types";
 import { mapCollectionNodeResList, mapCollectionRes } from "./mappers";
 
 export interface CollectionCreateReq {
@@ -89,6 +89,14 @@ export async function reorderCollection(
 
 /** 트리 조회 */
 export async function listTree(): Promise<CollectionNode[]> {
-  const { data } = await http.get(`/collections/tree`);
+  const { data } = await http.get<CollectionNodeRes[]>(`/collections/tree`);
   return mapCollectionNodeResList(data);
+}
+
+/** 경로 조회 */
+export async function getPath(id: ID): Promise<CollectionPathRes[]> {
+  const { data } = await http.get<CollectionPathRes[]>(
+    `/collections/${id}/path`
+  );
+  return data;
 }

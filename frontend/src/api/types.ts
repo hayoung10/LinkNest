@@ -60,6 +60,12 @@ export interface CollectionNodeRes {
   childCount: number;
 }
 
+export interface CollectionPathRes {
+  id: ID;
+  name: string;
+  emoji: string | null;
+}
+
 export interface UserPreferencesRes {
   defaultBookmarkSort: BookmarkSortOption;
   defaultLayout: LayoutOption;
