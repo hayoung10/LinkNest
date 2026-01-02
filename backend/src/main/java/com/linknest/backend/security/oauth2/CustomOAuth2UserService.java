@@ -61,6 +61,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private OAuth2UserInfo toUserInfo(String registrationId, Map<String, Object> attributes) {
         return switch (registrationId) {
             case "google" -> GoogleUserInfo.from(attributes);
+            case "kakao" -> KakaoUserInfo.from(attributes);
             default -> throw new OAuth2AuthenticationException(
                     new OAuth2Error("unsupported_provider"),
                     "Unsupported provider: " + registrationId
