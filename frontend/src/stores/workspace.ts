@@ -270,11 +270,11 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    async reorderCollection(id: ID, parentId: ID | null, newOrder: number) {
+    async reorderCollection(id: ID, targetIndex: number) {
       this.mutateError.reorderCollection = null;
       setMutating(this.isMutating, "reorderCollection", true);
       try {
-        await CollectionApi.reorderCollection(id, { newOrder });
+        await CollectionApi.reorderCollection(id, { targetIndex });
         await this.fetchCollectionTree();
       } catch (e) {
         fail(

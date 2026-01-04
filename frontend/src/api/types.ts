@@ -66,6 +66,12 @@ export interface CollectionPathRes {
   emoji: string | null;
 }
 
+export interface CollectionPositionRes {
+  id: ID;
+  parentId: ID | null;
+  sortOrder: number;
+}
+
 export interface UserPreferencesRes {
   defaultBookmarkSort: BookmarkSortOption;
   defaultLayout: LayoutOption;
