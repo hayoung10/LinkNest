@@ -79,12 +79,12 @@ public class CollectionController {
         return ResponseEntity.ok(res);
     }
 
-    @PatchMapping("/{id}/order")
-    public ResponseEntity<Void> reorder(@AuthenticationPrincipal(expression = "id") Long userId,
+    @PatchMapping("/{id}/reorder")
+    public ResponseEntity<CollectionPositionRes> reorder(@AuthenticationPrincipal(expression = "id") Long userId,
                                         @PathVariable @Min(1) Long id,
                                         @RequestBody @Valid CollectionReorderReq req) {
-        service.reorder(userId, id, req.newOrder());
-        return ResponseEntity.noContent().build();
+        CollectionPositionRes res = service.reorder(userId, id, req.targetIndex());
+        return ResponseEntity.ok(res);
     }
 
     @GetMapping("/tree")
