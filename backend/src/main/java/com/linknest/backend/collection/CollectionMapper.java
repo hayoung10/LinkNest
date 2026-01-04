@@ -30,5 +30,5 @@ public interface CollectionMapper {
     CollectionNodeRes toNodeRes(Collection c, long bookmarkCount, long childCount);
 
     @Mapping(target = "parentId", expression = "java(c.getParent() == null ? null : c.getParent().getId())")
-    CollectionMoveRes toMoveRes(Collection c);
+    CollectionPositionRes toPositionRes(Collection c);
 }

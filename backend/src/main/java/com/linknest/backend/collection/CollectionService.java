@@ -105,11 +105,11 @@ public class CollectionService {
 
     // ---------- 이동 (경로 변경) ----------
     @Transactional
-    public CollectionMoveRes move(Long userId, Long id, Long targetParentId) {
+    public CollectionPositionRes move(Long userId, Long id, Long targetParentId) {
         Collection collection = requireOwnedCollection(userId, id);
 
         Long currentParentId = (collection.getParent() == null) ? null : collection.getParent().getId();
-        if(Objects.equals(currentParentId, targetParentId)) return mapper.toMoveRes(collection);
+        if(Objects.equals(currentParentId, targetParentId)) return mapper.toPositionRes(collection);
 
         Collection newParent = (targetParentId == null) ? null : requireOwnedCollection(userId, targetParentId);
         validateMoveTarget(collection, newParent);
@@ -121,7 +121,7 @@ public class CollectionService {
         collection.setParent(newParent);
         collection.setSortOrder(nextOrder);
 
-        return mapper.toMoveRes(collection);
+        return mapper.toPositionRes(collection);
     }
 
     // ---------- 순서 변경 (같은 경로 내) ----------
