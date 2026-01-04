@@ -72,11 +72,11 @@ public class CollectionController {
     }
 
     @PatchMapping("/{id}/move")
-    public ResponseEntity<Void> move(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<CollectionMoveRes> move(@AuthenticationPrincipal(expression = "id") Long userId,
                                      @PathVariable @Min(1) Long id,
                                      @RequestBody @Valid CollectionMoveReq req) {
-        service.move(userId, id, req.targetParentId());
-        return ResponseEntity.noContent().build();
+        CollectionMoveRes res = service.move(userId, id, req.targetParentId());
+        return ResponseEntity.ok(res);
     }
 
     @PatchMapping("/{id}/order")
