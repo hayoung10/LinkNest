@@ -1,6 +1,7 @@
 package com.linknest.backend.collection;
 
-import com.linknest.backend.collection.dto.*;
+import com.linknest.backend.collection.dto.request.*;
+import com.linknest.backend.collection.dto.response.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;

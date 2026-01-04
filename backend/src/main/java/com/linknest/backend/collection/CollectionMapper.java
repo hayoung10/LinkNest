@@ -1,6 +1,10 @@
 package com.linknest.backend.collection;
 
-import com.linknest.backend.collection.dto.*;
+import com.linknest.backend.collection.dto.request.CollectionCreateReq;
+import com.linknest.backend.collection.dto.request.CollectionUpdateReq;
+import com.linknest.backend.collection.dto.response.CollectionNodeRes;
+import com.linknest.backend.collection.dto.response.CollectionPositionRes;
+import com.linknest.backend.collection.dto.response.CollectionRes;
 import org.mapstruct.*;
 
 @Mapper(componentModel = "spring",

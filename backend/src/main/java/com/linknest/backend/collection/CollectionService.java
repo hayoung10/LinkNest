@@ -1,7 +1,8 @@
 package com.linknest.backend.collection;
 
 import com.linknest.backend.bookmark.BookmarkRepository;
-import com.linknest.backend.collection.dto.*;
+import com.linknest.backend.collection.dto.request.*;
+import com.linknest.backend.collection.dto.response.*;
 import com.linknest.backend.common.dto.IdCount;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
