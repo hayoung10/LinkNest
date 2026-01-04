@@ -1,7 +1,8 @@
 package com.linknest.backend.collection;
 
 import com.linknest.backend.bookmark.BookmarkRepository;
-import com.linknest.backend.collection.dto.*;
+import com.linknest.backend.collection.dto.request.*;
+import com.linknest.backend.collection.dto.response.*;
 import com.linknest.backend.common.dto.IdCount;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
@@ -105,11 +106,13 @@ public class CollectionService {
 
     // ---------- 이동 (경로 변경) ----------
     @Transactional
-    public void move(Long userId, Long id, Long targetParentId) {
+    public CollectionPositionRes move(Long userId, Long id, Long targetParentId) {
         Collection collection = requireOwnedCollection(userId, id);
 
         Long currentParentId = (collection.getParent() == null) ? null : collection.getParent().getId();
-        if(Objects.equals(currentParentId, targetParentId)) return;
+        if(Objects.equals(currentParentId, targetParentId)) {
+            return mapper.toPositionRes(collection);
+        }
 
         Collection newParent = (targetParentId == null) ? null : requireOwnedCollection(userId, targetParentId);
         validateMoveTarget(collection, newParent);
@@ -120,11 +123,13 @@ public class CollectionService {
 
         collection.setParent(newParent);
         collection.setSortOrder(nextOrder);
+
+        return mapper.toPositionRes(collection);
     }
 
     // ---------- 순서 변경 (같은 경로 내) ----------
     @Transactional
-    public void reorder(Long userId, Long id, int newOrder) {
+    public CollectionPositionRes reorder(Long userId, Long id, int targetIndex) {
         Collection collection = requireOwnedCollection(userId, id);
         Long parentId = (collection.getParent() == null) ? null : collection.getParent().getId();
 
@@ -134,18 +139,21 @@ public class CollectionService {
 
         int oldIdx = requireIndexById(siblings, id);
 
-        int targetIdx = resolveTargetIndex(newOrder, siblings.size() - 1);
-        if(oldIdx == targetIdx) return;
+        int resolvedTargetIndex = resolveTargetIndex(targetIndex, siblings.size() - 1);
+        if(oldIdx == resolvedTargetIndex) {
+            return mapper.toPositionRes(collection);
+        }
 
         // 재배치
         Collection moving = siblings.remove(oldIdx);
-        siblings.add(targetIdx, moving);
+        siblings.add(resolvedTargetIndex, moving);
 
-        // sortOrder 재정렬
-        int from = Math.min(oldIdx, targetIdx);
-        for(int i = from; i < siblings.size(); i++) {
+        // 전체 재정렬
+        for(int i = 0; i < siblings.size(); i++) {
             siblings.get(i).setSortOrder(i);
         }
+
+        return mapper.toPositionRes(moving);
     }
 
     // ---------- 전체 컬렉션 트리 조회 ----------

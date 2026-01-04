@@ -1,6 +1,7 @@
 package com.linknest.backend.collection;
 
-import com.linknest.backend.collection.dto.*;
+import com.linknest.backend.collection.dto.request.*;
+import com.linknest.backend.collection.dto.response.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -72,19 +73,19 @@ public class CollectionController {
     }
 
     @PatchMapping("/{id}/move")
-    public ResponseEntity<Void> move(@AuthenticationPrincipal(expression = "id") Long userId,
-                                     @PathVariable @Min(1) Long id,
-                                     @RequestBody @Valid CollectionMoveReq req) {
-        service.move(userId, id, req.targetParentId());
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<CollectionPositionRes> move(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                      @PathVariable @Min(1) Long id,
+                                                      @RequestBody @Valid CollectionMoveReq req) {
+        CollectionPositionRes res = service.move(userId, id, req.targetParentId());
+        return ResponseEntity.ok(res);
     }
 
-    @PatchMapping("/{id}/order")
-    public ResponseEntity<Void> reorder(@AuthenticationPrincipal(expression = "id") Long userId,
+    @PatchMapping("/{id}/reorder")
+    public ResponseEntity<CollectionPositionRes> reorder(@AuthenticationPrincipal(expression = "id") Long userId,
                                         @PathVariable @Min(1) Long id,
                                         @RequestBody @Valid CollectionReorderReq req) {
-        service.reorder(userId, id, req.newOrder());
-        return ResponseEntity.noContent().build();
+        CollectionPositionRes res = service.reorder(userId, id, req.targetIndex());
+        return ResponseEntity.ok(res);
     }
 
     @GetMapping("/tree")

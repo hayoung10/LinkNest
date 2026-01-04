@@ -1,4 +1,4 @@
-package com.linknest.backend.collection.dto;
+package com.linknest.backend.collection.dto.response;
 
 import java.time.Instant;
 
