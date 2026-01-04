@@ -1,6 +1,11 @@
 import http from "@/api/http";
 import type { Collection, CollectionNode, ID } from "@/types/common";
-import { CollectionNodeRes, CollectionPathRes, CollectionRes } from "./types";
+import {
+  CollectionNodeRes,
+  CollectionPathRes,
+  CollectionPositionRes,
+  CollectionRes,
+} from "./types";
 import { mapCollectionNodeResList, mapCollectionRes } from "./mappers";
 
 export interface CollectionCreateReq {
@@ -18,7 +23,7 @@ export interface CollectionMoveReq {
 }
 
 export interface CollectionReorderReq {
-  newOrder: number;
+  targetIndex: number;
 }
 
 export interface CollectionEmojiUpdateReq {
@@ -71,20 +76,28 @@ export async function deleteCollection(id: ID): Promise<void> {
   await http.delete(`/collections/${id}`);
 }
 
-/** 이동 (204 No Content) */
+/** 이동 */
 export async function moveCollection(
   id: ID,
   payload: CollectionMoveReq
-): Promise<void> {
-  await http.patch(`/collections/${id}/move`, payload);
+): Promise<CollectionPositionRes> {
+  const { data } = await http.patch<CollectionPositionRes>(
+    `/collections/${id}/move`,
+    payload
+  );
+  return data;
 }
 
-/** 정렬 변경 (204 No Content) */
+/** 정렬 변경 */
 export async function reorderCollection(
   id: ID,
   payload: CollectionReorderReq
-): Promise<void> {
-  await http.patch(`/collections/${id}/order`, payload);
+): Promise<CollectionPositionRes> {
+  const { data } = await http.patch<CollectionPositionRes>(
+    `/collections/${id}/reorder`,
+    payload
+  );
+  return data;
 }
 
 /** 트리 조회 */
