@@ -14,19 +14,21 @@
       :style="{ paddingLeft: `${depth * 12}px` }"
       v-on="nodeHandlers"
     >
-      <button
-        v-if="!isEditing && !disabled && !isRenaming"
-        type="button"
-        class="mr-1 size-5 grid place-items-center rounded text-muted-foreground hover:bg-accent/50"
-        style="touch-action: none"
-        aria-label="드래그로 이동"
-        title="드래그"
-        @pointerdown.stop.prevent="draggable.handleDragStart"
-        @click.stop
-        @mousedown.stop
-      >
-        ⋮⋮
-      </button>
+      <span class="mr-1 inline-flex w-5 justify-center shrink-0">
+        <button
+          v-if="!isEditing && !disabled && !isRenaming"
+          type="button"
+          class="mr-1 size-5 grid place-items-center rounded text-muted-foreground opacity-55 hover:opacity-100 hover:bg-accent/50 cursor-grab active:cursor-grabbing transition"
+          style="touch-action: none"
+          aria-label="드래그로 이동"
+          title="드래그"
+          @pointerdown.stop.prevent="draggable.handleDragStart"
+          @click.stop
+          @mousedown.stop
+        >
+          <GripVerticalIcon :size="12" />
+        </button>
+      </span>
 
       <!-- 토글 아이콘 -->
       <button
@@ -151,6 +153,7 @@ import { CollectionMenu } from "@/features/workspace";
 import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
+import GripVerticalIcon from "@/components/icons/GripVerticalIcon.vue";
 
 defineOptions({ name: "CollectionNode" });
 
