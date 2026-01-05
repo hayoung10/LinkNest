@@ -1,5 +1,5 @@
 <template>
-  <li class="group relative">
+  <li class="group relative" :ref="setNodeEl">
     <!-- 컬렉션 헤더 -->
     <div
       :class="[
@@ -14,6 +14,20 @@
       :style="{ paddingLeft: `${depth * 12}px` }"
       v-on="nodeHandlers"
     >
+      <button
+        v-if="!isEditing && !disabled && !isRenaming"
+        type="button"
+        class="mr-1 size-5 grid place-items-center rounded text-muted-foreground hover:bg-accent/50"
+        style="touch-action: none"
+        aria-label="드래그로 이동"
+        title="드래그"
+        @pointerdown.stop.prevent="draggable.handleDragStart"
+        @click.stop
+        @mousedown.stop
+      >
+        ⋮⋮
+      </button>
+
       <!-- 토글 아이콘 -->
       <button
         v-if="hasChildren"
@@ -131,7 +145,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { ComponentPublicInstance, computed } from "vue";
+import { useDraggable, useDroppable } from "@vue-dnd-kit/core";
 import { CollectionMenu } from "@/features/workspace";
 import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
@@ -181,8 +196,6 @@ const emit = defineEmits<{
 }>();
 
 const expanded = computed(() => props.expandedIds.has(props.node.id));
-const hasChildren = computed(() => childIds.value.length > 0);
-const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
 const isEditing = computed(() => props.editingId === props.node.id);
 const isActive = computed(() => props.selectedCollectionId === props.node.id);
 
@@ -191,6 +204,46 @@ const childIds = computed<ID[]>(() => {
   const ids = props.childrenByParent[key] ?? [];
   return ids.filter((id) => props.collectionById[id] != null);
 });
+
+const hasChildren = computed(() => childIds.value.length > 0);
+const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
+
+const disableDnd = computed(
+  () => props.disabled || isEditing.value || !!props.isRenaming
+);
+
+const droppable = useDroppable({
+  groups: ["collections"],
+  disabled: disableDnd,
+  data: {
+    type: "collection",
+    collectionId: props.node.id,
+  },
+  events: {
+    onHover: () => {},
+    onLeave: () => {},
+    onDrop: async () => true,
+  },
+});
+
+const draggable = useDraggable({
+  id: `collection:${props.node.id}`,
+  groups: ["collections"],
+  disabled: disableDnd,
+  data: {
+    type: "collection",
+    collectionId: props.node.id,
+  },
+});
+
+function setNodeEl(
+  ref: Element | ComponentPublicInstance | null,
+  _refs?: Record<string, any>
+) {
+  const el = (ref instanceof HTMLElement ? ref : null) as HTMLElement | null;
+  droppable.elementRef.value = el;
+  draggable.elementRef.value = el;
+}
 
 // 핸들러 (편집 중일 때 비활성화)
 const nodeHandlers = computed(() => {
