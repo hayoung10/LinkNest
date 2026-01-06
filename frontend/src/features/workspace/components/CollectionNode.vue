@@ -161,6 +161,8 @@
           :disabled="disabled"
           :collection-by-id="collectionById"
           :children-by-parent="childrenByParent"
+          :dnd-active-id="dndActiveId"
+          :dnd-over="dndOver"
           @toggle="$emit('toggle', $event)"
           @add-collection="$emit('add-collection', $event)"
           @open-all="$emit('open-all', $event)"
