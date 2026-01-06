@@ -1,12 +1,15 @@
 <template>
-  <li class="group relative">
+  <li class="group relative" :ref="setNodeEl">
     <!-- 컬렉션 헤더 -->
     <div
+      :ref="setDroppableEl"
       :class="[
         'relative flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer select-none',
         isActive
           ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 font-medium ring-1 ring-blue-300'
           : 'hover:bg-zinc-100 dark:hover:bg-zinc-800',
+
+        draggable.isDragging.value ? 'opacity-60 scale-[0.99]' : '',
       ]"
       role="button"
       :aria-expanded="hasChildren ? expanded : undefined"
@@ -14,6 +17,28 @@
       :style="{ paddingLeft: `${depth * 12}px` }"
       v-on="nodeHandlers"
     >
+      <span class="mr-1 inline-flex w-5 justify-center shrink-0">
+        <button
+          v-show="!isEditing && !disabled && !isRenaming"
+          :ref="setDraggableEl"
+          type="button"
+          class="size-5 grid place-items-center rounded text-muted-foreground opacity-55 hover:opacity-100 hover:bg-accent/50 cursor-grab active:cursor-grabbing transition"
+          style="touch-action: none"
+          aria-label="드래그로 이동"
+          title="드래그"
+          @pointerdown.stop.prevent="
+            (e) => {
+              $emit('dnd-start', node.id);
+              draggable.handleDragStart(e);
+            }
+          "
+          @click.stop
+          @mousedown.stop
+        >
+          <GripVerticalIcon :size="12" />
+        </button>
+      </span>
+
       <!-- 토글 아이콘 -->
       <button
         v-if="hasChildren"
@@ -95,6 +120,28 @@
           @delete="$emit('delete-collection', node.id)"
         />
       </div>
+
+      <!-- zone 하이라이트 오버레이 -->
+      <div
+        v-if="isDropTarget"
+        class="pointer-events-none absolute inset-0 rounded-md"
+      >
+        <!-- middle -->
+        <div
+          v-if="overZone === 'middle'"
+          class="absolute inset-0 rounded-md ring-2 ring-blue-400/60 bg-blue-400/5"
+        />
+        <!-- top -->
+        <div
+          v-else-if="overZone === 'top'"
+          class="absolute left-0 right-0 top-0 h-[2px] rounded bg-blue-400"
+        />
+        <!-- bottom -->
+        <div
+          v-else
+          class="absolute left-0 right-0 bottom-0 h-[2px] rounded bg-blue-400"
+        />
+      </div>
     </div>
 
     <!-- 내용(하위 컬렉션 + 북마크) -->
@@ -114,6 +161,8 @@
           :disabled="disabled"
           :collection-by-id="collectionById"
           :children-by-parent="childrenByParent"
+          :dnd-active-id="dndActiveId"
+          :dnd-over="dndOver"
           @toggle="$emit('toggle', $event)"
           @add-collection="$emit('add-collection', $event)"
           @open-all="$emit('open-all', $event)"
@@ -124,6 +173,9 @@
           @input-rename="$emit('input-rename', $event)"
           @submit-rename="$emit('submit-rename')"
           @cancel-rename="$emit('cancel-rename')"
+          @dnd-start="$emit('dnd-start', $event)"
+          @dnd-hover="$emit('dnd-hover', $event)"
+          @dnd-drop="$emit('dnd-drop', $event)"
         />
       </ul>
     </div>
@@ -131,13 +183,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { ComponentPublicInstance, computed, watchEffect } from "vue";
+import { useDnDStore, useDraggable, useDroppable } from "@vue-dnd-kit/core";
 import { CollectionMenu } from "@/features/workspace";
 import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
+import GripVerticalIcon from "@/components/icons/GripVerticalIcon.vue";
+
+type DropZone = "top" | "middle" | "bottom";
+type DndDropPayload = { targetId: ID | null; zone: DropZone };
 
 defineOptions({ name: "CollectionNode" });
+
+const dndStore = useDnDStore();
 
 const props = withDefaults(
   defineProps<{
@@ -154,6 +213,9 @@ const props = withDefaults(
     editingId?: ID | null;
     draftName?: string;
     isRenaming?: boolean;
+
+    dndActiveId?: ID | null;
+    dndOver?: DndDropPayload | null;
   }>(),
   {
     depth: 0,
@@ -162,6 +224,8 @@ const props = withDefaults(
     editingId: null,
     draftName: "",
     isRenaming: false,
+    dndActiveId: null,
+    dndOver: null,
   }
 );
 
@@ -178,11 +242,13 @@ const emit = defineEmits<{
   (e: "input-rename", value: string): void;
   (e: "submit-rename"): void;
   (e: "cancel-rename"): void;
+
+  (e: "dnd-start", id: ID): void;
+  (e: "dnd-hover", payload: DndDropPayload): void;
+  (e: "dnd-drop", payload: DndDropPayload): void;
 }>();
 
 const expanded = computed(() => props.expandedIds.has(props.node.id));
-const hasChildren = computed(() => childIds.value.length > 0);
-const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
 const isEditing = computed(() => props.editingId === props.node.id);
 const isActive = computed(() => props.selectedCollectionId === props.node.id);
 
@@ -191,6 +257,85 @@ const childIds = computed<ID[]>(() => {
   const ids = props.childrenByParent[key] ?? [];
   return ids.filter((id) => props.collectionById[id] != null);
 });
+
+const hasChildren = computed(() => childIds.value.length > 0);
+const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
+
+const isDropTarget = computed(() => {
+  if (!props.dndActiveId) return false;
+  if (!props.dndOver) return false;
+  if (props.dndOver.targetId !== props.node.id) return false;
+  if (props.dndActiveId === props.node.id) return false;
+  return true;
+});
+const overZone = computed<DropZone>(() => props.dndOver?.zone ?? "middle");
+const currentZone = computed<DropZone>(() => {
+  const el = droppable.elementRef.value;
+  const pointerY = dndStore.pointerPosition?.current?.value?.y;
+
+  if (!el || pointerY == null) return "middle";
+  return getDropZone(pointerY, el);
+});
+
+const disableDnd = computed(
+  () => props.disabled || isEditing.value || !!props.isRenaming
+);
+
+const droppable = useDroppable({
+  groups: ["collections"],
+  disabled: disableDnd,
+  data: {
+    type: "collection",
+    id: props.node.id,
+    parentId: props.node.parentId ?? null,
+  },
+  events: {
+    onDrop: async () => {
+      emit("dnd-drop", { targetId: props.node.id, zone: currentZone.value });
+      return true;
+    },
+  },
+});
+
+const draggable = useDraggable({
+  id: props.node.id,
+  groups: ["collections"],
+  disabled: disableDnd,
+  data: {
+    type: "collection",
+    id: props.node.id,
+    parentId: props.node.parentId ?? null,
+  },
+});
+
+type TemplateRefType = Element | ComponentPublicInstance | null;
+
+function setNodeEl(ref: TemplateRefType, _refs?: Record<string, any>) {
+  const el = (ref instanceof HTMLElement ? ref : null) as HTMLElement | null;
+  droppable.elementRef.value = el;
+  draggable.elementRef.value = el;
+}
+
+function setDroppableEl(ref: TemplateRefType) {
+  const el = ref instanceof Element ? (ref as HTMLElement) : null;
+  droppable.elementRef.value = el;
+}
+
+function setDraggableEl(ref: TemplateRefType) {
+  const el = ref instanceof Element ? (ref as HTMLElement) : null;
+  draggable.elementRef.value = el;
+}
+
+function getDropZone(pointerY: number, el: HTMLElement): DropZone {
+  const rect = el.getBoundingClientRect();
+  const y = pointerY - rect.top;
+  const h = Math.max(1, rect.height);
+
+  const ratio = y / h; // 0~1
+  if (ratio <= 0.25) return "top";
+  if (ratio >= 0.75) return "bottom";
+  return "middle";
+}
 
 // 핸들러 (편집 중일 때 비활성화)
 const nodeHandlers = computed(() => {
@@ -222,5 +367,12 @@ const nodeHandlers = computed(() => {
       }
     },
   };
+});
+
+watchEffect(() => {
+  if (!props.dndActiveId) return;
+  if (!droppable.isOvered.value) return;
+
+  emit("dnd-hover", { targetId: props.node.id, zone: currentZone.value });
 });
 </script>

@@ -19,7 +19,7 @@
     </header>
 
     <!-- 컬렉션 리스트 -->
-    <nav class="flex-1 min-h-0 overflow-y-auto p-2 text-sm">
+    <nav class="flex-1 min-h-0 overflow-y-auto p-2 text-sm flex flex-col">
       <div class="flex items-center justify-between px-2 py-2">
         <div class="text-muted-foreground font-medium">컬렉션</div>
         <button
@@ -67,6 +67,8 @@
           :disabled="isLoadingCollections || hasError || isCollectionMutating"
           :collection-by-id="collectionById"
           :children-by-parent="childrenByParent"
+          :dnd-active-id="dndActiveId"
+          :dnd-over="dndOver"
           @toggle="toggleExpand"
           @add-collection="openAddCollectionDialog"
           @open-all="$emit('open-all', $event)"
@@ -77,8 +79,24 @@
           @input-rename="changeDraft"
           @submit-rename="submitRename"
           @cancel-rename="cancelRename"
+          @dnd-start="onDndStart"
+          @dnd-hover="onDndHover"
+          @dnd-drop="onDndDrop"
         />
       </ul>
+
+      <!-- 루트 드롭 영역(사이드바 빈 공간) -->
+      <div
+        :ref="setRootDropEl"
+        class="flex-1 mt-1 rounded-md transition"
+        :class="[
+          dndActiveId != null ? 'ring-1 ring-blue-400/15' : '',
+          dndOver?.targetId === null
+            ? 'ring-2 ring-blue-400/60 bg-blue-400/5'
+            : '',
+        ]"
+        aria-label="루트로 이동 (드롭 영역)"
+      />
     </nav>
 
     <!-- 하단 유저 메뉴 -->
@@ -152,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { ComponentPublicInstance, computed, nextTick, ref, watch } from "vue";
 import { CollectionNode, UserMenu } from "@/features/workspace";
 import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
@@ -160,6 +178,7 @@ import LogoIcon from "@/components/icons/LogoIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
+import { useDroppable } from "@vue-dnd-kit/core";
 
 defineOptions({ inheritAttrs: false });
 
@@ -321,6 +340,109 @@ async function handleAdd() {
   } finally {
     isAdding.value = false;
   }
+}
+
+// DnD
+type DropZone = "top" | "middle" | "bottom";
+type DndDropPayload = { targetId: ID | null; zone: DropZone };
+type TemplateRefType = Element | ComponentPublicInstance | null;
+
+const dndActiveId = ref<ID | null>(null);
+const dndOver = ref<DndDropPayload | null>(null);
+
+const rootDroppable = useDroppable({
+  groups: ["collections"],
+  disabled: computed(
+    () =>
+      isLoadingCollections.value || hasError.value || isCollectionMutating.value
+  ),
+  data: { type: "collection-root" },
+  events: {
+    onHover: () => {
+      if (!dndActiveId.value) return;
+      dndOver.value = { targetId: null, zone: "middle" };
+    },
+    onLeave: () => {
+      if (dndOver.value?.targetId === null) dndOver.value = null;
+    },
+    onDrop: async () => {
+      onDndDrop({ targetId: null, zone: "middle" });
+      return true;
+    },
+  },
+});
+
+function setRootDropEl(ref: TemplateRefType) {
+  const el = ref instanceof Element ? (ref as HTMLElement) : null;
+  rootDroppable.elementRef.value = el;
+}
+
+function onDndStart(id: ID) {
+  dndActiveId.value = id;
+  dndOver.value = null;
+}
+
+function onDndHover(payload: DndDropPayload) {
+  dndOver.value = payload;
+}
+
+function onDndDrop(payload: DndDropPayload) {
+  const activeId = dndActiveId.value;
+  dndActiveId.value = null;
+  dndOver.value = null;
+
+  if (activeId == null) return;
+
+  const { targetId, zone } = payload;
+
+  // 루트 드롭 -> root로 move
+  if (targetId == null) {
+    console.log("[DnD]", { type: "move", id: activeId, targetParentId: null });
+    return;
+  }
+
+  if (activeId === targetId) return;
+
+  const active = collectionById.value[activeId];
+  const target = collectionById.value[targetId];
+  if (!active || !target) return;
+
+  const activeParentId = active.parentId ?? null;
+
+  // 1) middle -> move
+  if (zone === "middle") {
+    console.log("[DnD]", {
+      type: "move",
+      id: activeId,
+      targetParentId: targetId,
+    });
+    return;
+  }
+
+  // 2) top/bottom -> reorder
+  const targetParentId = target.parentId ?? null;
+  const key = targetParentId == null ? "root" : String(targetParentId);
+  const siblings = (childrenByParent.value[key] ?? []).filter(
+    (id) => !!collectionById.value[id]
+  );
+
+  const baseIndex = siblings.indexOf(targetId);
+  if (baseIndex < 0) return;
+
+  let targetIndex = zone === "top" ? baseIndex : baseIndex + 1;
+
+  if (activeParentId === targetParentId) {
+    const activeIndex = siblings.indexOf(activeId);
+    if (activeIndex >= 0 && activeIndex < targetIndex) targetIndex -= 1;
+  }
+
+  console.log("[DnD]", {
+    type: "reorder",
+    id: activeId,
+    parentId: targetParentId,
+    targetIndex,
+    zone,
+  });
 }
 
 // 다이얼로그 포커스
