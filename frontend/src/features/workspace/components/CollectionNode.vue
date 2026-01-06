@@ -10,7 +10,6 @@
           : 'hover:bg-zinc-100 dark:hover:bg-zinc-800',
 
         draggable.isDragging.value ? 'opacity-60 scale-[0.99]' : '',
-        droppable.isOvered.value ? 'ring-2 ring-blue-400/60' : '',
       ]"
       role="button"
       :aria-expanded="hasChildren ? expanded : undefined"
@@ -121,6 +120,28 @@
           @delete="$emit('delete-collection', node.id)"
         />
       </div>
+
+      <!-- zone 하이라이트 오버레이 -->
+      <div
+        v-if="isDropTarget"
+        class="pointer-events-none absolute inset-0 rounded-md"
+      >
+        <!-- middle -->
+        <div
+          v-if="overZone === 'middle'"
+          class="absolute inset-0 rounded-md ring-2 ring-blue-400/60 bg-blue-400/5"
+        />
+        <!-- top -->
+        <div
+          v-else-if="overZone === 'top'"
+          class="absolute left-0 right-0 top-0 h-[2px] rounded bg-blue-400"
+        />
+        <!-- bottom -->
+        <div
+          v-else
+          class="absolute left-0 right-0 bottom-0 h-[2px] rounded bg-blue-400"
+        />
+      </div>
     </div>
 
     <!-- 내용(하위 컬렉션 + 북마크) -->
@@ -160,8 +181,8 @@
 </template>
 
 <script setup lang="ts">
-import { ComponentPublicInstance, computed } from "vue";
-import { useDraggable, useDroppable } from "@vue-dnd-kit/core";
+import { ComponentPublicInstance, computed, watchEffect } from "vue";
+import { useDnDStore, useDraggable, useDroppable } from "@vue-dnd-kit/core";
 import { CollectionMenu } from "@/features/workspace";
 import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
@@ -169,8 +190,11 @@ import FolderIcon from "@/components/icons/FolderIcon.vue";
 import GripVerticalIcon from "@/components/icons/GripVerticalIcon.vue";
 
 type DropZone = "top" | "middle" | "bottom";
+type DndDropPayload = { targetId: ID | null; zone: DropZone };
 
 defineOptions({ name: "CollectionNode" });
+
+const dndStore = useDnDStore();
 
 const props = withDefaults(
   defineProps<{
@@ -187,6 +211,9 @@ const props = withDefaults(
     editingId?: ID | null;
     draftName?: string;
     isRenaming?: boolean;
+
+    dndActiveId?: ID | null;
+    dndOver?: DndDropPayload | null;
   }>(),
   {
     depth: 0,
@@ -195,6 +222,8 @@ const props = withDefaults(
     editingId: null,
     draftName: "",
     isRenaming: false,
+    dndActiveId: null,
+    dndOver: null,
   }
 );
 
@@ -213,8 +242,8 @@ const emit = defineEmits<{
   (e: "cancel-rename"): void;
 
   (e: "dnd-start", id: ID): void;
-  (e: "dnd-hover", payload: { targetId: ID; zone: DropZone }): void;
-  (e: "dnd-drop", payload: { targetId: ID; zone: DropZone }): void;
+  (e: "dnd-hover", payload: DndDropPayload): void;
+  (e: "dnd-drop", payload: DndDropPayload): void;
 }>();
 
 const expanded = computed(() => props.expandedIds.has(props.node.id));
@@ -230,6 +259,22 @@ const childIds = computed<ID[]>(() => {
 const hasChildren = computed(() => childIds.value.length > 0);
 const bookmarkCount = computed(() => props.node.bookmarkCount ?? 0);
 
+const isDropTarget = computed(() => {
+  if (!props.dndActiveId) return false;
+  if (!props.dndOver) return false;
+  if (props.dndOver.targetId !== props.node.id) return false;
+  if (props.dndActiveId === props.node.id) return false;
+  return true;
+});
+const overZone = computed<DropZone>(() => props.dndOver?.zone ?? "middle");
+const currentZone = computed<DropZone>(() => {
+  const el = droppable.elementRef.value;
+  const pointerY = dndStore.pointerPosition?.current?.value?.y;
+
+  if (!el || pointerY == null) return "middle";
+  return getDropZone(pointerY, el);
+});
+
 const disableDnd = computed(
   () => props.disabled || isEditing.value || !!props.isRenaming
 );
@@ -243,24 +288,8 @@ const droppable = useDroppable({
     parentId: props.node.parentId ?? null,
   },
   events: {
-    onHover: (store) => {
-      const el = droppable.elementRef.value;
-      const pointerY = store.pointerPosition?.current?.value?.y;
-
-      if (!el || pointerY == null) return;
-
-      const zone = getDropZone(pointerY, el);
-      emit("dnd-hover", { targetId: props.node.id, zone });
-    },
-    onLeave: () => {},
-    onDrop: async (store) => {
-      const el = droppable.elementRef.value;
-      const pointerY = store.pointerPosition?.current?.value?.y;
-
-      const zone =
-        el && pointerY != null ? getDropZone(pointerY, el) : "middle";
-
-      emit("dnd-drop", { targetId: props.node.id, zone });
+    onDrop: async () => {
+      emit("dnd-drop", { targetId: props.node.id, zone: currentZone.value });
       return true;
     },
   },
@@ -336,5 +365,12 @@ const nodeHandlers = computed(() => {
       }
     },
   };
+});
+
+watchEffect(() => {
+  if (!props.dndActiveId) return;
+  if (!droppable.isOvered.value) return;
+
+  emit("dnd-hover", { targetId: props.node.id, zone: currentZone.value });
 });
 </script>

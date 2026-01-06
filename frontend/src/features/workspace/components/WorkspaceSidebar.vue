@@ -67,6 +67,8 @@
           :disabled="isLoadingCollections || hasError || isCollectionMutating"
           :collection-by-id="collectionById"
           :children-by-parent="childrenByParent"
+          :dnd-active-id="dndActiveId"
+          :dnd-over="dndOver"
           @toggle="toggleExpand"
           @add-collection="openAddCollectionDialog"
           @open-all="$emit('open-all', $event)"
@@ -86,12 +88,13 @@
       <!-- 루트 드롭 영역(사이드바 빈 공간) -->
       <div
         :ref="setRootDropEl"
-        class="flex-1 mt-1 rounded-md"
-        :class="
-          rootDroppable.isOvered.value
+        class="flex-1 mt-1 rounded-md transition"
+        :class="[
+          dndActiveId != null ? 'ring-1 ring-blue-400/15' : '',
+          dndOver?.targetId === null
             ? 'ring-2 ring-blue-400/60 bg-blue-400/5'
-            : ''
-        "
+            : '',
+        ]"
         aria-label="루트로 이동 (드롭 영역)"
       />
     </nav>
@@ -347,8 +350,6 @@ type TemplateRefType = Element | ComponentPublicInstance | null;
 const dndActiveId = ref<ID | null>(null);
 const dndOver = ref<DndDropPayload | null>(null);
 
-const rootDropEl = ref<HTMLElement | null>(null);
-
 const rootDroppable = useDroppable({
   groups: ["collections"],
   disabled: computed(
@@ -358,9 +359,12 @@ const rootDroppable = useDroppable({
   data: { type: "collection-root" },
   events: {
     onHover: () => {
-      onDndHover({ targetId: null, zone: "middle" });
+      if (!dndActiveId.value) return;
+      dndOver.value = { targetId: null, zone: "middle" };
     },
-    onLeave: () => {},
+    onLeave: () => {
+      if (dndOver.value?.targetId === null) dndOver.value = null;
+    },
     onDrop: async () => {
       onDndDrop({ targetId: null, zone: "middle" });
       return true;
