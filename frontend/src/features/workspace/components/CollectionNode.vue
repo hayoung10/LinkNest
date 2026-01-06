@@ -2,11 +2,15 @@
   <li class="group relative" :ref="setNodeEl">
     <!-- 컬렉션 헤더 -->
     <div
+      :ref="setDroppableEl"
       :class="[
         'relative flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer select-none',
         isActive
           ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 font-medium ring-1 ring-blue-300'
           : 'hover:bg-zinc-100 dark:hover:bg-zinc-800',
+
+        draggable.isDragging.value ? 'opacity-60 scale-[0.99]' : '',
+        droppable.isOvered.value ? 'ring-2 ring-blue-400/60' : '',
       ]"
       role="button"
       :aria-expanded="hasChildren ? expanded : undefined"
@@ -16,13 +20,19 @@
     >
       <span class="mr-1 inline-flex w-5 justify-center shrink-0">
         <button
-          v-if="!isEditing && !disabled && !isRenaming"
+          v-show="!isEditing && !disabled && !isRenaming"
+          :ref="setDraggableEl"
           type="button"
-          class="mr-1 size-5 grid place-items-center rounded text-muted-foreground opacity-55 hover:opacity-100 hover:bg-accent/50 cursor-grab active:cursor-grabbing transition"
+          class="size-5 grid place-items-center rounded text-muted-foreground opacity-55 hover:opacity-100 hover:bg-accent/50 cursor-grab active:cursor-grabbing transition"
           style="touch-action: none"
           aria-label="드래그로 이동"
           title="드래그"
-          @pointerdown.stop.prevent="draggable.handleDragStart"
+          @pointerdown.stop.prevent="
+            (e) => {
+              $emit('dnd-start', node.id);
+              draggable.handleDragStart(e);
+            }
+          "
           @click.stop
           @mousedown.stop
         >
@@ -140,6 +150,9 @@
           @input-rename="$emit('input-rename', $event)"
           @submit-rename="$emit('submit-rename')"
           @cancel-rename="$emit('cancel-rename')"
+          @dnd-start="$emit('dnd-start', $event)"
+          @dnd-hover="$emit('dnd-hover', $event)"
+          @dnd-drop="$emit('dnd-drop', $event)"
         />
       </ul>
     </div>
@@ -154,6 +167,8 @@ import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 import GripVerticalIcon from "@/components/icons/GripVerticalIcon.vue";
+
+type DropZone = "top" | "middle" | "bottom";
 
 defineOptions({ name: "CollectionNode" });
 
@@ -196,6 +211,10 @@ const emit = defineEmits<{
   (e: "input-rename", value: string): void;
   (e: "submit-rename"): void;
   (e: "cancel-rename"): void;
+
+  (e: "dnd-start", id: ID): void;
+  (e: "dnd-hover", payload: { targetId: ID; zone: DropZone }): void;
+  (e: "dnd-drop", payload: { targetId: ID; zone: DropZone }): void;
 }>();
 
 const expanded = computed(() => props.expandedIds.has(props.node.id));
@@ -220,32 +239,71 @@ const droppable = useDroppable({
   disabled: disableDnd,
   data: {
     type: "collection",
-    collectionId: props.node.id,
+    id: props.node.id,
+    parentId: props.node.parentId ?? null,
   },
   events: {
-    onHover: () => {},
+    onHover: (store) => {
+      const el = droppable.elementRef.value;
+      const pointerY = store.pointerPosition?.current?.value?.y;
+
+      if (!el || pointerY == null) return;
+
+      const zone = getDropZone(pointerY, el);
+      emit("dnd-hover", { targetId: props.node.id, zone });
+    },
     onLeave: () => {},
-    onDrop: async () => true,
+    onDrop: async (store) => {
+      const el = droppable.elementRef.value;
+      const pointerY = store.pointerPosition?.current?.value?.y;
+
+      const zone =
+        el && pointerY != null ? getDropZone(pointerY, el) : "middle";
+
+      emit("dnd-drop", { targetId: props.node.id, zone });
+      return true;
+    },
   },
 });
 
 const draggable = useDraggable({
-  id: `collection:${props.node.id}`,
+  id: props.node.id,
   groups: ["collections"],
   disabled: disableDnd,
   data: {
     type: "collection",
-    collectionId: props.node.id,
+    id: props.node.id,
+    parentId: props.node.parentId ?? null,
   },
 });
 
-function setNodeEl(
-  ref: Element | ComponentPublicInstance | null,
-  _refs?: Record<string, any>
-) {
+type TemplateRefType = Element | ComponentPublicInstance | null;
+
+function setNodeEl(ref: TemplateRefType, _refs?: Record<string, any>) {
   const el = (ref instanceof HTMLElement ? ref : null) as HTMLElement | null;
   droppable.elementRef.value = el;
   draggable.elementRef.value = el;
+}
+
+function setDroppableEl(ref: TemplateRefType) {
+  const el = ref instanceof Element ? (ref as HTMLElement) : null;
+  droppable.elementRef.value = el;
+}
+
+function setDraggableEl(ref: TemplateRefType) {
+  const el = ref instanceof Element ? (ref as HTMLElement) : null;
+  draggable.elementRef.value = el;
+}
+
+function getDropZone(pointerY: number, el: HTMLElement): DropZone {
+  const rect = el.getBoundingClientRect();
+  const y = pointerY - rect.top;
+  const h = Math.max(1, rect.height);
+
+  const ratio = y / h; // 0~1
+  if (ratio <= 0.25) return "top";
+  if (ratio >= 0.75) return "bottom";
+  return "middle";
 }
 
 // 핸들러 (편집 중일 때 비활성화)
