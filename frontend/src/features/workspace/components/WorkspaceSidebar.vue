@@ -179,6 +179,7 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useDroppable } from "@vue-dnd-kit/core";
+import { DropResult } from "@/types/dnd";
 
 defineOptions({ inheritAttrs: false });
 
@@ -386,7 +387,7 @@ function onDndHover(payload: DndDropPayload) {
   dndOver.value = payload;
 }
 
-function onDndDrop(payload: DndDropPayload) {
+async function onDndDrop(payload: DndDropPayload) {
   const activeId = dndActiveId.value;
   dndActiveId.value = null;
   dndOver.value = null;
@@ -397,7 +398,12 @@ function onDndDrop(payload: DndDropPayload) {
 
   // 루트 드롭 -> root로 move
   if (targetId == null) {
-    console.log("[DnD]", { type: "move", id: activeId, targetParentId: null });
+    const result: DropResult = {
+      type: "move",
+      id: activeId,
+      targetParentId: null,
+    };
+    await workspace.applyDropResult(result);
     return;
   }
 
@@ -411,11 +417,12 @@ function onDndDrop(payload: DndDropPayload) {
 
   // 1) middle -> move
   if (zone === "middle") {
-    console.log("[DnD]", {
+    const result: DropResult = {
       type: "move",
       id: activeId,
       targetParentId: targetId,
-    });
+    };
+    await workspace.applyDropResult(result);
     return;
   }
 
@@ -436,13 +443,15 @@ function onDndDrop(payload: DndDropPayload) {
     if (activeIndex >= 0 && activeIndex < targetIndex) targetIndex -= 1;
   }
 
-  console.log("[DnD]", {
+  if (!Number.isInteger(targetIndex) || targetIndex < 0) return;
+
+  const result: DropResult = {
     type: "reorder",
     id: activeId,
     parentId: targetParentId,
-    targetIndex,
-    zone,
-  });
+    targetIndex: targetIndex,
+  };
+  await workspace.applyDropResult(result);
 }
 
 // 다이얼로그 포커스
