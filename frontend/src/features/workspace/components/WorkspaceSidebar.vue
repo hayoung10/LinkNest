@@ -384,6 +384,23 @@ function onDndStart(id: ID) {
 }
 
 function onDndHover(payload: DndDropPayload) {
+  const activeId = dndActiveId.value;
+  if (!activeId) return;
+
+  const active = collectionById.value[activeId];
+  const target =
+    payload.targetId != null ? collectionById.value[payload.targetId] : null;
+
+  if (
+    payload.zone !== "middle" &&
+    active &&
+    target &&
+    active.parentId !== target.parentId
+  ) {
+    dndOver.value = { targetId: payload.targetId, zone: "middle" };
+    return;
+  }
+
   dndOver.value = payload;
 }
 
