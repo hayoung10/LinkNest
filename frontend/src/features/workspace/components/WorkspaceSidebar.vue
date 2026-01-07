@@ -180,6 +180,7 @@ import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useDroppable } from "@vue-dnd-kit/core";
 import { DropResult } from "@/types/dnd";
+import { useToastStore } from "@/stores/toast";
 
 defineOptions({ inheritAttrs: false });
 
@@ -206,6 +207,7 @@ const {
   collectionById,
   childrenByParent,
 } = storeToRefs(workspace);
+const toast = useToastStore();
 
 const isLoadingCollections = computed(() => isLoading.value.collectionTree);
 const collectionsError = computed(() => error.value.collectionTree);
@@ -420,7 +422,12 @@ async function onDndDrop(payload: DndDropPayload) {
       id: activeId,
       targetParentId: null,
     };
-    await workspace.applyDropResult(result);
+
+    try {
+      await workspace.applyDropResult(result);
+    } catch (e) {
+      showDndError(result.type);
+    }
     return;
   }
 
@@ -439,7 +446,12 @@ async function onDndDrop(payload: DndDropPayload) {
       id: activeId,
       targetParentId: targetId,
     };
-    await workspace.applyDropResult(result);
+
+    try {
+      await workspace.applyDropResult(result);
+    } catch (e) {
+      showDndError(result.type);
+    }
     return;
   }
 
@@ -468,7 +480,20 @@ async function onDndDrop(payload: DndDropPayload) {
     parentId: targetParentId,
     targetIndex: targetIndex,
   };
-  await workspace.applyDropResult(result);
+
+  try {
+    await workspace.applyDropResult(result);
+  } catch (e) {
+    showDndError(result.type);
+  }
+}
+
+function showDndError(type: DropResult["type"]) {
+  toast.error(
+    type === "move"
+      ? "컬렉션 이동에 실패했습니다. 다시 시도해주세요."
+      : "컬렉션 순서 변경에 실패했습니다."
+  );
 }
 
 // 다이얼로그 포커스
