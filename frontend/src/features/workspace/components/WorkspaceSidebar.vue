@@ -179,6 +179,8 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useDroppable } from "@vue-dnd-kit/core";
+import { DropResult } from "@/types/dnd";
+import { useToastStore } from "@/stores/toast";
 
 defineOptions({ inheritAttrs: false });
 
@@ -205,6 +207,7 @@ const {
   collectionById,
   childrenByParent,
 } = storeToRefs(workspace);
+const toast = useToastStore();
 
 const isLoadingCollections = computed(() => isLoading.value.collectionTree);
 const collectionsError = computed(() => error.value.collectionTree);
@@ -383,10 +386,27 @@ function onDndStart(id: ID) {
 }
 
 function onDndHover(payload: DndDropPayload) {
+  const activeId = dndActiveId.value;
+  if (!activeId) return;
+
+  const active = collectionById.value[activeId];
+  const target =
+    payload.targetId != null ? collectionById.value[payload.targetId] : null;
+
+  if (
+    payload.zone !== "middle" &&
+    active &&
+    target &&
+    active.parentId !== target.parentId
+  ) {
+    dndOver.value = { targetId: payload.targetId, zone: "middle" };
+    return;
+  }
+
   dndOver.value = payload;
 }
 
-function onDndDrop(payload: DndDropPayload) {
+async function onDndDrop(payload: DndDropPayload) {
   const activeId = dndActiveId.value;
   dndActiveId.value = null;
   dndOver.value = null;
@@ -397,7 +417,17 @@ function onDndDrop(payload: DndDropPayload) {
 
   // 루트 드롭 -> root로 move
   if (targetId == null) {
-    console.log("[DnD]", { type: "move", id: activeId, targetParentId: null });
+    const result: DropResult = {
+      type: "move",
+      id: activeId,
+      targetParentId: null,
+    };
+
+    try {
+      await workspace.applyDropResult(result);
+    } catch (e) {
+      showDndError(result.type);
+    }
     return;
   }
 
@@ -411,11 +441,17 @@ function onDndDrop(payload: DndDropPayload) {
 
   // 1) middle -> move
   if (zone === "middle") {
-    console.log("[DnD]", {
+    const result: DropResult = {
       type: "move",
       id: activeId,
       targetParentId: targetId,
-    });
+    };
+
+    try {
+      await workspace.applyDropResult(result);
+    } catch (e) {
+      showDndError(result.type);
+    }
     return;
   }
 
@@ -436,13 +472,28 @@ function onDndDrop(payload: DndDropPayload) {
     if (activeIndex >= 0 && activeIndex < targetIndex) targetIndex -= 1;
   }
 
-  console.log("[DnD]", {
+  if (!Number.isInteger(targetIndex) || targetIndex < 0) return;
+
+  const result: DropResult = {
     type: "reorder",
     id: activeId,
     parentId: targetParentId,
-    targetIndex,
-    zone,
-  });
+    targetIndex: targetIndex,
+  };
+
+  try {
+    await workspace.applyDropResult(result);
+  } catch (e) {
+    showDndError(result.type);
+  }
+}
+
+function showDndError(type: DropResult["type"]) {
+  toast.error(
+    type === "move"
+      ? "컬렉션 이동에 실패했습니다. 다시 시도해주세요."
+      : "컬렉션 순서 변경에 실패했습니다."
+  );
 }
 
 // 다이얼로그 포커스

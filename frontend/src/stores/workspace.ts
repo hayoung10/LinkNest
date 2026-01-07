@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { Bookmark, Collection, CollectionNode, ID } from "@/types/common";
 import * as CollectionApi from "@/api/collections";
 import * as BookmarkApi from "@/api/bookmarks";
+import { DropResult } from "@/types/dnd";
 
 type LoadKey = "collectionTree" | "bookmarks";
 type MutateKey =
@@ -287,6 +288,28 @@ export const useWorkspaceStore = defineStore("workspace", {
       } finally {
         setMutating(this.isMutating, "reorderCollection", false);
       }
+    },
+
+    async applyDropResult(result: DropResult) {
+      if (this.isMutating.moveCollection || this.isMutating.reorderCollection)
+        return;
+
+      if (result.type === "move") {
+        await this.moveCollection(result.id, result.targetParentId);
+        return;
+      }
+
+      // reorder
+      const node = this.collectionById[result.id];
+      if (!node) return;
+
+      const nodeParentId = node.parentId ?? null;
+      if (nodeParentId !== result.parentId) return;
+
+      if (!Number.isInteger(result.targetIndex) || result.targetIndex < 0)
+        return;
+
+      await this.reorderCollection(result.id, result.targetIndex);
     },
 
     async fetchCollectionTree() {
