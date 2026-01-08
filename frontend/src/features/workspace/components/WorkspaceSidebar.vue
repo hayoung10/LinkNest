@@ -19,7 +19,10 @@
     </header>
 
     <!-- 컬렉션 리스트 -->
-    <nav class="flex-1 min-h-0 overflow-y-auto p-2 text-sm flex flex-col">
+    <nav
+      class="flex-1 min-h-0 overflow-y-auto p-2 text-sm flex flex-col"
+      data-collection-scroll
+    >
       <div class="flex items-center justify-between px-2 py-2">
         <div class="text-muted-foreground font-medium">컬렉션</div>
         <button
@@ -389,6 +392,11 @@ function onDndHover(payload: DndDropPayload) {
   const activeId = dndActiveId.value;
   if (!activeId) return;
 
+  if (payload.targetId === activeId) {
+    dndOver.value = null;
+    return;
+  }
+
   const active = collectionById.value[activeId];
   const target =
     payload.targetId != null ? collectionById.value[payload.targetId] : null;
@@ -408,12 +416,14 @@ function onDndHover(payload: DndDropPayload) {
 
 async function onDndDrop(payload: DndDropPayload) {
   const activeId = dndActiveId.value;
+
   dndActiveId.value = null;
   dndOver.value = null;
 
   if (activeId == null) return;
 
   const { targetId, zone } = payload;
+  if (activeId === targetId) return;
 
   // 루트 드롭 -> root로 move
   if (targetId == null) {
@@ -430,8 +440,6 @@ async function onDndDrop(payload: DndDropPayload) {
     }
     return;
   }
-
-  if (activeId === targetId) return;
 
   const active = collectionById.value[activeId];
   const target = collectionById.value[targetId];

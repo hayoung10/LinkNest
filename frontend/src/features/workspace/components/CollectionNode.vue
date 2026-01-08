@@ -134,12 +134,14 @@
         <!-- top -->
         <div
           v-else-if="overZone === 'top'"
-          class="absolute left-0 right-0 top-0 h-[2px] rounded bg-blue-400"
+          class="absolute top-0 h-[2px] rounded bg-blue-400"
+          :style="reorderLineStyle"
         />
         <!-- bottom -->
         <div
           v-else
-          class="absolute left-0 right-0 bottom-0 h-[2px] rounded bg-blue-400"
+          class="absolute bottom-0 h-[2px] rounded bg-blue-400"
+          :style="reorderLineStyle"
         />
       </div>
     </div>
@@ -183,7 +185,14 @@
 </template>
 
 <script setup lang="ts">
-import { ComponentPublicInstance, computed, watchEffect } from "vue";
+import {
+  ComponentPublicInstance,
+  computed,
+  onBeforeMount,
+  onBeforeUnmount,
+  ref,
+  watchEffect,
+} from "vue";
 import { useDnDStore, useDraggable, useDroppable } from "@vue-dnd-kit/core";
 import { CollectionMenu } from "@/features/workspace";
 import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
@@ -269,13 +278,6 @@ const isDropTarget = computed(() => {
   return true;
 });
 const overZone = computed<DropZone>(() => props.dndOver?.zone ?? "middle");
-const currentZone = computed<DropZone>(() => {
-  const el = droppable.elementRef.value;
-  const pointerY = dndStore.pointerPosition?.current?.value?.y;
-
-  if (!el || pointerY == null) return "middle";
-  return getDropZone(pointerY, el);
-});
 
 const disableDnd = computed(
   () => props.disabled || isEditing.value || !!props.isRenaming
@@ -310,10 +312,19 @@ const draggable = useDraggable({
 
 type TemplateRefType = Element | ComponentPublicInstance | null;
 
-function setNodeEl(ref: TemplateRefType, _refs?: Record<string, any>) {
+const nodeEl = ref<HTMLElement | null>(null);
+const scrollParentEl = ref<HTMLElement | null>(null);
+
+function setNodeEl(ref: TemplateRefType) {
   const el = (ref instanceof HTMLElement ? ref : null) as HTMLElement | null;
-  droppable.elementRef.value = el;
-  draggable.elementRef.value = el;
+  nodeEl.value = el;
+
+  if (el) {
+    const scroller = el.closest(
+      "[data-collection-scroll]"
+    ) as HTMLElement | null;
+    scrollParentEl.value = scroller;
+  }
 }
 
 function setDroppableEl(ref: TemplateRefType) {
@@ -336,6 +347,67 @@ function getDropZone(pointerY: number, el: HTMLElement): DropZone {
   if (ratio >= 0.75) return "bottom";
   return "middle";
 }
+
+const currentZone = computed<DropZone>(() => {
+  const el = droppable.elementRef.value;
+  const pointerY = dndStore.pointerPosition?.current?.value?.y;
+
+  if (!el || pointerY == null) return "middle";
+  return getDropZone(pointerY, el);
+});
+
+const reorderLineStyle = computed(() => {
+  const left = props.depth * 12;
+  return {
+    left: `${left}px`,
+    right: "8px",
+    width: "auto",
+    position: "absolute",
+  } as const;
+});
+
+const lastHover = ref<string>(""); // 직전 hover 상태
+
+// auto scroll
+let rafId: number | null = null;
+
+function autoScrollOnce(pointerY: number) {
+  const scroller = scrollParentEl.value;
+  if (!scroller) return;
+
+  const rect = scroller.getBoundingClientRect();
+  const threshold = 44;
+  const maxStep = 18;
+
+  const distTop = pointerY - rect.top;
+  const distBottom = rect.bottom - pointerY;
+
+  let delta = 0;
+
+  if (distTop >= 0 && distTop < threshold) {
+    const t = 1 - distTop / threshold; // 0~1
+    delta = -1 * Math.ceil(maxStep * t);
+  } else if (distBottom >= 0 && distBottom < threshold) {
+    const t = 1 - distBottom / threshold;
+    delta = Math.ceil(maxStep * t);
+  }
+
+  if (delta !== 0) {
+    scroller.scrollTop += delta;
+  }
+}
+
+function scheduleAutoScroll(pointerY: number) {
+  if (rafId != null) return;
+  rafId = requestAnimationFrame(() => {
+    rafId = null;
+    autoScrollOnce(pointerY);
+  });
+}
+
+onBeforeUnmount(() => {
+  if (rafId != null) cancelAnimationFrame(rafId);
+});
 
 // 핸들러 (편집 중일 때 비활성화)
 const nodeHandlers = computed(() => {
@@ -369,10 +441,32 @@ const nodeHandlers = computed(() => {
   };
 });
 
+// dnd-hover + auto scroll 트리거
 watchEffect(() => {
-  if (!props.dndActiveId) return;
+  if (!props.dndActiveId) {
+    lastHover.value = "";
+    return;
+  }
+
+  const pointerY =
+    dndStore.pointerPosition?.current?.value?.y ??
+    (dndStore.pointerPosition as any)?.value?.y;
+
+  if (pointerY != null) scheduleAutoScroll(pointerY);
+
   if (!droppable.isOvered.value) return;
 
-  emit("dnd-hover", { targetId: props.node.id, zone: currentZone.value });
+  if (props.dndActiveId === props.node.id) return;
+
+  const payload: DndDropPayload = {
+    targetId: props.node.id,
+    zone: currentZone.value,
+  };
+  const key = `${payload.targetId}:${payload.zone}`;
+
+  if (key !== lastHover.value) {
+    lastHover.value = key;
+    emit("dnd-hover", payload);
+  }
 });
 </script>
