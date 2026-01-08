@@ -91,8 +91,9 @@
       <!-- 루트 드롭 영역(사이드바 빈 공간) -->
       <div
         :ref="setRootDropEl"
-        class="flex-1 mt-1 rounded-md transition"
+        class="mt-1 rounded-md flex-1 transition-[min-height] duration-150 ease-out"
         :class="[
+          dndActiveId != null ? 'min-h-[48px]' : 'min-h-0',
           dndActiveId != null ? 'ring-1 ring-blue-400/15' : '',
           dndOver?.targetId === null
             ? 'ring-2 ring-blue-400/60 bg-blue-400/5'

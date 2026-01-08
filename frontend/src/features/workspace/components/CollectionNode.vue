@@ -7,7 +7,9 @@
         'relative flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer select-none',
         isActive
           ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 font-medium ring-1 ring-blue-300'
-          : 'hover:bg-zinc-100 dark:hover:bg-zinc-800',
+          : !props.dndActiveId
+          ? 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+          : '',
 
         draggable.isDragging.value ? 'opacity-60 scale-[0.99]' : '',
       ]"
@@ -122,26 +124,23 @@
       </div>
 
       <!-- zone 하이라이트 오버레이 -->
-      <div
-        v-if="isDropTarget"
-        class="pointer-events-none absolute inset-0 rounded-md"
-      >
+      <div v-if="isDropTarget" class="pointer-events-none absolute inset-0">
         <!-- middle -->
         <div
           v-if="overZone === 'middle'"
-          class="absolute inset-0 rounded-md ring-2 ring-blue-400/60 bg-blue-400/5"
+          class="absolute inset-0 rounded-md ring-2 ring-indigo-500/70 bg-transparent"
         />
         <!-- top -->
         <div
           v-else-if="overZone === 'top'"
-          class="absolute top-0 h-[2px] rounded bg-blue-400"
-          :style="reorderLineStyle"
+          class="absolute h-[2px] rounded bg-indigo-500"
+          :style="[reorderLineStyle, { top: '1px' }]"
         />
         <!-- bottom -->
         <div
           v-else
-          class="absolute bottom-0 h-[2px] rounded bg-blue-400"
-          :style="reorderLineStyle"
+          class="absolute h-[2px] rounded bg-indigo-500"
+          :style="[reorderLineStyle, { bottom: '1px' }]"
         />
       </div>
     </div>
