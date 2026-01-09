@@ -257,12 +257,21 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    async moveCollection(id: ID, targetParentId: ID | null) {
+    async moveCollection(
+      id: ID,
+      targetParentId: ID | null,
+      opts?: { refreshTree?: boolean }
+    ) {
+      const refreshTree = opts?.refreshTree ?? true;
+
       this.mutateError.moveCollection = null;
       setMutating(this.isMutating, "moveCollection", true);
       try {
         await CollectionApi.moveCollection(id, { targetParentId });
-        await this.fetchCollectionTree();
+
+        if (refreshTree) {
+          await this.fetchCollectionTree();
+        }
       } catch (e) {
         fail(
           this.mutateError,
@@ -276,12 +285,21 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    async reorderCollection(id: ID, targetIndex: number) {
+    async reorderCollection(
+      id: ID,
+      targetIndex: number,
+      opts?: { refreshTree?: boolean }
+    ) {
+      const refreshTree = opts?.refreshTree ?? true;
+
       this.mutateError.reorderCollection = null;
       setMutating(this.isMutating, "reorderCollection", true);
       try {
         await CollectionApi.reorderCollection(id, { targetIndex });
-        await this.fetchCollectionTree();
+
+        if (refreshTree) {
+          await this.fetchCollectionTree();
+        }
       } catch (e) {
         fail(
           this.mutateError,
@@ -295,7 +313,6 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    // 서버 API 반영
     async applyDropResult(result: DropResult) {
       if (this.isMutating.moveCollection || this.isMutating.reorderCollection)
         return;
