@@ -435,7 +435,7 @@ async function onDndDrop(payload: DndDropPayload) {
     };
 
     try {
-      await workspace.applyDropResult(result);
+      await workspace.applyDropResultWithRollback(result);
     } catch (e) {
       showDndError(result.type);
     }
@@ -457,7 +457,7 @@ async function onDndDrop(payload: DndDropPayload) {
     };
 
     try {
-      await workspace.applyDropResult(result);
+      await workspace.applyDropResultWithRollback(result);
     } catch (e) {
       showDndError(result.type);
     }
@@ -491,7 +491,7 @@ async function onDndDrop(payload: DndDropPayload) {
   };
 
   try {
-    await workspace.applyDropResult(result);
+    await workspace.applyDropResultWithRollback(result);
   } catch (e) {
     showDndError(result.type);
   }

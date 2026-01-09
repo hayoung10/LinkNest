@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { Bookmark, Collection, CollectionNode, ID } from "@/types/common";
+import { Bookmark, CollectionNode, ID } from "@/types/common";
 import * as CollectionApi from "@/api/collections";
 import * as BookmarkApi from "@/api/bookmarks";
 import { DropResult } from "@/types/dnd";
@@ -12,6 +12,7 @@ type MutateKey =
   | "deleteCollection"
   | "moveCollection"
   | "reorderCollection"
+  | "collectionDnd"
   | "createBookmark"
   | "updateBookmark"
   | "deleteBookmark"
@@ -65,6 +66,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       deleteCollection: false,
       moveCollection: false,
       reorderCollection: false,
+      collectionDnd: false,
       createBookmark: false,
       updateBookmark: false,
       deleteBookmark: false,
@@ -77,6 +79,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       deleteCollection: null,
       moveCollection: null,
       reorderCollection: null,
+      collectionDnd: null,
       createBookmark: null,
       updateBookmark: null,
       deleteBookmark: null,
@@ -128,6 +131,7 @@ export const useWorkspaceStore = defineStore("workspace", {
         deleteCollection: false,
         moveCollection: false,
         reorderCollection: false,
+        collectionDnd: false,
         createBookmark: false,
         updateBookmark: false,
         deleteBookmark: false,
@@ -140,6 +144,7 @@ export const useWorkspaceStore = defineStore("workspace", {
         deleteCollection: null,
         moveCollection: null,
         reorderCollection: null,
+        collectionDnd: null,
         createBookmark: null,
         updateBookmark: null,
         deleteBookmark: null,
@@ -290,6 +295,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
+    // 서버 API 반영
     async applyDropResult(result: DropResult) {
       if (this.isMutating.moveCollection || this.isMutating.reorderCollection)
         return;
@@ -310,6 +316,114 @@ export const useWorkspaceStore = defineStore("workspace", {
         return;
 
       await this.reorderCollection(result.id, result.targetIndex);
+    },
+
+    // 로컬 트리에 먼저 반영, 실패 시 롤백
+    async applyDropResultWithRollback(result: DropResult) {
+      if (this.isMutating.collectionDnd) return;
+      this.mutateError.collectionDnd = null;
+      setMutating(this.isMutating, "collectionDnd", true);
+
+      const rollback = this.applyDropResultLocal(result);
+
+      try {
+        if (result.type === "move") {
+          await CollectionApi.moveCollection(result.id, {
+            targetParentId: result.targetParentId,
+          });
+          return;
+        }
+
+        // reorder
+        const node = this.collectionById[result.id];
+        if (!node) return;
+
+        const nodeParentId = node.parentId ?? null;
+        if (nodeParentId !== result.parentId) return;
+
+        if (!Number.isInteger(result.targetIndex) || result.targetIndex < 0)
+          return;
+
+        await CollectionApi.reorderCollection(result.id, {
+          targetIndex: result.targetIndex,
+        });
+      } catch (e) {
+        console.error("[collectionDnd] move/reorder failed:", e);
+        rollback();
+        throw e;
+      } finally {
+        setMutating(this.isMutating, "collectionDnd", false);
+      }
+    },
+
+    // 로컬 트리 반영
+    applyDropResultLocal(result: DropResult): () => void {
+      const prevNodes = JSON.parse(
+        JSON.stringify(this.collectionNodes)
+      ) as CollectionNode[];
+
+      const rollback = () => {
+        this.collectionNodes = prevNodes;
+      };
+
+      if (result.type === "move") {
+        this.applyMoveLocal(result.id, result.targetParentId);
+      } else if (result.type === "reorder") {
+        this.applyReorderLocal(result.id, result.parentId, result.targetIndex);
+      }
+
+      return rollback;
+    },
+
+    parentKey(parentId: ID | null) {
+      return parentId == null ? "root" : String(parentId);
+    },
+
+    applyMoveLocal(id: ID, targetParentId: ID | null) {
+      const idx = this.collectionNodes.findIndex((n) => n.id === id);
+      if (idx < 0) return;
+
+      const node = this.collectionNodes[idx];
+      const nodeParentId = node.parentId ?? null;
+
+      if (nodeParentId === targetParentId) return;
+
+      const maxOrder = this.collectionNodes
+        .filter((n) => (n.parentId ?? null) === targetParentId && n.id !== id)
+        .reduce((max, n) => Math.max(max, n.sortOrder ?? 0), -1);
+
+      this.collectionNodes.splice(idx, 1, {
+        ...node,
+        parentId: targetParentId,
+        sortOrder: maxOrder + 1,
+      });
+    },
+
+    applyReorderLocal(id: ID, parentId: ID | null, targetIndex: number) {
+      if (!Number.isInteger(targetIndex) || targetIndex < 0) return;
+
+      const siblings = this.collectionNodes
+        .filter((n) => (n.parentId ?? null) === parentId)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+
+      const nodeIndex = siblings.findIndex((n) => n.id === id);
+      if (nodeIndex < 0) return;
+
+      const [moved] = siblings.splice(nodeIndex, 1);
+
+      const nextIndex = Math.max(0, Math.min(targetIndex, siblings.length));
+      siblings.splice(nextIndex, 0, moved);
+
+      // sortOrder 정리?
+      const nextOrderById = new Map<ID, number>();
+      siblings.forEach((n, i) => nextOrderById.set(n.id, i));
+
+      this.collectionNodes = this.collectionNodes.map((n) => {
+        if ((n.parentId ?? null) !== parentId) return n;
+        const nextOrder = nextOrderById.get(n.id);
+        if (nextOrder == null) return n;
+        return { ...n, sortOrder: nextOrder };
+      });
     },
 
     async fetchCollectionTree() {
