@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.validator.constraints.URL;
 
+import java.util.List;
+
 public record BookmarkCreateReq(
         @NotNull(message = "컬렉션 ID를 입력하세요.")
         Long collectionId,
@@ -24,5 +26,10 @@ public record BookmarkCreateReq(
         @Size(max = 16)
         String emoji,
 
-        ImageMode imageMode
+        ImageMode imageMode,
+
+        boolean isFavorite,
+
+        @Size(max = 3, message = "태그는 최대 3개까지 가능합니다.")
+        List<@Size(max = 50) String> tags
 ) {}
