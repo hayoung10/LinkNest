@@ -41,10 +41,10 @@ public class Collection {
     @JoinColumn(name = "parent_id")
     private Collection parent;
 
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.REMOVE)
+    @OneToMany(mappedBy = "parent")
     private List<Collection> children = new ArrayList<>();
 
-    @OneToMany(mappedBy = "collection", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "collection")
     private List<Bookmark> bookmarks = new ArrayList<>();
 
     @Column(name = "sort_order", nullable = false)

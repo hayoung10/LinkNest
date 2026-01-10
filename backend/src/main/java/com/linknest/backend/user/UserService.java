@@ -87,9 +87,6 @@ public class UserService {
         // 모든 RT 삭제
         tokenService.revokeAllTokens(userId);
 
-        // UserPreferences 삭제
-        userPreferencesRepository.deleteByUserId(user.getId());
-
         // 프로필 이미지 삭제
         String profileImageUrl = user.getProfileImageUrl();
         if(profileImageUrl != null && !profileImageUrl.isBlank()) {

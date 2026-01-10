@@ -58,7 +58,7 @@ public class Bookmark {
     @Column(name = "is_favorite", nullable = false)
     private boolean isFavorite = false;
 
-    @OneToMany(mappedBy = "bookmark", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "bookmark", cascade = CascadeType.PERSIST, orphanRemoval = true)
     @Builder.Default
     private Set<BookmarkTag> bookmarkTags = new HashSet<>();
 

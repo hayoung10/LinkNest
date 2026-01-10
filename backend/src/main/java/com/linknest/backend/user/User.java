@@ -48,10 +48,10 @@ public class User {
     @Column(nullable = false)
     private Role role; // ROLE_USER, ROLE_ADMIN
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user")
     private List<Bookmark> bookmarks = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user")
     private List<Collection> collections = new ArrayList<>();
 
     @CreatedDate
