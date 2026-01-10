@@ -10,6 +10,8 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity @Table(name = "bookmarks",
         indexes = {
@@ -52,6 +54,13 @@ public class Bookmark {
     @Enumerated(EnumType.STRING)
     @Column(name = "image_mode", length = 10, nullable = false)
     private ImageMode imageMode = ImageMode.AUTO;
+
+    @Column(name = "is_favorite", nullable = false)
+    private boolean isFavorite = false;
+
+    @OneToMany(mappedBy = "bookmark", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private Set<BookmarkTag> bookmarkTags = new HashSet<>();
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

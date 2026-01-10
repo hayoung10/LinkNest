@@ -23,6 +23,7 @@ public enum ErrorCode {
     INVALID_BOOKMARK_URL(HttpStatus.BAD_REQUEST, "북마크 URL이 유효하지 않습니다."),
     INVALID_IMAGE_MODE(HttpStatus.BAD_REQUEST, "유효하지 않은 이미지 모드입니다."),
     CUSTOM_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "CUSTOM 모드에서는 커스텀 이미지가 필요합니다."),
+    TAG_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "태그는 최대 3개까지 지정할 수 있습니다."),
 
     // collection
     COLLECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "컬렉션을 찾을 수 없습니다."),

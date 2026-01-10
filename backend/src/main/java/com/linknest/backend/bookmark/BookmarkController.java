@@ -60,7 +60,7 @@ public class BookmarkController {
 
     @GetMapping
     public ResponseEntity<List<BookmarkRes>> listBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
-                                                           @RequestParam(required = false) Long collectionId) {
+                                                           @RequestParam @Min(1) Long collectionId) {
         List<BookmarkRes> res = service.listByCollection(userId, collectionId);
         return ResponseEntity.ok(res);
     }
@@ -93,6 +93,14 @@ public class BookmarkController {
                                                        @PathVariable @Min(1) Long id,
                                                        @RequestBody @Valid BookmarkImageModeUpdateReq req) {
         BookmarkRes res = service.updateImageMode(userId, id, req.imageMode());
+        return ResponseEntity.ok(res);
+    }
+
+    @PatchMapping("/{id}/favorite")
+    public ResponseEntity<BookmarkRes> updateFavorite(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                      @PathVariable @Min(1) Long id,
+                                                      @RequestBody @Valid BookmarkFavoriteUpdateReq req) {
+        BookmarkRes res = service.updateFavorite(userId, id, req.favorite());
         return ResponseEntity.ok(res);
     }
 }

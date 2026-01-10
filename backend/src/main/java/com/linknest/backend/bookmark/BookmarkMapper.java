@@ -5,6 +5,8 @@ import com.linknest.backend.bookmark.dto.BookmarkRes;
 import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
 import org.mapstruct.*;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface BookmarkMapper {
@@ -12,9 +14,31 @@ public interface BookmarkMapper {
     Bookmark toEntity(BookmarkCreateReq createReq);
 
     // UpdateReq -> Entity
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateFromDto(BookmarkUpdateReq updateReq, @MappingTarget Bookmark target);
 
     // Entity -> Res
-    @Mapping(target = "collectionId", source = "collection.id")
-    BookmarkRes toRes(Bookmark bookmark);
+    default  BookmarkRes toRes(Bookmark bookmark) {
+        if(bookmark == null) return null;
+
+        List<String> tags = bookmark.getBookmarkTags().stream()
+                .map(bt -> bt.getTag().getName())
+                .toList();
+
+        return new BookmarkRes(
+                bookmark.getId(),
+                bookmark.getCollection().getId(),
+                bookmark.getUrl(),
+                bookmark.getTitle(),
+                bookmark.getDescription(),
+                bookmark.getEmoji(),
+                bookmark.getAutoImageUrl(),
+                bookmark.getCustomImageUrl(),
+                bookmark.getImageMode(),
+                bookmark.isFavorite(),
+                tags,
+                bookmark.getCreatedAt(),
+                bookmark.getUpdatedAt()
+        );
+    }
 }

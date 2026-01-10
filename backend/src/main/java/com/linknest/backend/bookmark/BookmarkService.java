@@ -10,6 +10,8 @@ import com.linknest.backend.collection.CollectionRepository;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.storage.Storage;
+import com.linknest.backend.tag.Tag;
+import com.linknest.backend.tag.TagRepository;
 import com.linknest.backend.user.UserRepository;
 import com.linknest.backend.userpreferences.UserPreferencesService;
 import com.linknest.backend.userpreferences.domain.DefaultBookmarkSort;
@@ -19,17 +21,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BookmarkService {
+    private static final int MAX_TAGS = 3;
+
     private final BookmarkRepository bookmarkRepository;
     private final CollectionRepository collectionRepository;
     private final UserRepository userRepository;
+    private final TagRepository tagRepository;
+    private final BookmarkTagRepository bookmarkTagRepository;
     private final UserPreferencesService userPreferencesService;
     private final BookmarkPreviewService previewService;
 
@@ -58,7 +65,10 @@ public class BookmarkService {
             bookmark.setAutoImageUrl(null);
         }
 
-        return mapper.toRes(bookmarkRepository.save(bookmark));
+        Bookmark saved = bookmarkRepository.save(bookmark);
+        updateBookmarkTags(saved, req.tags());
+
+        return mapper.toRes(saved);
     }
 
     // ---------- 조회 ----------
@@ -86,6 +96,8 @@ public class BookmarkService {
 
         boolean urlChanged = !Objects.equals(beforeUrl, bookmark.getUrl());
         applyImageMode(bookmark, imageMode, urlChanged);
+
+        updateBookmarkTags(bookmark, req.tags());
 
         return mapper.toRes(bookmark);
     }
@@ -187,6 +199,14 @@ public class BookmarkService {
         return mapper.toRes(bookmark);
     }
 
+    // ---------- 즐겨찾기(isFavorite) 수정 ----------
+    @Transactional
+    public BookmarkRes updateFavorite(Long userId, Long id, boolean favorite) {
+        Bookmark bookmark = requireOwnedBookmark(userId, id);
+        bookmark.setFavorite(favorite);
+        return mapper.toRes(bookmark);
+    }
+
     // ==========================================================
     // 내부 유틸
     // ==========================================================
@@ -236,6 +256,49 @@ public class BookmarkService {
         } catch (Exception e) {
             log.warn("Bookmark cover delete: failed to delete old cover. bookmarkId={}, url={}, reason={}",
                     id, url, e.getMessage(), e);
+        }
+    }
+
+    private void updateBookmarkTags(Bookmark bookmark, List<String> tagNames) {
+        if(tagNames == null) return;
+
+        Set<String> names = tagNames.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(t -> !t.isBlank())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if(names.size() > MAX_TAGS) {
+            throw new BusinessException(ErrorCode.TAG_LIMIT_EXCEEDED);
+        }
+
+        if(names.isEmpty()) {
+            bookmark.getBookmarkTags().clear();
+            return;
+        }
+
+        Long userId = bookmark.getUser().getId();
+
+        // 기존 태그 조회
+        List<Tag> existing = tagRepository.findByUserIdAndNameIn(userId, names);
+        Map<String, Tag> byName = existing.stream()
+                .collect(Collectors.toMap(Tag::getName, Function.identity()));
+
+        // 없다면 생성
+        for(String name: names) {
+            byName.computeIfAbsent(name, n -> tagRepository.save(
+                    Tag.builder()
+                            .user(bookmark.getUser())
+                            .name(n)
+                            .build()
+            ));
+        }
+
+        // 북마크-태그 전체 교체
+        bookmark.getBookmarkTags().clear();
+        for(String name: names) {
+            Tag tag = byName.get(name);
+            bookmark.getBookmarkTags().add(BookmarkTag.create(bookmark, tag));
         }
     }
 }
