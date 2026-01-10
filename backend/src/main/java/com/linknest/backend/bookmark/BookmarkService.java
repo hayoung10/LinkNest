@@ -89,10 +89,6 @@ public class BookmarkService {
             throw new BusinessException(ErrorCode.INVALID_BOOKMARK_URL);
         }
 
-        if(req.isFavorite() != null) {
-            bookmark.setFavorite(req.isFavorite());
-        }
-
         ImageMode imageMode = bookmark.getImageMode();
         if(imageMode == null) {
             imageMode = ImageMode.NONE;
@@ -200,6 +196,14 @@ public class BookmarkService {
 
         applyImageMode(bookmark, imageMode, false);
 
+        return mapper.toRes(bookmark);
+    }
+
+    // ---------- 즐겨찾기(isFavorite) 수정 ----------
+    @Transactional
+    public BookmarkRes updateFavorite(Long userId, Long id, boolean favorite) {
+        Bookmark bookmark = requireOwnedBookmark(userId, id);
+        bookmark.setFavorite(favorite);
         return mapper.toRes(bookmark);
     }
 

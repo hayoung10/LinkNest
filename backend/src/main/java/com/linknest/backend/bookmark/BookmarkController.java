@@ -95,4 +95,12 @@ public class BookmarkController {
         BookmarkRes res = service.updateImageMode(userId, id, req.imageMode());
         return ResponseEntity.ok(res);
     }
+
+    @PatchMapping("/{id}/favorite")
+    public ResponseEntity<BookmarkRes> updateFavorite(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                      @PathVariable @Min(1) Long id,
+                                                      @RequestBody @Valid BookmarkFavoriteUpdateReq req) {
+        BookmarkRes res = service.updateFavorite(userId, id, req.favorite());
+        return ResponseEntity.ok(res);
+    }
 }
