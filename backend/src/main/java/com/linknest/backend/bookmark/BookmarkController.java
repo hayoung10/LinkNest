@@ -60,7 +60,7 @@ public class BookmarkController {
 
     @GetMapping
     public ResponseEntity<List<BookmarkRes>> listBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
-                                                           @RequestParam(required = false) Long collectionId) {
+                                                           @RequestParam @Min(1) Long collectionId) {
         List<BookmarkRes> res = service.listByCollection(userId, collectionId);
         return ResponseEntity.ok(res);
     }
