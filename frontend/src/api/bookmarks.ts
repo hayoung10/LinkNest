@@ -10,6 +10,7 @@ export interface BookmarkCreateReq {
   description?: string | null;
   emoji?: string | null;
   imageMode?: ImageMode;
+  tags?: string[];
 }
 
 export interface BookmarkUpdateReq {
@@ -17,6 +18,7 @@ export interface BookmarkUpdateReq {
   title?: string | null;
   description?: string | null;
   emoji?: string | null;
+  tags?: string[];
 }
 
 export interface BookmarkMoveReq {
@@ -25,6 +27,10 @@ export interface BookmarkMoveReq {
 
 export interface BookmarkImageModeUpdateReq {
   imageMode: Exclude<ImageMode, "CUSTOM">;
+}
+
+export interface BookmarkFavoriteUpdateReq {
+  isFavorite: boolean;
 }
 
 /** 생성 */
@@ -97,6 +103,18 @@ export async function updateImageMode(
 ): Promise<Bookmark> {
   const { data } = await http.patch<BookmarkRes>(
     `/bookmarks/${id}/image-mode`,
+    payload
+  );
+  return mapBookmarkRes(data);
+}
+
+/** 즐겨찾기 수정 */
+export async function updateFavorite(
+  id: ID,
+  payload: BookmarkFavoriteUpdateReq
+): Promise<Bookmark> {
+  const { data } = await http.patch<BookmarkRes>(
+    `/bookmarks/{id}/favorite`,
     payload
   );
   return mapBookmarkRes(data);

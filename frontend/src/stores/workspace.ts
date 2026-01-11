@@ -16,7 +16,8 @@ type MutateKey =
   | "createBookmark"
   | "updateBookmark"
   | "deleteBookmark"
-  | "moveBookmark";
+  | "moveBookmark"
+  | "toggleBookmarkFavorite";
 type ErrorMap<K extends string> = Record<K, string | null>;
 
 interface WorkspaceState {
@@ -71,6 +72,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       updateBookmark: false,
       deleteBookmark: false,
       moveBookmark: false,
+      toggleBookmarkFavorite: false,
     },
     mutateError: {
       createCollection: null,
@@ -84,6 +86,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       updateBookmark: null,
       deleteBookmark: null,
       moveBookmark: null,
+      toggleBookmarkFavorite: null,
     },
   }),
 
@@ -136,6 +139,7 @@ export const useWorkspaceStore = defineStore("workspace", {
         updateBookmark: false,
         deleteBookmark: false,
         moveBookmark: false,
+        toggleBookmarkFavorite: false,
       };
       this.mutateError = {
         createCollection: null,
@@ -149,6 +153,7 @@ export const useWorkspaceStore = defineStore("workspace", {
         updateBookmark: null,
         deleteBookmark: null,
         moveBookmark: null,
+        toggleBookmarkFavorite: null,
       };
     },
     selectCollection(id: ID | null) {
@@ -470,7 +475,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       try {
         const created = await BookmarkApi.createBookmark(payload);
         if (this.selectedCollectionId === created.collectionId) {
-          this.bookmarks.push(created);
+          this.bookmarks = [...this.bookmarks, created];
         }
         this.updateBookmarkCount(created.collectionId, +1);
       } catch (e) {
@@ -491,8 +496,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       setMutating(this.isMutating, "updateBookmark", true);
       try {
         const updated = await BookmarkApi.updateBookmark(id, payload);
-        const idx = this.bookmarks.findIndex((b) => b.id === id);
-        if (idx >= 0) this.bookmarks.splice(idx, 1, updated);
+        this.replaceBookmark(updated);
       } catch (e) {
         fail(
           this.mutateError,
@@ -576,6 +580,27 @@ export const useWorkspaceStore = defineStore("workspace", {
     replaceBookmark(updated: Bookmark) {
       const idx = this.bookmarks.findIndex((b) => b.id === updated.id);
       if (idx >= 0) this.bookmarks.splice(idx, 1, updated);
+    },
+
+    async toggleBookmarkFavorite(bookmark: Bookmark) {
+      this.mutateError.toggleBookmarkFavorite = null;
+      setMutating(this.isMutating, "toggleBookmarkFavorite", true);
+      try {
+        const updated = await BookmarkApi.updateFavorite(bookmark.id, {
+          isFavorite: !bookmark.isFavorite,
+        });
+        this.replaceBookmark(updated);
+      } catch (e) {
+        fail(
+          this.mutateError,
+          "toggleBookmarkFavorite",
+          e,
+          "즐겨찾기 변경에 실패했습니다."
+        );
+        throw e;
+      } finally {
+        setMutating(this.isMutating, "toggleBookmarkFavorite", false);
+      }
     },
   },
 });

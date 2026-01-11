@@ -40,6 +40,9 @@ export function mapBookmarkRes(dto: BookmarkRes): Bookmark {
     customImageUrl: dto.customImageUrl ?? null,
     imageMode: dto.imageMode ?? "AUTO",
 
+    isFavorite: dto.isFavorite ?? false,
+    tags: dto.tags ?? [],
+
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   };

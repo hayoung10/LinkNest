@@ -45,6 +45,9 @@ export interface Bookmark {
   customImageUrl: string | null;
   imageMode: ImageMode;
 
+  isFavorite: boolean;
+  tags: string[];
+
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
 }
