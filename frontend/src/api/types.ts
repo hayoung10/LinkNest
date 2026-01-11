@@ -31,6 +31,9 @@ export interface BookmarkRes {
   customImageUrl: string | null;
   imageMode: ImageMode | null;
 
+  isFavorite: boolean;
+  tags: string[];
+
   createdAt: string;
   updatedAt: string;
 }
