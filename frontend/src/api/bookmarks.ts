@@ -114,7 +114,7 @@ export async function updateFavorite(
   payload: BookmarkFavoriteUpdateReq
 ): Promise<Bookmark> {
   const { data } = await http.patch<BookmarkRes>(
-    `/bookmarks/{id}/favorite`,
+    `/bookmarks/${id}/favorite`,
     payload
   );
   return mapBookmarkRes(data);
