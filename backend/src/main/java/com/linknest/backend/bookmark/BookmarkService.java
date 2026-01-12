@@ -201,9 +201,9 @@ public class BookmarkService {
 
     // ---------- 즐겨찾기(isFavorite) 수정 ----------
     @Transactional
-    public BookmarkRes updateFavorite(Long userId, Long id, boolean favorite) {
+    public BookmarkRes updateFavorite(Long userId, Long id, boolean isFavorite) {
         Bookmark bookmark = requireOwnedBookmark(userId, id);
-        bookmark.setFavorite(favorite);
+        bookmark.setFavorite(isFavorite);
         return mapper.toRes(bookmark);
     }
 
