@@ -2,16 +2,17 @@
   <section class="h-full flex flex-col bg-card text-card-foreground">
     <!-- 헤더 -->
     <header class="sticky top-0 z-10 bg-card border-b border-border">
-      <div class="relative flex items-center justify-between px-4 py-3">
-        <!-- 좌: 컬렉션 정보 -->
-        <div class="min-w-0">
-          <p
-            v-if="collectionName"
-            class="text-[15px] font-semibold text-foreground truncate"
-          >
-            {{ collectionName }}
-          </p>
-        </div>
+      <!-- 1행 (좌: 닫기 / 우: 액션 + 즐겨찾기) -->
+      <div class="flex items-center justify-between px-4 py-2">
+        <!-- 좌: 닫기 -->
+        <button
+          type="button"
+          class="p-2 rounded-md hover:bg-accent"
+          aria-label="패널 닫기"
+          @click="$emit('close')"
+        >
+          ✕
+        </button>
 
         <!-- 우: 액션(보기/편집) -->
         <div class="flex items-center gap-1">
@@ -21,19 +22,28 @@
               type="button"
               :disabled="isBookmarkMutating"
               @click="handleEdit"
-              class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm"
+              class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm disabled:opacity-50"
             >
-              <EditIcon class="size-6" />
+              <EditIcon class="size-5" />
               <span class="ml-1">수정</span>
             </button>
+
             <button
               type="button"
-              :disabled="isBookmarkMutating"
-              @click="showDeleteDialog = true"
-              class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 text-sm"
+              :disabled="isBookmarkMutating || isFavoriteMutating"
+              class="p-2 rounded-md hover:bg-accent disabled:opacity-50"
+              aria-label="즐겨찾기"
+              @click="onToggleFavorite"
             >
-              <TrashIcon class="size-6" />
-              <span class="ml-1">삭제</span>
+              <StarIcon
+                :filled="props.bookmark.isFavorite"
+                :klass="
+                  props.bookmark.isFavorite
+                    ? 'text-amber-400'
+                    : 'text-muted-foreground'
+                "
+                size="18"
+              />
             </button>
           </template>
 
@@ -43,30 +53,129 @@
               type="button"
               :disabled="isBookmarkMutating"
               @click="handleCancel"
-              class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm"
+              class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm disabled:opacity-50"
             >
-              <CloseIcon class="size-6" />
+              <CloseIcon class="size-5" />
               <span class="ml-1">취소</span>
             </button>
+
             <button
               type="button"
               :disabled="isBookmarkMutating || !canSave"
               @click="handleSave"
               class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
-              <SaveIcon class="size-6" />
+              <SaveIcon class="size-5" />
               <span class="ml-1">저장</span>
             </button>
           </template>
+        </div>
+      </div>
 
-          <!-- 우측 상단: 닫기 -->
-          <button
-            type="button"
-            class="ml-1 p-2 rounded-md hover:bg-accent"
-            aria-label="패널 닫기"
-            @click="$emit('close')"
+      <!-- 2행 (컬렉션 이름 + (이모지 + 제목) + 최근 수정일) -->
+      <div class="px-5 pb-3">
+        <p
+          v-if="collectionName"
+          class="ml-1 text-[13px] leading-5 font-muted-foreground truncate mb-2"
+        >
+          {{ collectionName }}
+        </p>
+
+        <div class="flex items-end justify-between gap-3">
+          <!-- 좌: 이모지 + 제목 -->
+          <div class="min-w-0 flex items-center gap-3">
+            <!-- 이모지 + popover -->
+            <div class="relative shrink-0">
+              <button
+                ref="emojiTriggerEl"
+                type="button"
+                :class="[
+                  'flex items-center justify-center size-9 rounded-md transition-colors',
+                  isEditing
+                    ? 'hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer'
+                    : 'cursor-default',
+                ]"
+                @click="onEmojiStateClick"
+                :aria-label="
+                  currentBookmark.emoji ? '이모지 변경' : '이모지 상태'
+                "
+                title="이모지"
+              >
+                <span
+                  v-if="currentBookmark.emoji"
+                  class="text-2xl leading-none"
+                  >{{ currentBookmark.emoji }}</span
+                >
+                <span
+                  v-else-if="isEditing"
+                  class="text-lg leading-none opacity-20"
+                  >+</span
+                >
+              </button>
+
+              <!-- EmojiPicker popover -->
+              <div
+                v-if="emojiPickerOpen"
+                ref="emojiPopoverRef"
+                class="absolute left-0 top-full mt-2 z-50"
+              >
+                <EmojiPicker :native="true" @select="onEmojiSelected" />
+              </div>
+            </div>
+
+            <!-- 제목 -->
+            <div class="min-w-0">
+              <template v-if="isEditing">
+                <input
+                  ref="titleRef"
+                  v-model="editedBookmark!.title"
+                  type="text"
+                  class="w-full border-0 border-b border-border/70 bg-transparent px-0 py-1 text-xl font-semibold placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/40"
+                  placeholder="(제목 없음)"
+                />
+              </template>
+              <template v-else>
+                <h1
+                  class="text-xl font-semibold truncate leading-none"
+                  :class="
+                    hasTitle
+                      ? 'text-foreground'
+                      : 'text-neutral-400 dark:text-neutral-500'
+                  "
+                >
+                  {{ displayTitle(currentBookmark) }}
+                </h1>
+              </template>
+            </div>
+          </div>
+
+          <!-- 우: (보기 모드) 최근 수정일 -->
+          <p
+            v-if="!isEditing"
+            class="mb-2 mr-1 shrink-0 text-xs text-muted-foreground leading-none"
           >
-            ✕
+            {{ updatedAtText }}
+          </p>
+        </div>
+
+        <!-- (편집 모드) 이모지 추가/제거 버튼-->
+        <div v-if="isEditing" class="mt-2 flex items-center gap-2">
+          <button
+            v-if="!currentBookmark.emoji"
+            type="button"
+            class="rounded-md px-2 py-1 text-xs leading-none text-muted-foreground/70 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-foreground transition-colors"
+            @click="toggleEmojiPicker"
+          >
+            이모지 추가
+          </button>
+
+          <button
+            v-else
+            type="button"
+            class="rounded-md px-2 py-1 text-xs leading-none text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+            @click="removeEmoji"
+          >
+            이모지 제거
           </button>
         </div>
       </div>
@@ -182,85 +291,6 @@
         </div>
       </section>
 
-      <!-- 제목 -->
-      <div class="space-y-2">
-        <!-- 이모지 -->
-        <div
-          v-if="isEditing || currentBookmark.emoji"
-          class="relative flex items-end gap-2"
-        >
-          <button
-            ref="emojiTriggerEl"
-            type="button"
-            :class="[
-              'relative flex items-center justify-center size-9 rounded-md transition-colors',
-              isEditing && currentBookmark.emoji
-                ? 'hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer'
-                : 'cursor-default',
-            ]"
-            @click="onEmojiStateClick"
-            :aria-label="currentBookmark.emoji ? '이모지 변경' : '이모지 상태'"
-            title="이모지"
-          >
-            <span v-if="currentBookmark.emoji" class="text-2xl leading-none">{{
-              currentBookmark.emoji
-            }}</span>
-            <span v-else class="text-lg leading-none opacity-20">+</span>
-          </button>
-
-          <template v-if="isEditing">
-            <button
-              v-if="!currentBookmark.emoji"
-              type="button"
-              class="mb-0.5 rounded-md px-2 py-1 text-xs leading-none text-muted-foreground/60 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-foreground transition-colors"
-              @click="toggleEmojiPicker"
-            >
-              이모지 추가
-            </button>
-
-            <button
-              v-else
-              type="button"
-              class="mb-0.5 rounded-md px-2 py-1 text-xs leading-none text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-              @click="removeEmoji"
-            >
-              이모지 제거
-            </button>
-          </template>
-
-          <!-- EmojiPicker popover -->
-          <div
-            v-if="emojiPickerOpen"
-            ref="emojiPopoverRef"
-            class="absolute left-0 top-full mt-2 z-50"
-          >
-            <EmojiPicker :native="true" @select="onEmojiSelected" />
-          </div>
-        </div>
-
-        <template v-if="isEditing">
-          <input
-            ref="titleRef"
-            v-model="editedBookmark!.title"
-            type="text"
-            class="w-full border-0 border-b border-border/70 bg-transparent px-3 py-2.5 text-xl font-semibold placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/40"
-            placeholder="(제목 없음)"
-          />
-        </template>
-        <template v-else>
-          <h1
-            class="text-xl font-semibold truncate"
-            :class="
-              hasTitle
-                ? 'text-foreground'
-                : 'text-neutral-400 dark:text-neutral-500'
-            "
-          >
-            {{ displayTitle(currentBookmark) }}
-          </h1>
-        </template>
-      </div>
-
       <!-- 링크 -->
       <div class="space-y-2">
         <template v-if="isEditing">
@@ -337,55 +367,67 @@
           </p>
         </template>
       </div>
-    </div>
-  </section>
 
-  <!-- 삭제 확인 다이얼로그 -->
-  <teleport to="#modals">
-    <div
-      v-if="showDeleteDialog"
-      class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
-      @click.self="showDeleteDialog = false"
-      @keydown.esc="showDeleteDialog = false"
-    >
-      <div
-        class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="bookmark-delete-title"
-      >
-        <header class="mb-4">
-          <h3
-            id="bookmark-delete-title"
-            class="text-[17px] font-semibold leading-6"
-          >
-            북마크 삭제
-          </h3>
-          <p class="mt-1 text-sm text-muted-foreground">
-            정말로 이 북마크를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-          </p>
-        </header>
-        <footer class="mt-6 flex justify-end gap-2">
-          <button
-            type="button"
-            class="px-4 py-2 border rounded-md text-sm hover:bg-accent"
-            @click="showDeleteDialog = false"
-          >
-            취소
-          </button>
-          <button
-            ref="confirmBtnRef"
-            type="button"
-            :disabled="isMutating.deleteBookmark"
-            class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500"
-            @click="handleDelete"
-          >
-            삭제
-          </button>
-        </footer>
+      <!-- 삭제 버튼 -->
+      <div class="pt-6 flex justify-end">
+        <button
+          type="button"
+          :disabled="isBookmarkMutating"
+          @click="showDeleteDialog = true"
+          class="inline-flex items-center h-9 px-4 rounded-md border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50"
+        >
+          삭제
+        </button>
       </div>
     </div>
-  </teleport>
+
+    <!-- 삭제 확인 다이얼로그 -->
+    <teleport to="#modals">
+      <div
+        v-if="showDeleteDialog"
+        class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
+        @click.self="showDeleteDialog = false"
+        @keydown.esc="showDeleteDialog = false"
+      >
+        <div
+          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bookmark-delete-title"
+        >
+          <header class="mb-4">
+            <h3
+              id="bookmark-delete-title"
+              class="text-[17px] font-semibold leading-6"
+            >
+              북마크 삭제
+            </h3>
+            <p class="mt-1 text-sm text-muted-foreground">
+              정말로 이 북마크를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </p>
+          </header>
+          <footer class="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              class="px-4 py-2 border rounded-md text-sm hover:bg-accent"
+              @click="showDeleteDialog = false"
+            >
+              취소
+            </button>
+            <button
+              ref="confirmBtnRef"
+              type="button"
+              :disabled="isMutating.deleteBookmark"
+              class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500"
+              @click="handleDelete"
+            >
+              삭제
+            </button>
+          </footer>
+        </div>
+      </div>
+    </teleport>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -402,6 +444,7 @@ import "vue3-emoji-picker/css";
 import { storeToRefs } from "pinia";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useToastStore } from "@/stores/toast";
+import StarIcon from "@/components/icons/StarIcon.vue";
 
 const props = defineProps<{
   bookmark: Bookmark;
@@ -439,6 +482,10 @@ const isCoverMutating = computed(
   () => isBookmarkMutating.value || isModeUpdating.value
 );
 
+const isFavoriteMutating = computed(
+  () => isMutating.value.toggleBookmarkFavorite
+);
+
 defineExpose({ focusUrl });
 
 // 편집 상태
@@ -458,6 +505,19 @@ const hasTitle = computed(() => !!currentBookmark.value.title?.trim());
 const hasDescription = computed(
   () => !!currentBookmark.value.description?.trim()
 );
+
+const updatedAtText = computed(() => {
+  const iso = currentBookmark.value.updatedAt;
+  if (!iso) return "";
+
+  return (
+    new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(new Date(iso)) + " 편집"
+  );
+});
 
 const isUrlValid = computed(() => {
   const v = (editedBookmark.value?.url ?? "").trim();
@@ -494,6 +554,15 @@ async function handleEdit() {
 
   await nextTick();
   focusUrl();
+}
+async function onToggleFavorite() {
+  if (isEditing.value) return;
+
+  try {
+    await workspace.toggleBookmarkFavorite(props.bookmark);
+  } catch (e) {
+    toast.error("즐겨찾기 변경에 실패했습니다.");
+  }
 }
 function handleCancel() {
   editedBookmark.value = null;
