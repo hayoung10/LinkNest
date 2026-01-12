@@ -100,7 +100,7 @@ public class BookmarkController {
     public ResponseEntity<BookmarkRes> updateFavorite(@AuthenticationPrincipal(expression = "id") Long userId,
                                                       @PathVariable @Min(1) Long id,
                                                       @RequestBody @Valid BookmarkFavoriteUpdateReq req) {
-        BookmarkRes res = service.updateFavorite(userId, id, req.favorite());
+        BookmarkRes res = service.updateFavorite(userId, id, req.isFavorite());
         return ResponseEntity.ok(res);
     }
 }
