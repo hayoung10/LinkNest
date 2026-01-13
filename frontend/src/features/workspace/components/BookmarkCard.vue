@@ -213,8 +213,8 @@
               >
                 <div class="min-w-0 flex-1 flex flex-col gap-0.5">
                   <span class="truncate">{{ domain(b.url) }}</span>
-                  <time :datetime="b.createdAt || ''">
-                    {{ formatDate(b.createdAt) }}
+                  <time :datetime="b.updatedAt || ''">
+                    {{ formatDate(b.updatedAt) }}
                   </time>
                 </div>
 

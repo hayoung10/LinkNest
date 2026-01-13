@@ -239,8 +239,8 @@
                       >
                         <span class="truncate">{{ domain(b.url) }}</span>
                         <span aria-hidden="true">·</span>
-                        <time :datetime="b.createdAt || ''">
-                          {{ formatDate(b.createdAt) }}
+                        <time :datetime="b.updatedAt || ''">
+                          {{ formatDate(b.updatedAt) }}
                         </time>
                       </div>
                     </div>
