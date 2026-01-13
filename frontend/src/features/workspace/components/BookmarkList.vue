@@ -127,14 +127,37 @@
               >
                 <button
                   type="button"
-                  class="w-full text-left px-3"
+                  class="w-full text-left"
                   @click="onSelect(b)"
                   :title="displayTitle(b)"
                 >
-                  <div class="flex items-stretch gap-4 px-3">
+                  <div class="flex items-stretch gap-3 px-3">
+                    <!-- favorite -->
+                    <div class="shrink-0 pt-2">
+                      <button
+                        type="button"
+                        class="shrink-0 inline-flex items-center justify-center size-8 rounded-md bg-white border border-zinc-300 shadow-sm hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-600 dark:hover:bg-zinc-800 transition-colors"
+                        :disabled="isFavoriteMutating(b.id)"
+                        :aria-label="
+                          b.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'
+                        "
+                        @click.stop.prevent="onToggleFavorite(b)"
+                      >
+                        <StarIcon
+                          :size="18"
+                          :filled="b.isFavorite"
+                          :klass="
+                            b.isFavorite
+                              ? 'text-amber-400'
+                              : 'text-zinc-500/80 dark:text-zinc-200/80'
+                          "
+                        />
+                      </button>
+                    </div>
+
                     <!-- 왼쪽: cover -->
                     <span
-                      class="shrink-0 relative h-14 w-14 rounded-xl overflow-hidden border bg-zinc-200/70 dark:bg-zinc-800/70"
+                      class="shrink-0 h-14 w-14 rounded-xl overflow-hidden border bg-zinc-200/70 dark:bg-zinc-800/70"
                       :class="[
                         isActive(b)
                           ? 'border-blue-400/70 ring-2 ring-blue-300/60 dark:ring-blue-800/50'
@@ -249,11 +272,13 @@ import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
+import StarIcon from "@/components/icons/StarIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import * as CollectionApi from "@/api/collections";
 import { CollectionPathRes } from "@/api/types";
+import { useToastStore } from "@/stores/toast";
 
 const props = defineProps<{
   collection: CollectionNode | null;
@@ -265,6 +290,7 @@ const emit = defineEmits<{
   (e: "select-bookmark", id: ID): void;
 }>();
 
+const toast = useToastStore();
 const workspace = useWorkspaceStore();
 const {
   selectedCollectionId,
@@ -305,7 +331,20 @@ function onRetry() {
   if (cid != null) workspace.fetchBookmarks(cid);
 }
 
-// 유틸
+function isFavoriteMutating(id: ID) {
+  return isMutating.value.toggleBookmarkFavorite;
+}
+
+async function onToggleFavorite(b: Bookmark) {
+  if (isFavoriteMutating(b.id)) return;
+
+  try {
+    await workspace.toggleBookmarkFavorite(b);
+  } catch (e) {
+    toast.error("즐겨찾기 변경에 실패했습니다.");
+  }
+}
+
 function displayTitle(b: Bookmark): string {
   const t = (b.title ?? "").trim();
   return t || "(제목 없음)";
