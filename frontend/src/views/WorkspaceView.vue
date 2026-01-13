@@ -15,23 +15,40 @@
     <!-- 우측: 메인 콘텐츠 -->
     <section class="relative flex-1 flex flex-col overflow-hidden min-h-0">
       <!-- 목록 -->
-      <BookmarkList
-        v-if="isListLayout"
-        :key="'list-' + (selectedCollectionId || 'none')"
-        :collection="selectedCollection"
-        :selected-bookmark-id="selectedBookmarkId"
-        @open-add="openAddPanel"
-        @select-bookmark="onSelectBookmark"
-      />
+      <template v-if="viewMode === 'favorites'">
+        <FavoriteBookmarkList
+          v-if="isListLayout"
+          :key="'fav-list'"
+          :selected-bookmark-id="selectedBookmarkId"
+          @select-bookmark="onSelectBookmark"
+        />
+        <FavoriteBookmarkCard
+          v-else
+          :key="'fav-card'"
+          :selected-bookmark-id="selectedBookmarkId"
+          @select-bookmark="onSelectBookmark"
+        />
+      </template>
 
-      <BookmarkCard
-        v-else
-        :key="'card-' + (selectedCollectionId || 'none')"
-        :collection="selectedCollection"
-        :selected-bookmark-id="selectedBookmarkId"
-        @open-add="openAddPanel"
-        @select-bookmark="onSelectBookmark"
-      />
+      <template v-else>
+        <BookmarkList
+          v-if="isListLayout"
+          :key="'list-' + (selectedCollectionId || 'none')"
+          :collection="selectedCollection"
+          :selected-bookmark-id="selectedBookmarkId"
+          @open-add="openAddPanel"
+          @select-bookmark="onSelectBookmark"
+        />
+
+        <BookmarkCard
+          v-else
+          :key="'card-' + (selectedCollectionId || 'none')"
+          :collection="selectedCollection"
+          :selected-bookmark-id="selectedBookmarkId"
+          @open-add="openAddPanel"
+          @select-bookmark="onSelectBookmark"
+        />
+      </template>
 
       <!-- 북마크 상세 패널 -->
       <SidePanel
@@ -108,6 +125,8 @@ import {
   BookmarkCard,
   BookmarkDetail,
   AddBookmarkForm,
+  FavoriteBookmarkList,
+  FavoriteBookmarkCard,
 } from "@/features/workspace";
 import { Settings } from "@/features/settings";
 import SidePanel from "@/components/overlays/SidePanel.vue";
@@ -133,8 +152,14 @@ const toast = useToastStore();
 const workspace = useWorkspaceStore();
 const preferences = usePreferencesStore();
 
-const { selectedCollectionId, bookmarks, isLoading, error, collectionById } =
-  storeToRefs(workspace);
+const {
+  viewMode,
+  selectedCollectionId,
+  bookmarks,
+  isLoading,
+  error,
+  collectionById,
+} = storeToRefs(workspace);
 const { defaultLayout } = storeToRefs(preferences);
 
 const auth = useAuthStore();
