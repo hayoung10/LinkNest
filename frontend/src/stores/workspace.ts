@@ -4,6 +4,7 @@ import * as CollectionApi from "@/api/collections";
 import * as BookmarkApi from "@/api/bookmarks";
 import { DropResult } from "@/types/dnd";
 
+type ViewMode = "collection" | "favorites";
 type LoadKey = "collectionTree" | "bookmarks";
 type MutateKey =
   | "createCollection"
@@ -21,6 +22,7 @@ type MutateKey =
 type ErrorMap<K extends string> = Record<K, string | null>;
 
 interface WorkspaceState {
+  viewMode: ViewMode;
   collectionNodes: CollectionNode[];
   bookmarks: Bookmark[];
   selectedCollectionId: ID | null;
@@ -55,6 +57,7 @@ function setMutating(
 
 export const useWorkspaceStore = defineStore("workspace", {
   state: (): WorkspaceState => ({
+    viewMode: "collection",
     collectionNodes: [],
     bookmarks: [],
     selectedCollectionId: null,
@@ -117,11 +120,15 @@ export const useWorkspaceStore = defineStore("workspace", {
       if (id == null) return null;
       return this.collectionById[id] ?? null;
     },
+    isFavoriteView(): boolean {
+      return this.viewMode === "favorites";
+    },
   },
 
   actions: {
     // 초기화
     resetAll() {
+      this.viewMode = "collection";
       this.collectionNodes = [];
       this.bookmarks = [];
       this.selectedCollectionId = null;
@@ -157,7 +164,12 @@ export const useWorkspaceStore = defineStore("workspace", {
       };
     },
     selectCollection(id: ID | null) {
+      this.viewMode = "collection";
       this.selectedCollectionId = id;
+    },
+    selectFavorites() {
+      this.viewMode = "favorites";
+      this.selectedCollectionId = null;
     },
     updateBookmarkCount(collectionId: ID, cnt: number) {
       if (!this.collectionNodes?.length) return;
@@ -535,6 +547,16 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.error.bookmarks = null;
       setLoading(this.isLoading, "bookmarks", true);
       try {
+        // 즐겨찾기 뷰
+        if (this.viewMode === "favorites") {
+          // TODO: 즐겨찾기 목록 조회 API 연동
+
+          // 임시
+          this.bookmarks = this.bookmarks.filter((b) => b.isFavorite);
+          return;
+        }
+
+        // 컬렉션 뷰
         const cid = collectionId ?? this.selectedCollectionId ?? null;
         if (cid == null) {
           this.bookmarks = [];
@@ -590,6 +612,11 @@ export const useWorkspaceStore = defineStore("workspace", {
           isFavorite: !bookmark.isFavorite,
         });
         this.replaceBookmark(updated);
+
+        // TODO: 즐겨찾기 목록 조회 API 연동 후, 변경 예정
+        if (this.viewMode === "favorites") {
+          this.bookmarks = this.bookmarks.filter((b) => b.isFavorite);
+        }
       } catch (e) {
         fail(
           this.mutateError,

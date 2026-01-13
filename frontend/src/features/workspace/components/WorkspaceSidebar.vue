@@ -103,6 +103,25 @@
       />
     </nav>
 
+    <!-- 하단 즐겨찾기 -->
+    <div class="border-t border-border px-2 py-2">
+      <button
+        type="button"
+        class="w-full inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors"
+        :class="
+          viewMode === 'favorites'
+            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 ring-1 ring-blue-300'
+            : 'hover:bg-accent text-foreground'
+        "
+        :disabled="isLoadingCollections || hasError"
+        aria-label="즐겨찾기 보기"
+        @click="handleSelectFavorites"
+      >
+        <StarIcon :size="16" filled klass="text-amber-400" />
+        <span class="min-w-0 truncate">즐겨찾기</span>
+      </button>
+    </div>
+
     <!-- 하단 유저 메뉴 -->
     <footer class="mt-auto border-t border-border px-3 py-3">
       <UserMenu
@@ -185,6 +204,7 @@ import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useDroppable } from "@vue-dnd-kit/core";
 import { DropResult } from "@/types/dnd";
 import { useToastStore } from "@/stores/toast";
+import StarIcon from "@/components/icons/StarIcon.vue";
 
 defineOptions({ inheritAttrs: false });
 
@@ -203,6 +223,7 @@ const emit = defineEmits<{
 
 const workspace = useWorkspaceStore();
 const {
+  viewMode,
   collectionNodes,
   selectedCollectionId,
   isLoading,
@@ -239,6 +260,12 @@ const rootIds = computed<ID[]>(() =>
 
 function handleSelectCollection(node: CollectionNodeModel) {
   workspace.selectCollection(node.id);
+}
+
+function handleSelectFavorites() {
+  if (isLoading.value.bookmarks) return;
+  workspace.selectFavorites();
+  workspace.fetchBookmarks();
 }
 
 function onClickAddRoot() {
