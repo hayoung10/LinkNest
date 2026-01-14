@@ -81,6 +81,7 @@
           :bookmark="selectedBookmark"
           :collection-name="selectedCollection?.name"
           @close="selectedBookmarkId = null"
+          @unfavorite="onUnfavoriteFromDetail"
           @update-bookmark="onUpdateBookmark"
           @delete-bookmark="onDeleteBookmark"
           @replace-bookmark="onReplaceBookmark"
@@ -139,6 +140,7 @@ import { useRouter } from "vue-router";
 import { usePreferencesStore } from "@/stores/preferences";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useToastStore } from "@/stores/toast";
+import { list } from "postcss";
 
 type UpdateBookmarkPayload = {
   id: ID;
@@ -322,6 +324,12 @@ async function onAddBookmark(payload: {
   }
 }
 
+function onUnfavoriteFromDetail(id: ID) {
+  if (viewMode.value === "favorites" && selectedBookmarkId.value === id) {
+    selectedBookmarkId.value = null;
+  }
+}
+
 async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
   try {
     await workspace.updateBookmark(payload.id, {
@@ -381,10 +389,13 @@ async function onLogout() {
 }
 
 function retryFetchBookmarks() {
-  const cid = selectedCollectionId.value;
-  if (cid != null) {
-    workspace.fetchBookmarks(cid);
+  if (viewMode.value === "favorites") {
+    workspace.fetchBookmarks();
+    return;
   }
+
+  const cid = selectedCollectionId.value;
+  if (cid != null) workspace.fetchBookmarks(cid);
 }
 
 watch(
@@ -408,5 +419,17 @@ watch(
     }
   },
   { immediate: true }
+);
+
+watch(
+  [viewMode, bookmarks, selectedBookmarkId],
+  ([mode, list, sid]) => {
+    if (mode !== "favorites") return;
+    if (sid == null) return;
+
+    const exists = list.some((b) => b.id === sid);
+    if (!exists) selectedBookmarkId.value = null;
+  },
+  { deep: false }
 );
 </script>

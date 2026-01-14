@@ -435,7 +435,6 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import type { Bookmark, ID, ImageMode } from "@/types/common";
 import * as BookmarkApi from "@/api/bookmarks";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
-import TrashIcon from "@/components/icons/TrashIcon.vue";
 import SaveIcon from "@/components/icons/SaveIcon.vue";
 import CloseIcon from "@/components/icons/CloseIcon.vue";
 import EditIcon from "@/components/icons/EditIcon.vue";
@@ -453,6 +452,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "close"): void;
+  (e: "unfavorite", id: ID): void;
   (
     e: "update-bookmark",
     payload: {
@@ -558,8 +558,14 @@ async function handleEdit() {
 async function onToggleFavorite() {
   if (isEditing.value) return;
 
+  const prevFavorite = props.bookmark.isFavorite;
+
   try {
     await workspace.toggleBookmarkFavorite(props.bookmark);
+
+    if (workspace.viewMode === "favorites" && prevFavorite) {
+      emit("unfavorite", props.bookmark.id);
+    }
   } catch (e) {
     toast.error("즐겨찾기 변경에 실패했습니다.");
   }
