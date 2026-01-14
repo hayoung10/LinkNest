@@ -62,7 +62,7 @@
           v-if="hasBookmarksError"
           title="북마크를 불러올 수 없습니다"
           :description="bookmarksError ?? undefined"
-          :onRetry="retryFetchBookmarks"
+          :onRetry="refreshBookmarks"
         />
 
         <BaseLoading
@@ -140,7 +140,6 @@ import { useRouter } from "vue-router";
 import { usePreferencesStore } from "@/stores/preferences";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useToastStore } from "@/stores/toast";
-import { list } from "postcss";
 
 type UpdateBookmarkPayload = {
   id: ID;
@@ -162,7 +161,7 @@ const {
   error,
   collectionById,
 } = storeToRefs(workspace);
-const { defaultLayout } = storeToRefs(preferences);
+const { defaultLayout, defaultBookmarkSort } = storeToRefs(preferences);
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -388,48 +387,61 @@ async function onLogout() {
   }
 }
 
-function retryFetchBookmarks() {
-  if (viewMode.value === "favorites") {
-    workspace.fetchBookmarks();
-    return;
-  }
+async function refreshBookmarks() {
+  try {
+    if (viewMode.value === "favorites") {
+      await workspace.fetchBookmarks();
+      return;
+    }
 
-  const cid = selectedCollectionId.value;
-  if (cid != null) workspace.fetchBookmarks(cid);
+    const cid = selectedBookmarkId.value;
+    if (cid === null) {
+      await workspace.fetchBookmarks();
+      return;
+    }
+
+    await workspace.fetchBookmarks(cid);
+  } catch (e) {
+    toast.error("북마크 목록을 불러오지 못했습니다.");
+  }
 }
 
 watch(
   selectedCollectionId,
   async (cid, prev) => {
     if (cid === prev) return;
+    if (viewMode.value !== "collection") return;
 
     selectedBookmarkId.value = null;
     isAddOpen.value = false;
     isSettingsOpen.value = false;
 
-    try {
-      if (cid == null) {
-        await workspace.fetchBookmarks();
-        return;
-      }
-
-      await workspace.fetchBookmarks(cid);
-    } catch (e) {
-      toast.error("북마크 목록을 불러오지 못했습니다.");
-    }
+    await refreshBookmarks();
   },
   { immediate: true }
 );
 
 watch(
-  [viewMode, bookmarks, selectedBookmarkId],
+  () => [viewMode.value, bookmarks.value, selectedBookmarkId.value] as const,
   ([mode, list, sid]) => {
     if (mode !== "favorites") return;
     if (sid == null) return;
 
     const exists = list.some((b) => b.id === sid);
     if (!exists) selectedBookmarkId.value = null;
-  },
-  { deep: false }
+  }
+);
+
+watch(
+  () =>
+    [
+      defaultBookmarkSort.value,
+      viewMode.value,
+      selectedCollectionId.value,
+    ] as const,
+  async ([sort], [prevSort]) => {
+    if (sort === prevSort) return;
+    await refreshBookmarks();
+  }
 );
 </script>

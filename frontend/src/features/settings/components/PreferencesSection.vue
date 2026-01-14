@@ -130,7 +130,7 @@ const workspace = useWorkspaceStore();
 
 const { defaultBookmarkSort, defaultLayout, openInNewTab, loaded } =
   storeToRefs(preferences);
-const { selectedCollectionId } = storeToRefs(workspace);
+const { viewMode, selectedCollectionId } = storeToRefs(workspace);
 
 // 로딩/저장 상태
 const isSaving = ref(false);
@@ -147,7 +147,9 @@ const changeDefaultSort = async (value: BookmarkSortOption) => {
   try {
     await preferences.update({ defaultBookmarkSort: value });
 
-    if (selectedCollectionId.value != null) {
+    if (viewMode.value === "favorites") {
+      await workspace.fetchBookmarks();
+    } else if (selectedCollectionId.value != null) {
       await workspace.fetchBookmarks(selectedCollectionId.value);
     }
   } catch (e) {
