@@ -207,6 +207,19 @@ public class BookmarkService {
         return mapper.toRes(bookmark);
     }
 
+    // ---------- 즐겨찾기 목록 조회 ----------
+    public List<BookmarkRes> listByFavorites(Long userId) {
+        DefaultBookmarkSort sort = userPreferencesService.getDefaultBookmarkSort(userId);
+
+        List<Bookmark> list = switch(sort) {
+            case NEWEST -> bookmarkRepository.findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtDesc(userId);
+            case OLDEST -> bookmarkRepository.findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtAsc(userId);
+            case TITLE -> bookmarkRepository.findAllFavoritesSortedByTitle(userId);
+        };
+
+        return list.stream().map(mapper::toRes).toList();
+    }
+
     // ==========================================================
     // 내부 유틸
     // ==========================================================

@@ -103,4 +103,10 @@ public class BookmarkController {
         BookmarkRes res = service.updateFavorite(userId, id, req.isFavorite());
         return ResponseEntity.ok(res);
     }
+
+    @GetMapping("/favorites")
+    public ResponseEntity<List<BookmarkRes>> listFavorites(@AuthenticationPrincipal(expression = "id") Long userId) {
+        List<BookmarkRes> res = service.listByFavorites(userId);
+        return ResponseEntity.ok(res);
+    }
 }
