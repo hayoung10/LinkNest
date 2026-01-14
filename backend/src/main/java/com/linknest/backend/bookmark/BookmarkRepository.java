@@ -24,4 +24,14 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "where b.collection.id in :collectionIds " +
             "group by b.collection.id")
     List<IdCount> countByCollectionIds(@Param("collectionIds") List<Long> collectionIds);
+
+    List<Bookmark> findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtDesc(Long userId);
+
+    List<Bookmark> findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtAsc(Long userId);
+
+    @Query("select b from Bookmark b " +
+            "where b.user.id = :userId and b.isFavorite = true " +
+            "order by " + "" +
+            "   case when b.title is null or b.title = '' then 1 else 0 end, b.title asc, b.createdAt desc")
+    List<Bookmark> findAllFavoritesSortedByTitle(@Param("userId") Long userId);
 }
