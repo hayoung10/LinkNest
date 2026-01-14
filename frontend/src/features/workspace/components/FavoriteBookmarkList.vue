@@ -239,10 +239,7 @@ const isLoadingBookmarks = computed(() => isLoading.value.bookmarks);
 const bookmarksError = computed(() => error.value.bookmarks);
 const hasError = computed(() => !!bookmarksError.value);
 
-// TODO: 즐겨찾기 목록 조회 API 연동 후, 변경 예정
-const favoriteBookmarks = computed<Bookmark[]>(() =>
-  (bookmarks.value ?? []).filter((b) => b.isFavorite)
-);
+const favoriteBookmarks = computed(() => bookmarks.value);
 
 const isEmpty = computed(
   () =>
@@ -252,7 +249,6 @@ const isEmpty = computed(
 );
 
 function onRetry() {
-  // TODO: 즐겨찾기 목록 조회 API 연동 후, 변경 예정
   workspace.fetchBookmarks();
 }
 

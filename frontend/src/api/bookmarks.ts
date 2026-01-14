@@ -119,3 +119,9 @@ export async function updateFavorite(
   );
   return mapBookmarkRes(data);
 }
+
+/** 즐겨찾기 목록 조회 */
+export async function listFavorites(): Promise<Bookmark[]> {
+  const { data } = await http.get<BookmarkRes[]>(`/bookmarks/favorites`);
+  return data.map(mapBookmarkRes);
+}

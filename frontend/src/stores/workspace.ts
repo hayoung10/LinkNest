@@ -549,10 +549,8 @@ export const useWorkspaceStore = defineStore("workspace", {
       try {
         // 즐겨찾기 뷰
         if (this.viewMode === "favorites") {
-          // TODO: 즐겨찾기 목록 조회 API 연동
-
-          // 임시
-          this.bookmarks = this.bookmarks.filter((b) => b.isFavorite);
+          const list = await BookmarkApi.listFavorites();
+          this.bookmarks = list;
           return;
         }
 
@@ -611,12 +609,13 @@ export const useWorkspaceStore = defineStore("workspace", {
         const updated = await BookmarkApi.updateFavorite(bookmark.id, {
           isFavorite: !bookmark.isFavorite,
         });
-        this.replaceBookmark(updated);
 
-        // TODO: 즐겨찾기 목록 조회 API 연동 후, 변경 예정
-        if (this.viewMode === "favorites") {
-          this.bookmarks = this.bookmarks.filter((b) => b.isFavorite);
+        if (this.viewMode === "favorites" && !updated.isFavorite) {
+          this.bookmarks = this.bookmarks.filter((b) => b.id !== updated.id);
+          return;
         }
+
+        this.replaceBookmark(updated);
       } catch (e) {
         fail(
           this.mutateError,
