@@ -29,11 +29,11 @@
         <div class="flex text-center gap-2 pr-3" aria-hidden="true">
           <!-- 헤더 높이 맞춤 -->
           <span
-            class="infline-flex items-center gap-1 px-3.5 py-1.5 opacity-0 select-none"
+            class="inline-flex items-center px-3.5 py-1.5 opacity-0 select-none"
           >
-            <PlusIcon :size="16" klass="shrink-0" />
-            <span>추가</span></span
-          >
+            <span class="inline-block size-9" />
+            <span>추가</span>
+          </span>
         </div>
       </header>
 
