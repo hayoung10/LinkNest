@@ -106,7 +106,6 @@
 <script setup lang="ts">
 import { usePreferencesStore } from "@/stores/preferences";
 import { useToastStore } from "@/stores/toast";
-import { useWorkspaceStore } from "@/stores/workspace";
 import type { BookmarkSortOption, LayoutOption } from "@/types/common";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
@@ -126,11 +125,9 @@ const layoutOptions: { value: LayoutOption; label: string }[] = [
 
 const toast = useToastStore();
 const preferences = usePreferencesStore();
-const workspace = useWorkspaceStore();
 
 const { defaultBookmarkSort, defaultLayout, openInNewTab, loaded } =
   storeToRefs(preferences);
-const { selectedCollectionId } = storeToRefs(workspace);
 
 // 로딩/저장 상태
 const isSaving = ref(false);
@@ -141,15 +138,11 @@ const changeDefaultSort = async (value: BookmarkSortOption) => {
   if (defaultBookmarkSort.value === value) return;
 
   const prev = defaultBookmarkSort.value;
-  defaultBookmarkSort.value = value;
-
   isSaving.value = true;
+
   try {
     await preferences.update({ defaultBookmarkSort: value });
-
-    if (selectedCollectionId.value != null) {
-      await workspace.fetchBookmarks(selectedCollectionId.value);
-    }
+    defaultBookmarkSort.value = value;
   } catch (e) {
     console.error("기본 정렬 업데이트 실패:", e);
     toast.error("기본 북마크 정렬 설정에 실패했습니다.");
@@ -164,11 +157,11 @@ const changeDefaultLayout = async (value: LayoutOption) => {
   if (defaultLayout.value === value) return;
 
   const prev = defaultLayout.value;
-  defaultLayout.value = value;
-
   isSaving.value = true;
+
   try {
     await preferences.update({ defaultLayout: value });
+    defaultLayout.value = value;
   } catch (e) {
     console.error("기본 레이아웃 업데이트 실패:", e);
     toast.error("기본 레이아웃 설정에 실패했습니다.");

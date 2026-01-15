@@ -62,7 +62,7 @@
           v-if="hasBookmarksError"
           title="북마크를 불러올 수 없습니다"
           :description="bookmarksError ?? undefined"
-          :onRetry="retryFetchBookmarks"
+          :onRetry="refreshBookmarks"
         />
 
         <BaseLoading
@@ -81,6 +81,7 @@
           :bookmark="selectedBookmark"
           :collection-name="selectedCollection?.name"
           @close="selectedBookmarkId = null"
+          @unfavorite="onUnfavoriteFromDetail"
           @update-bookmark="onUpdateBookmark"
           @delete-bookmark="onDeleteBookmark"
           @replace-bookmark="onReplaceBookmark"
@@ -160,7 +161,7 @@ const {
   error,
   collectionById,
 } = storeToRefs(workspace);
-const { defaultLayout } = storeToRefs(preferences);
+const { defaultLayout, defaultBookmarkSort } = storeToRefs(preferences);
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -322,6 +323,12 @@ async function onAddBookmark(payload: {
   }
 }
 
+function onUnfavoriteFromDetail(id: ID) {
+  if (viewMode.value === "favorites" && selectedBookmarkId.value === id) {
+    selectedBookmarkId.value = null;
+  }
+}
+
 async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
   try {
     await workspace.updateBookmark(payload.id, {
@@ -380,33 +387,60 @@ async function onLogout() {
   }
 }
 
-function retryFetchBookmarks() {
-  const cid = selectedCollectionId.value;
-  if (cid != null) {
-    workspace.fetchBookmarks(cid);
+async function refreshBookmarks() {
+  try {
+    if (viewMode.value === "favorites") {
+      await workspace.fetchBookmarks();
+      return;
+    }
+
+    const cid = selectedCollectionId.value;
+    if (cid === null) {
+      await workspace.fetchBookmarks();
+      return;
+    }
+
+    await workspace.fetchBookmarks(cid);
+  } catch (e) {
+    toast.error("북마크 목록을 불러오지 못했습니다.");
   }
 }
 
+// 화면 컨텍스트 변화(모드/선택) → 목록 리프레시
 watch(
-  selectedCollectionId,
-  async (cid, prev) => {
-    if (cid === prev) return;
+  () => [viewMode.value, selectedCollectionId.value] as const,
+  async ([mode, cid], prev) => {
+    const [prevMode, prevCid] = prev ?? [undefined, undefined];
+
+    if (mode === prevMode && cid === prevCid) return;
 
     selectedBookmarkId.value = null;
     isAddOpen.value = false;
     isSettingsOpen.value = false;
 
-    try {
-      if (cid == null) {
-        await workspace.fetchBookmarks();
-        return;
-      }
-
-      await workspace.fetchBookmarks(cid);
-    } catch (e) {
-      toast.error("북마크 목록을 불러오지 못했습니다.");
-    }
+    await refreshBookmarks();
   },
   { immediate: true }
+);
+
+// favorites 모드에서, 선택된 북마크가 목록에서 빠지면 패널 닫기
+watch(
+  () => [viewMode.value, bookmarks.value, selectedBookmarkId.value] as const,
+  ([mode, list, sid]) => {
+    if (mode !== "favorites") return;
+    if (sid == null) return;
+
+    const exists = list.some((b) => b.id === sid);
+    if (!exists) selectedBookmarkId.value = null;
+  }
+);
+
+// 정렬 변경 → 목록 리프레시
+watch(
+  () => defaultBookmarkSort.value,
+  async (sort, prevSort) => {
+    if (sort === prevSort) return;
+    await refreshBookmarks();
+  }
 );
 </script>
