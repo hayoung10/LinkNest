@@ -394,7 +394,7 @@ async function refreshBookmarks() {
       return;
     }
 
-    const cid = selectedBookmarkId.value;
+    const cid = selectedCollectionId.value;
     if (cid === null) {
       await workspace.fetchBookmarks();
       return;
@@ -406,11 +406,13 @@ async function refreshBookmarks() {
   }
 }
 
+// 화면 컨텍스트 변화(모드/선택) → 목록 리프레시
 watch(
-  selectedCollectionId,
-  async (cid, prev) => {
-    if (cid === prev) return;
-    if (viewMode.value !== "collection") return;
+  () => [viewMode.value, selectedCollectionId.value] as const,
+  async ([mode, cid], prev) => {
+    const [prevMode, prevCid] = prev ?? [undefined, undefined];
+
+    if (mode === prevMode && cid === prevCid) return;
 
     selectedBookmarkId.value = null;
     isAddOpen.value = false;
@@ -421,6 +423,7 @@ watch(
   { immediate: true }
 );
 
+// favorites 모드에서, 선택된 북마크가 목록에서 빠지면 패널 닫기
 watch(
   () => [viewMode.value, bookmarks.value, selectedBookmarkId.value] as const,
   ([mode, list, sid]) => {
@@ -432,14 +435,10 @@ watch(
   }
 );
 
+// 정렬 변경 → 목록 리프레시
 watch(
-  () =>
-    [
-      defaultBookmarkSort.value,
-      viewMode.value,
-      selectedCollectionId.value,
-    ] as const,
-  async ([sort], [prevSort]) => {
+  () => defaultBookmarkSort.value,
+  async (sort, prevSort) => {
     if (sort === prevSort) return;
     await refreshBookmarks();
   }
