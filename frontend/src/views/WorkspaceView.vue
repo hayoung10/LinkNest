@@ -143,9 +143,9 @@ import { useToastStore } from "@/stores/toast";
 
 type UpdateBookmarkPayload = {
   id: ID;
-  title?: string | null;
+  title: string;
   url: string;
-  description?: string | null;
+  description: string;
   emoji?: string | null;
 };
 
