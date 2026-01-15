@@ -457,9 +457,9 @@ const emit = defineEmits<{
     e: "update-bookmark",
     payload: {
       id: ID;
-      title?: string | null;
+      title: string;
       url: string;
-      description?: string | null;
+      description: string;
       emoji?: string | null;
     }
   ): void;
@@ -533,17 +533,11 @@ const canSave = computed(
   () => isEditing.value && !!editedBookmark.value && isUrlValid.value
 );
 
-// 유틸
 function displayTitle(b: Bookmark) {
   const t = (b.title ?? "").trim();
   return t || "(제목 없음)";
 }
-const normalize = (s?: string | null) => {
-  const v = (s ?? "").trim();
-  return v ? v : null;
-};
 
-// 핸들러
 function focusUrl() {
   urlRef.value?.focus();
 }
@@ -577,13 +571,18 @@ function handleCancel() {
 }
 function handleSave() {
   if (!canSave.value || !editedBookmark.value) return;
+
+  const title = (editedBookmark.value.title ?? "").trim();
+  const description = (editedBookmark.value.description ?? "").trim();
+
   emit("update-bookmark", {
     id: editedBookmark.value.id,
-    title: normalize(editedBookmark.value.title),
+    title,
     url: editedBookmark.value.url.trim(),
-    description: normalize(editedBookmark.value.description),
+    description,
     emoji: editedBookmark.value.emoji ?? null,
   });
+
   isEditing.value = false;
   editedBookmark.value = null;
   closeEmojiPicker();
