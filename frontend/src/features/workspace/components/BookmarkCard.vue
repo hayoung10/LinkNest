@@ -199,6 +199,27 @@
                   </span>
                 </h3>
 
+                <!-- 태그 -->
+                <div
+                  class="mt-1 min-h-[18px] flex flex-wrap items-center gap-1.5"
+                >
+                  <template v-if="tagCount(b) > 0">
+                    <span
+                      v-for="t in visibleTags(b)"
+                      :key="t"
+                      class="inline-flex items-center rounded-full bg-muted/40 border border-border/60 px-2 py-0.5 text-[11px] text-muted-foreground"
+                      >{{ t }}</span
+                    >
+
+                    <!-- 3개 초과 시 +n 표시 -->
+                    <span
+                      v-if="extraTagCount(b) > 0"
+                      class="text-[11px] text-muted-foreground/70"
+                      >+{{ extraTagCount(b) }}</span
+                    >
+                  </template>
+                </div>
+
                 <p
                   v-if="b.description"
                   class="mt-1 text-xs text-neutral-500 line-clamp-2"
@@ -334,6 +355,18 @@ function hasTitle(b: Bookmark): boolean {
 
 function isActive(b: Bookmark): boolean {
   return props.selectedBookmarkId === b.id;
+}
+
+function tagCount(b: Bookmark) {
+  return b.tags?.length ?? 0;
+}
+
+function extraTagCount(b: Bookmark, visible = 3) {
+  return Math.max(tagCount(b) - visible, 0);
+}
+
+function visibleTags(b: Bookmark, visible = 3) {
+  return b.tags?.slice(0, visible) ?? [];
 }
 
 function domain(url: string) {
