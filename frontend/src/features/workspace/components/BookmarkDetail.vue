@@ -340,6 +340,35 @@
         </template>
       </div>
 
+      <!-- 태그 -->
+      <div class="space-y-2">
+        <label class="block text-sm text-muted-foreground">태그</label>
+
+        <template v-if="isEditing">
+          <TagInput
+            v-model="editedBookmark!.tags"
+            :max="3"
+            placeholder="태그 입력 후 Enter로 추가"
+            :disabled="isBookmarkMutating"
+          />
+        </template>
+
+        <template v-else>
+          <div
+            v-if="(currentBookmark.tags?.length ?? 0) > 0"
+            class="flex flex-wrap gap-2"
+          >
+            <span
+              v-for="t in currentBookmark.tags"
+              :key="t"
+              class="inline-flex items-center rounded-full bg-muted/40 border border-border/60 px-2 py-1 text-xs"
+              >{{ t }}</span
+            >
+          </div>
+          <p v-else class="text-sm text-muted-foreground">(태그 없음)</p>
+        </template>
+      </div>
+
       <!-- 설명 -->
       <div class="space-y-2">
         <label class="block text-sm text-foreground">설명</label>
@@ -444,6 +473,7 @@ import { storeToRefs } from "pinia";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useToastStore } from "@/stores/toast";
 import StarIcon from "@/components/icons/StarIcon.vue";
+import TagInput from "./TagInput.vue";
 
 const props = defineProps<{
   bookmark: Bookmark;
@@ -461,6 +491,7 @@ const emit = defineEmits<{
       url: string;
       description: string;
       emoji?: string | null;
+      tags?: string[];
     }
   ): void;
   (e: "delete-bookmark", id: ID): void;
@@ -542,7 +573,10 @@ function focusUrl() {
   urlRef.value?.focus();
 }
 async function handleEdit() {
-  editedBookmark.value = { ...props.bookmark };
+  editedBookmark.value = {
+    ...props.bookmark,
+    tags: props.bookmark.tags ? [...props.bookmark.tags] : [],
+  };
   isEditing.value = true;
   closeEmojiPicker();
 
@@ -574,6 +608,9 @@ function handleSave() {
 
   const title = (editedBookmark.value.title ?? "").trim();
   const description = (editedBookmark.value.description ?? "").trim();
+  const tags = editedBookmark.value.tags?.length
+    ? editedBookmark.value.tags
+    : undefined;
 
   emit("update-bookmark", {
     id: editedBookmark.value.id,
@@ -581,6 +618,7 @@ function handleSave() {
     url: editedBookmark.value.url.trim(),
     description,
     emoji: editedBookmark.value.emoji ?? null,
+    tags,
   });
 
   isEditing.value = false;

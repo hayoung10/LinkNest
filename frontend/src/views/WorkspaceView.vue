@@ -147,6 +147,7 @@ type UpdateBookmarkPayload = {
   url: string;
   description: string;
   emoji?: string | null;
+  tags?: string[];
 };
 
 const toast = useToastStore();
@@ -306,6 +307,7 @@ async function onAddBookmark(payload: {
   emoji?: string | null;
   imageMode?: ImageMode;
   collectionId: ID;
+  tags?: string[];
 }) {
   try {
     await workspace.createBookmark({
@@ -315,6 +317,7 @@ async function onAddBookmark(payload: {
       description: payload.description ?? null,
       emoji: payload.emoji ?? null,
       imageMode: payload.imageMode ?? "AUTO",
+      tags: payload.tags?.length ? payload.tags : undefined,
     });
     await workspace.fetchBookmarks(payload.collectionId);
     isAddOpen.value = false;
@@ -336,6 +339,7 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
       title: payload.title,
       description: payload.description,
       emoji: payload.emoji ?? null,
+      tags: payload.tags?.length ? payload.tags : undefined,
     });
 
     const cid = selectedCollectionId.value;

@@ -134,6 +134,18 @@
         </p>
       </div>
 
+      <!-- 태그 -->
+      <div class="space-y-2">
+        <label class="block text-sm text-muted-foreground">태그</label>
+
+        <TagInput
+          v-model="form.tags"
+          :max="3"
+          placeholder="태그 입력 후 Enter로 추가"
+          :disabled="isSaving"
+        />
+      </div>
+
       <!-- 설명 -->
       <div class="space-y-2">
         <label class="block text-sm text-muted-foreground" :for="descId"
@@ -182,6 +194,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css";
+import TagInput from "./TagInput.vue";
 
 const props = defineProps<{
   open: boolean;
@@ -199,6 +212,7 @@ const emit = defineEmits<{
       emoji?: string | null;
       imageMode?: ImageMode;
       collectionId: ID;
+      tags?: string[];
     }
   ): void;
 }>();
@@ -215,6 +229,7 @@ const form = ref({
   description: "",
   emoji: null as string | null,
   imageMode: "AUTO" as ImageMode,
+  tags: [] as string[],
 });
 
 const urlRef = ref<HTMLInputElement | null>(null);
@@ -254,6 +269,7 @@ function resetForm() {
     description: "",
     emoji: null,
     imageMode: "AUTO",
+    tags: [],
   };
   emojiPickerOpen.value = false;
 }
@@ -264,6 +280,9 @@ function handleClose() {
 function handleSubmit() {
   if (isSaving.value) return;
   if (!canSave.value || props.collectionId === null) return;
+
+  const tags = form.value.tags?.length ? form.value.tags : undefined;
+
   emit("submit", {
     title: normalize(form.value.title),
     url: form.value.url.trim(),
@@ -271,6 +290,7 @@ function handleSubmit() {
     emoji: form.value.emoji,
     imageMode: form.value.imageMode,
     collectionId: props.collectionId,
+    tags,
   });
   resetForm();
 }
