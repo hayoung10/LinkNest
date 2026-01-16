@@ -293,24 +293,38 @@ public class BookmarkService {
         Long userId = bookmark.getUser().getId();
 
         // 기존 태그 조회
-        List<Tag> existing = tagRepository.findByUserIdAndNameIn(userId, names);
-        Map<String, Tag> byName = existing.stream()
+        Map<String, Tag> byName = tagRepository.findByUserIdAndNameIn(userId, names).stream()
                 .collect(Collectors.toMap(Tag::getName, Function.identity()));
 
-        // 없다면 생성
-        for(String name: names) {
-            byName.computeIfAbsent(name, n -> tagRepository.save(
-                    Tag.builder()
-                            .user(bookmark.getUser())
-                            .name(n)
-                            .build()
-            ));
+        // 없는 태그는 생성
+        List<Tag> toCreate = names.stream()
+                .filter(n -> !byName.containsKey(n))
+                .map(n -> Tag.builder()
+                        .user(bookmark.getUser())
+                        .name(n)
+                        .build())
+                .toList();
+
+        if(!toCreate.isEmpty()) {
+            tagRepository.saveAll(toCreate).forEach(t -> byName.put(t.getName(), t));
         }
 
-        // 북마크-태그 전체 교체
-        bookmark.getBookmarkTags().clear();
+        // 목표 tagId 집합
+        Set<Long> targetTagIds = names.stream()
+                .map(n -> byName.get(n).getId())
+                .collect(Collectors.toSet());
+
+        Set<Long> existingTagIds = bookmark.getBookmarkTags().stream()
+                .map(bt -> bt.getTag().getId())
+                .collect(Collectors.toSet());
+
+        // 제거: 목표 집합에 없는 BookmarkTag 제거
+        bookmark.getBookmarkTags().removeIf(bt -> !targetTagIds.contains(bt.getTag().getId()));
+
+        // 추가
         for(String name: names) {
             Tag tag = byName.get(name);
+            if(existingTagIds.contains(tag.getId())) continue;
             bookmark.getBookmarkTags().add(BookmarkTag.create(bookmark, tag));
         }
     }
