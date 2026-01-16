@@ -7,11 +7,17 @@
         <!-- 좌: 닫기 -->
         <button
           type="button"
-          class="p-2 rounded-md hover:bg-accent"
+          :disabled="isBookmarkMutating"
+          class="p-2 rounded-md transition-colors duration-150"
+          :class="
+            isBookmarkMutating
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60'
+          "
           aria-label="패널 닫기"
           @click="$emit('close')"
         >
-          <CloseIcon class="size-5" />
+          <CloseIcon class="size-5 text-muted-foreground" />
         </button>
 
         <!-- 우: 액션(보기/편집) -->
@@ -22,10 +28,10 @@
               type="button"
               :disabled="isBookmarkMutating"
               @click="handleEdit"
-              class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm disabled:opacity-50"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-muted-foreground transition-colors duration-150 hover:bg-black/10 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <EditIcon class="size-5" />
-              <span class="ml-1">수정</span>
+              <span>수정</span>
             </button>
 
             <button
@@ -53,20 +59,20 @@
               type="button"
               :disabled="isBookmarkMutating"
               @click="handleCancel"
-              class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm disabled:opacity-50"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-muted-foreground transition-colors duration-150 hover:bg-black/10 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CloseIcon class="size-5" />
-              <span class="ml-1">취소</span>
+              <span>취소</span>
             </button>
 
             <button
               type="button"
               :disabled="isBookmarkMutating || !canSave"
               @click="handleSave"
-              class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm bg-neutral-900 text-white transition-colors duration-150 hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <SaveIcon class="size-5" />
-              <span class="ml-1">저장</span>
+              <span>저장</span>
             </button>
           </template>
         </div>
