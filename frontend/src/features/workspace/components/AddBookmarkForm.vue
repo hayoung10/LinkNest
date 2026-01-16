@@ -8,11 +8,14 @@
         <button
           type="button"
           :disabled="isSaving"
-          class="absolute right-2 top-2 p-2 rounded-md hover:bg-accent"
+          class="absolute right-2 top-2 p-2 rounded-md transition-colors"
+          :class="
+            isSaving ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent'
+          "
           aria-label="패널 닫기"
           @click="$emit('close')"
         >
-          ✕
+          <CloseIcon class="size-5" />
         </button>
       </div>
     </header>
@@ -91,11 +94,11 @@
         <input
           :id="urlId"
           ref="urlRef"
-          v-model.trim="form!.url"
+          v-model="form.url"
           type="url"
           class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
           placeholder="https://example.com"
-          :aria-invalid="!isUrlValid"
+          :aria-invalid="form.url ? !isUrlValid : false"
         />
 
         <!-- 커버 이미지 토글 -->
@@ -197,7 +200,6 @@ import "vue3-emoji-picker/css";
 import TagInput from "./TagInput.vue";
 
 const props = defineProps<{
-  open: boolean;
   collectionId: ID | null;
 }>();
 

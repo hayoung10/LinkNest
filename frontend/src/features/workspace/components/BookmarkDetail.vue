@@ -11,7 +11,7 @@
           aria-label="패널 닫기"
           @click="$emit('close')"
         >
-          ✕
+          <CloseIcon class="size-5" />
         </button>
 
         <!-- 우: 액션(보기/편집) -->
@@ -95,7 +95,7 @@
                     ? 'hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer'
                     : 'cursor-default',
                 ]"
-                @click="onEmojiStateClick"
+                @click="onEmojiTriggerClick"
                 :aria-label="
                   currentBookmark.emoji ? '이모지 변경' : '이모지 상태'
                 "
@@ -299,6 +299,7 @@
             ref="urlRef"
             v-model="editedBookmark!.url"
             type="url"
+            :aria-invalid="editedBookmark!.url ? !isUrlValid : false"
             class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
             placeholder="https://example.com"
           />
@@ -648,7 +649,7 @@ function toggleEmojiPicker() {
   if (!isEditing.value) return;
   emojiPickerOpen.value = !emojiPickerOpen.value;
 }
-function onEmojiStateClick() {
+function onEmojiTriggerClick() {
   if (!isEditing.value) return;
   if (!currentBookmark.value.emoji) return;
   toggleEmojiPicker();
