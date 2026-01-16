@@ -38,6 +38,12 @@ app:
     header: Authorization
     prefix: Bearer
     clock-skew-seconds: 60
+  tag-cleanup:
+    enabled: false
+    cron: "0 0 3 * * *"
+    zone: "Asia/Seoul"
+    batch-size: 500
+    ttl-days: 1
 
 storage:
   provider: local
@@ -48,7 +54,7 @@ spring:
     activate:
       on-profile: dev-config
   datasource:
-    url: jdbc:mysql://localhost:3310/linknest?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3310/linknest?characterEncoding=UTF-8&sessionVariables=time_zone=UTC
   data:
     redis:
       host: localhost
@@ -58,6 +64,9 @@ spring:
 app:
   frontend:
     oauth2-success-redirect: "http://localhost:5173/redirect"
+  tag-cleanup:
+    enabled: false
+    # cron: "0 */1 * * * *" #테스트용
 
 storage:
   local:
@@ -80,6 +89,10 @@ spring:
       on-profile: prod-config
   flyway:
     clean-disabled: true
+
+app:
+  tag-cleanup:
+    enabled: true
 
 logging:
   level:
