@@ -80,6 +80,7 @@
           v-else
           :bookmark="selectedBookmark"
           :collection-name="selectedCollection?.name"
+          :collection-emoji="selectedCollection?.emoji"
           @close="selectedBookmarkId = null"
           @unfavorite="onUnfavoriteFromDetail"
           @update-bookmark="onUpdateBookmark"

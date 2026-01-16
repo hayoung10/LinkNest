@@ -37,7 +37,7 @@
             <button
               type="button"
               :disabled="isBookmarkMutating || isFavoriteMutating"
-              class="p-2 rounded-md hover:bg-accent disabled:opacity-50"
+              class="p-2 rounded-md text-muted-foreground transition-colors duration-150 hover:bg-black/10 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="즐겨찾기"
               @click="onToggleFavorite"
             >
@@ -82,9 +82,13 @@
       <div class="px-5 pb-3">
         <p
           v-if="collectionName"
-          class="ml-1 text-[13px] leading-5 font-muted-foreground truncate mb-2"
+          class="ml-1 mb-2 flex items-center gap-1.5 truncate text-[13px] leading-5 text-muted-foreground"
         >
-          {{ collectionName }}
+          <span v-if="collectionEmoji" class="shrink-0 text-sm leading-none">
+            {{ collectionEmoji }}
+          </span>
+          <FolderIcon v-else class="shrink-0 size-3.5 opacity-60" />
+          <span class="truncate">{{ collectionName }}</span>
         </p>
 
         <div class="flex items-end justify-between gap-3">
@@ -117,6 +121,13 @@
                   class="text-lg leading-none opacity-20"
                   >+</span
                 >
+                <span
+                  v-else
+                  class="text-xl leading-none text-zinc-400/60 dark:text-zinc-500/60 select-none"
+                  aria-hidden="true"
+                >
+                  •
+                </span>
               </button>
 
               <!-- EmojiPicker popover -->
@@ -126,6 +137,15 @@
                 class="absolute left-0 top-full mt-2 z-50"
               >
                 <EmojiPicker :native="true" @select="onEmojiSelected" />
+
+                <button
+                  v-if="isEditing && editedBookmark?.emoji"
+                  type="button"
+                  class="mt-2 w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-red-600 shadow-[0_10px_30px_rgba(0,0,0,0.20)] hover:bg-red-50 transition-colors dark:text-red-400 dark:hover:bg-red-950/30"
+                  @click="removeEmoji"
+                >
+                  이모지 제거
+                </button>
               </div>
             </div>
 
@@ -162,27 +182,6 @@
           >
             {{ updatedAtText }}
           </p>
-        </div>
-
-        <!-- (편집 모드) 이모지 추가/제거 버튼-->
-        <div v-if="isEditing" class="mt-2 flex items-center gap-2">
-          <button
-            v-if="!currentBookmark.emoji"
-            type="button"
-            class="rounded-md px-2 py-1 text-xs leading-none text-muted-foreground/70 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-foreground transition-colors"
-            @click="toggleEmojiPicker"
-          >
-            이모지 추가
-          </button>
-
-          <button
-            v-else
-            type="button"
-            class="rounded-md px-2 py-1 text-xs leading-none text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-            @click="removeEmoji"
-          >
-            이모지 제거
-          </button>
         </div>
       </div>
     </header>
@@ -485,6 +484,7 @@ import TagInput from "./TagInput.vue";
 const props = defineProps<{
   bookmark: Bookmark;
   collectionName?: string;
+  collectionEmoji?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -657,7 +657,6 @@ function toggleEmojiPicker() {
 }
 function onEmojiTriggerClick() {
   if (!isEditing.value) return;
-  if (!currentBookmark.value.emoji) return;
   toggleEmojiPicker();
 }
 function onEmojiSelected(emoji: any) {
