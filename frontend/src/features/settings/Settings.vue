@@ -1,23 +1,24 @@
 <template>
   <div class="h-full w-full px-6 py-6 flex flex-col">
     <!-- 헤더 -->
-    <header class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-[17px]">설정</h1>
+    <header class="flex items-start gap-4 mb-6">
+      <!-- 좌: 패널 닫기 -->
+      <button
+        type="button"
+        class="p-2 rounded-md transition-colors duration-150 text-muted-foreground hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60 hover:text-foreground"
+        aria-label="닫기"
+        @click="$emit('close')"
+      >
+        <CloseIcon class="size-5" />
+      </button>
+
+      <!-- 우: 제목 + 설명 -->
+      <div class="flex-1">
+        <h1 class="text-[17px] font-semibold">설정</h1>
         <p class="mt-1 text-sm text-neutral-500">
           계정·보안·환경 설정을 한 곳에서 관리하세요.
         </p>
       </div>
-
-      <!-- 우측 상단: 닫기 -->
-      <button
-        type="button"
-        class="p-2 rounded-md hover:bg-muted transition-colors"
-        aria-label="닫기"
-        @click="$emit('close')"
-      >
-        <CloseIcon :size="20" />
-      </button>
     </header>
 
     <!-- 탭 버튼 영역 -->
