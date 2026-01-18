@@ -81,7 +81,7 @@
                 <!-- favorite -->
                 <button
                   type="button"
-                  class="absolute top-2 right-2 z-20 inline-flex items-center justify-center size-8 rounded-md bg-white/85 backdrop-blur border border-white/60 shadow-sm hover:bg-white dark:bg-zinc-900/70 dark:border-zinc-700/60 dark:hover:bg-zinc-800 transition-colors"
+                  class="absolute top-2 left-2 z-20 inline-flex items-center justify-center size-8 rounded-md bg-white/85 backdrop-blur border border-white/60 shadow-sm hover:bg-white dark:bg-zinc-900/70 dark:border-zinc-700/60 dark:hover:bg-zinc-800 transition-colors"
                   :disabled="isFavoriteMutating(b.id)"
                   :aria-label="b.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'"
                   @click.stop.prevent="onToggleFavorite(b)"
