@@ -2,27 +2,49 @@
   <section class="h-full flex flex-col bg-card text-card-foreground">
     <!-- 헤더 -->
     <header class="sticky top-0 z-10 bg-card border-b border-border">
-      <div class="relative flex items-center justify-between px-4 py-3">
-        <h2 class="text-[15px] font-semibold">새 북마크 추가</h2>
-
+      <!-- 1행 (좌: 닫기 / 우: 액션)-->
+      <div class="flex items-center justify-between px-4 py-2">
+        <!-- 좌: 닫기 -->
         <button
           type="button"
           :disabled="isSaving"
-          class="absolute right-2 top-2 p-2 rounded-md hover:bg-accent"
+          class="p-2 rounded-md transition-colors duration-150"
+          :class="
+            isSaving
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60'
+          "
           aria-label="패널 닫기"
           @click="$emit('close')"
         >
-          ✕
+          <CloseIcon class="size-5 text-muted-foreground" />
         </button>
+
+        <!-- 우: 액션(저장) -->
+        <div class="flex items-center gap-1">
+          <button
+            type="button"
+            :disabled="isSaving || !canSave"
+            @click="handleSubmit"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm bg-neutral-900 text-white transition-colors duration-150 hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <SaveIcon class="size-5" />
+            <span class="ml-1">저장</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2행 (제목 + 설명 문구) -->
+      <div class="px-5 pb-3">
+        <h2 class="text-[15px] font-semibold">새 북마크 추가</h2>
+        <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+          저장하고 싶은 링크의 정보를 입력해주세요.
+        </p>
       </div>
     </header>
 
     <!-- 본문 -->
     <div class="flex-1 overflow-auto px-5 py-4 space-y-6">
-      <p class="text-sm text-neutral-500 dark:text-neutral-400 pb-4">
-        저장하고 싶은 링크의 정보를 입력해주세요.
-      </p>
-
       <!-- 제목 -->
       <div class="space-y-2">
         <!-- 이모지 -->
@@ -91,11 +113,11 @@
         <input
           :id="urlId"
           ref="urlRef"
-          v-model.trim="form!.url"
+          v-model="form.url"
           type="url"
           class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
           placeholder="https://example.com"
-          :aria-invalid="!isUrlValid"
+          :aria-invalid="form.url ? !isUrlValid : false"
         />
 
         <!-- 커버 이미지 토글 -->
@@ -159,29 +181,6 @@
         />
       </div>
     </div>
-
-    <footer
-      class="sticky bottom-0 z-10 flex justify-end gap-2 border-t border-border bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/70 px-4 py-3"
-    >
-      <button
-        type="button"
-        :disabled="isSaving"
-        class="inline-flex items-center h-9 gap-1.5 px-3 rounded-md hover:bg-accent text-sm"
-        @click="handleClose"
-      >
-        <CloseIcon class="size-6" />
-        <span>취소</span>
-      </button>
-      <button
-        type="button"
-        class="inline-flex items-center h-9 gap-1.5 px-3 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-        :disabled="!canSave"
-        @click="handleSubmit"
-      >
-        <SaveIcon class="size-6" />
-        <span>저장</span>
-      </button>
-    </footer>
   </section>
 </template>
 
@@ -197,7 +196,6 @@ import "vue3-emoji-picker/css";
 import TagInput from "./TagInput.vue";
 
 const props = defineProps<{
-  open: boolean;
   collectionId: ID | null;
 }>();
 
@@ -272,10 +270,6 @@ function resetForm() {
     tags: [],
   };
   emojiPickerOpen.value = false;
-}
-function handleClose() {
-  resetForm();
-  emit("close");
 }
 function handleSubmit() {
   if (isSaving.value) return;

@@ -35,7 +35,7 @@ interface WorkspaceState {
 function setLoading(
   target: Record<LoadKey, boolean>,
   key: LoadKey,
-  isLoading: boolean
+  isLoading: boolean,
 ) {
   target[key] = isLoading;
 }
@@ -43,14 +43,14 @@ function fail<K extends string>(
   target: ErrorMap<K>,
   key: K,
   e: unknown,
-  fallbackMsg: string
+  fallbackMsg: string,
 ) {
   target[key] = e instanceof Error && e.message ? e.message : fallbackMsg;
 }
 function setMutating(
   target: Record<MutateKey, boolean>,
   key: MutateKey,
-  v: boolean
+  v: boolean,
 ) {
   target[key] = v;
 }
@@ -97,6 +97,20 @@ export const useWorkspaceStore = defineStore("workspace", {
     collectionById(state): Record<ID, CollectionNode> {
       const map = {} as Record<ID, CollectionNode>;
       for (const node of state.collectionNodes) map[node.id] = node;
+      return map;
+    },
+    collectionInfoById(
+      state,
+    ): Record<ID, { name: string; emoji: string | null; parentId: ID | null }> {
+      const map = {} as Record<
+        ID,
+        { name: string; emoji: string | null; parentId: ID | null }
+      >;
+
+      for (const n of state.collectionNodes) {
+        map[n.id] = { name: n.name, emoji: n.emoji, parentId: n.parentId };
+      }
+
       return map;
     },
     childrenByParent(state): Record<string, ID[]> {
@@ -176,13 +190,13 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.collectionNodes = this.collectionNodes.map((n) =>
         n.id === collectionId
           ? { ...n, bookmarkCount: Math.max(0, (n.bookmarkCount ?? 0) + cnt) }
-          : n
+          : n,
       );
     },
     setBookmarkCount(collectionId: ID, count: number) {
       if (!this.collectionNodes.length) return;
       this.collectionNodes = this.collectionNodes.map((n) =>
-        n.id === collectionId ? { ...n, bookmarkCount: Math.max(0, count) } : n
+        n.id === collectionId ? { ...n, bookmarkCount: Math.max(0, count) } : n,
       );
     },
 
@@ -202,7 +216,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "createCollection",
           e,
-          "컬렉션 생성에 실패했습니다."
+          "컬렉션 생성에 실패했습니다.",
         );
         throw e;
       } finally {
@@ -221,7 +235,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "updateCollection",
           e,
-          "컬렉션 수정에 실패했습니다."
+          "컬렉션 수정에 실패했습니다.",
         );
         throw e;
       } finally {
@@ -240,7 +254,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "updateCollectionEmoji",
           e,
-          "컬렉션 이모지 수정에 실패했습니다."
+          "컬렉션 이모지 수정에 실패했습니다.",
         );
         throw e;
       } finally {
@@ -266,7 +280,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "deleteCollection",
           e,
-          "컬렉션 삭제에 실패했습니다."
+          "컬렉션 삭제에 실패했습니다.",
         );
         throw e;
       } finally {
@@ -277,7 +291,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     async moveCollection(
       id: ID,
       targetParentId: ID | null,
-      opts?: { refreshTree?: boolean }
+      opts?: { refreshTree?: boolean },
     ) {
       const refreshTree = opts?.refreshTree ?? true;
 
@@ -294,7 +308,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "moveCollection",
           e,
-          "컬렉션 이동에 실패했습니다."
+          "컬렉션 이동에 실패했습니다.",
         );
         throw e;
       } finally {
@@ -305,7 +319,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     async reorderCollection(
       id: ID,
       targetIndex: number,
-      opts?: { refreshTree?: boolean }
+      opts?: { refreshTree?: boolean },
     ) {
       const refreshTree = opts?.refreshTree ?? true;
 
@@ -322,7 +336,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "reorderCollection",
           e,
-          "컬렉션 정렬에 실패했습니다."
+          "컬렉션 정렬에 실패했습니다.",
         );
         throw e;
       } finally {
@@ -393,7 +407,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     // 로컬 트리 반영
     applyDropResultLocal(result: DropResult): () => void {
       const prevNodes = JSON.parse(
-        JSON.stringify(this.collectionNodes)
+        JSON.stringify(this.collectionNodes),
       ) as CollectionNode[];
 
       const rollback = () => {
@@ -472,7 +486,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.error,
           "collectionTree",
           e,
-          "컬렉션 트리를 불러오지 못했습니다."
+          "컬렉션 트리를 불러오지 못했습니다.",
         );
         throw e;
       } finally {
@@ -495,7 +509,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "createBookmark",
           e,
-          "북마크 생성에 실패했습니다."
+          "북마크 생성에 실패했습니다.",
         );
         throw e;
       } finally {
@@ -514,7 +528,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "updateBookmark",
           e,
-          "북마크 수정에 실패했습니다."
+          "북마크 수정에 실패했습니다.",
         );
         throw e;
       } finally {
@@ -535,7 +549,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "deleteBookmark",
           e,
-          "북마크 삭제에 실패했습니다."
+          "북마크 삭제에 실패했습니다.",
         );
         throw e;
       } finally {
@@ -589,7 +603,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "moveBookmark",
           e,
-          "북마크 이동에 실패했습니다."
+          "북마크 이동에 실패했습니다.",
         );
         throw e;
       } finally {
@@ -621,7 +635,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.mutateError,
           "toggleBookmarkFavorite",
           e,
-          "즐겨찾기 변경에 실패했습니다."
+          "즐겨찾기 변경에 실패했습니다.",
         );
         throw e;
       } finally {

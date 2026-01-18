@@ -7,11 +7,17 @@
         <!-- 좌: 닫기 -->
         <button
           type="button"
-          class="p-2 rounded-md hover:bg-accent"
+          :disabled="isBookmarkMutating"
+          class="p-2 rounded-md transition-colors duration-150"
+          :class="
+            isBookmarkMutating
+              ? 'opacity-50 cursor-not-allowed'
+              : 'hover:bg-zinc-200/70 dark:hover:bg-zinc-700/60'
+          "
           aria-label="패널 닫기"
           @click="$emit('close')"
         >
-          ✕
+          <CloseIcon class="size-5 text-muted-foreground" />
         </button>
 
         <!-- 우: 액션(보기/편집) -->
@@ -22,16 +28,16 @@
               type="button"
               :disabled="isBookmarkMutating"
               @click="handleEdit"
-              class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm disabled:opacity-50"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-muted-foreground transition-colors duration-150 hover:bg-black/10 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <EditIcon class="size-5" />
-              <span class="ml-1">수정</span>
+              <span>수정</span>
             </button>
 
             <button
               type="button"
               :disabled="isBookmarkMutating || isFavoriteMutating"
-              class="p-2 rounded-md hover:bg-accent disabled:opacity-50"
+              class="p-2 rounded-md text-muted-foreground transition-colors duration-150 hover:bg-black/10 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="즐겨찾기"
               @click="onToggleFavorite"
             >
@@ -53,20 +59,20 @@
               type="button"
               :disabled="isBookmarkMutating"
               @click="handleCancel"
-              class="inline-flex items-center px-2.5 py-1.5 rounded-md hover:bg-accent text-sm disabled:opacity-50"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm text-muted-foreground transition-colors duration-150 hover:bg-black/10 hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CloseIcon class="size-5" />
-              <span class="ml-1">취소</span>
+              <span>취소</span>
             </button>
 
             <button
               type="button"
               :disabled="isBookmarkMutating || !canSave"
               @click="handleSave"
-              class="inline-flex items-center px-3 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm bg-neutral-900 text-white transition-colors duration-150 hover:bg-black/80 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <SaveIcon class="size-5" />
-              <span class="ml-1">저장</span>
+              <span>저장</span>
             </button>
           </template>
         </div>
@@ -76,9 +82,13 @@
       <div class="px-5 pb-3">
         <p
           v-if="collectionName"
-          class="ml-1 text-[13px] leading-5 font-muted-foreground truncate mb-2"
+          class="ml-1 mb-2 flex items-center gap-1.5 truncate text-[13px] leading-5 text-muted-foreground"
         >
-          {{ collectionName }}
+          <span v-if="collectionEmoji" class="shrink-0 text-sm leading-none">
+            {{ collectionEmoji }}
+          </span>
+          <FolderIcon v-else class="shrink-0 size-3.5 opacity-60" />
+          <span class="truncate">{{ collectionName }}</span>
         </p>
 
         <div class="flex items-end justify-between gap-3">
@@ -95,7 +105,7 @@
                     ? 'hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer'
                     : 'cursor-default',
                 ]"
-                @click="onEmojiStateClick"
+                @click="onEmojiTriggerClick"
                 :aria-label="
                   currentBookmark.emoji ? '이모지 변경' : '이모지 상태'
                 "
@@ -111,6 +121,13 @@
                   class="text-lg leading-none opacity-20"
                   >+</span
                 >
+                <span
+                  v-else
+                  class="text-xl leading-none text-zinc-400/60 dark:text-zinc-500/60 select-none"
+                  aria-hidden="true"
+                >
+                  •
+                </span>
               </button>
 
               <!-- EmojiPicker popover -->
@@ -120,6 +137,15 @@
                 class="absolute left-0 top-full mt-2 z-50"
               >
                 <EmojiPicker :native="true" @select="onEmojiSelected" />
+
+                <button
+                  v-if="isEditing && editedBookmark?.emoji"
+                  type="button"
+                  class="mt-2 w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-red-600 shadow-[0_10px_30px_rgba(0,0,0,0.20)] hover:bg-red-50 transition-colors dark:text-red-400 dark:hover:bg-red-950/30"
+                  @click="removeEmoji"
+                >
+                  이모지 제거
+                </button>
               </div>
             </div>
 
@@ -156,27 +182,6 @@
           >
             {{ updatedAtText }}
           </p>
-        </div>
-
-        <!-- (편집 모드) 이모지 추가/제거 버튼-->
-        <div v-if="isEditing" class="mt-2 flex items-center gap-2">
-          <button
-            v-if="!currentBookmark.emoji"
-            type="button"
-            class="rounded-md px-2 py-1 text-xs leading-none text-muted-foreground/70 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-foreground transition-colors"
-            @click="toggleEmojiPicker"
-          >
-            이모지 추가
-          </button>
-
-          <button
-            v-else
-            type="button"
-            class="rounded-md px-2 py-1 text-xs leading-none text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-            @click="removeEmoji"
-          >
-            이모지 제거
-          </button>
         </div>
       </div>
     </header>
@@ -299,6 +304,7 @@
             ref="urlRef"
             v-model="editedBookmark!.url"
             type="url"
+            :aria-invalid="editedBookmark!.url ? !isUrlValid : false"
             class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
             placeholder="https://example.com"
           />
@@ -478,6 +484,7 @@ import TagInput from "./TagInput.vue";
 const props = defineProps<{
   bookmark: Bookmark;
   collectionName?: string;
+  collectionEmoji?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -648,9 +655,8 @@ function toggleEmojiPicker() {
   if (!isEditing.value) return;
   emojiPickerOpen.value = !emojiPickerOpen.value;
 }
-function onEmojiStateClick() {
+function onEmojiTriggerClick() {
   if (!isEditing.value) return;
-  if (!currentBookmark.value.emoji) return;
   toggleEmojiPicker();
 }
 function onEmojiSelected(emoji: any) {
