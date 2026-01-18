@@ -202,11 +202,27 @@
                       </div>
 
                       <div
-                        class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2"
+                        class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2 min-w-0"
                       >
-                        <span class="truncate">{{ domain(b.url) }}</span>
-                        <span aria-hidden="true">·</span>
-                        <time :datetime="b.updatedAt || ''">
+                        <!-- 컬렉션 (이모지 + 이름) -->
+                        <span
+                          class="shrink-0 inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                        >
+                          <span aria-hidden="true">{{
+                            collectionEmoji(b)
+                          }}</span>
+                          <span class="truncate">{{ collectionName(b) }}</span>
+                        </span>
+                        <span aria-hidden="true" class="shrink-0">·</span>
+
+                        <!-- 도메인 -->
+                        <span class="min-w-0 truncate">{{
+                          domain(b.url)
+                        }}</span>
+                        <span aria-hidden="true" class="shrink-0">·</span>
+
+                        <!-- 수정일 -->
+                        <time class="shrink-0" :datetime="b.updatedAt || ''">
                           {{ formatDate(b.updatedAt) }}
                         </time>
                       </div>
@@ -233,7 +249,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import type { Bookmark, ID } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
@@ -266,7 +282,7 @@ const isEmpty = computed(
   () =>
     !isLoadingBookmarks.value &&
     !hasError.value &&
-    favoriteBookmarks.value.length === 0
+    favoriteBookmarks.value.length === 0,
 );
 
 function onRetry() {
@@ -312,6 +328,18 @@ function visibleTags(b: Bookmark, visible = 3) {
   return b.tags?.slice(0, visible) ?? [];
 }
 
+function collectionLabel(b: Bookmark): string {
+  return `${collectionEmoji(b)} ${collectionName(b)}`;
+}
+
+function collectionEmoji(b: Bookmark): string {
+  return workspace.collectionInfoById[b.collectionId]?.emoji ?? "📁";
+}
+
+function collectionName(b: Bookmark): string {
+  return workspace.collectionInfoById[b.collectionId]?.name.trim() ?? "로딩…";
+}
+
 function domain(url: string) {
   try {
     return new URL(url).host.replace(/^www\./, "");
@@ -346,6 +374,11 @@ function isAutoPending(b: Bookmark): boolean {
 function onSelect(b: Bookmark) {
   emit("select-bookmark", b.id);
 }
+
+onMounted(() => {
+  if (!workspace.collectionNodes.length)
+    workspace.fetchCollectionTree().catch(() => {});
+});
 </script>
 
 <style scoped>

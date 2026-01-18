@@ -179,6 +179,18 @@
                 class="mt-auto px-4 pb-3 pt-2 flex items-center justify-between gap-2 text-xs text-neutral-500"
               >
                 <div class="min-w-0 flex-1 flex flex-col gap-0.5">
+                  <!-- 컬렉션 (이모지 + 이름) -->
+                  <span
+                    class="flex items-center gap-1 text-[11px] text-muted-foreground"
+                    :title="collectionLabel(b)"
+                  >
+                    <span aria-hidden="true">{{ collectionEmoji(b) }}</span>
+                    <span class="truncate" :title="collectionLabel(b)">{{
+                      collectionName(b)
+                    }}</span>
+                  </span>
+
+                  <!-- 도메인 / 날짜 -->
                   <span class="truncate">{{ domain(b.url) }}</span>
                   <time :datetime="b.updatedAt || ''">
                     {{ formatDate(b.updatedAt) }}
@@ -220,7 +232,6 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useToastStore } from "@/stores/toast";
-import PlusIcon from "@/components/icons/PlusIcon.vue";
 
 const props = defineProps<{
   selectedBookmarkId?: ID | null;
@@ -245,7 +256,7 @@ const isEmpty = computed(
   () =>
     !isLoadingBookmarks.value &&
     !hasError.value &&
-    favoriteBookmarks.value.length === 0
+    favoriteBookmarks.value.length === 0,
 );
 
 function onRetry() {
@@ -289,6 +300,18 @@ function extraTagCount(b: Bookmark, visible = 3) {
 
 function visibleTags(b: Bookmark, visible = 3) {
   return b.tags?.slice(0, visible) ?? [];
+}
+
+function collectionLabel(b: Bookmark): string {
+  return `${collectionEmoji(b)} ${collectionName(b)}`;
+}
+
+function collectionEmoji(b: Bookmark): string {
+  return workspace.collectionInfoById[b.collectionId]?.emoji ?? "📁";
+}
+
+function collectionName(b: Bookmark): string {
+  return workspace.collectionInfoById[b.collectionId]?.name.trim() ?? "로딩…";
 }
 
 function domain(url: string) {
