@@ -1,8 +1,10 @@
 package com.linknest.backend.auth.web;
 
 import com.linknest.backend.auth.token.TokenService;
+import com.linknest.backend.auth.web.dto.TokenRefreshRes;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
+import com.linknest.backend.common.response.ApiResponse;
 import com.linknest.backend.common.utils.CookieUtils;
 import com.linknest.backend.config.props.JwtProperties;
 import com.linknest.backend.userpreferences.UserPreferencesService;
@@ -34,7 +36,7 @@ public class TokenController {
     private static final String RT_COOKIE = "refresh_token";
 
     @PostMapping("/refresh")
-    public ResponseEntity refresh(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<TokenRefreshRes>> refresh(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = CookieUtils.getCookieValue(request, RT_COOKIE)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN));
 
@@ -57,17 +59,17 @@ public class TokenController {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         // AT -> JSON
-        Map<String, Object> body = Map.of(
-                "accessToken", newAt,
-                "tokenType", "Bearer",
-                "expiresIn", jwtProperties.getAccessExpMinutes() * 60
+        TokenRefreshRes body = new TokenRefreshRes(
+                newAt,
+                "Bearer",
+                jwtProperties.getAccessExpMinutes() * 60
         );
 
-        return ResponseEntity.ok(body);
+        return ResponseEntity.ok(ApiResponse.ok("액세스 토큰 재발급", body));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
         // 쿠키에서 RT 추출
         String refreshToken = CookieUtils.getCookieValue(request, RT_COOKIE).orElse(null);
         if(refreshToken != null) {
@@ -78,11 +80,11 @@ public class TokenController {
         ResponseCookie delCookie = CookieUtils.deleteCookie(RT_COOKIE);
         response.addHeader(HttpHeaders.SET_COOKIE, delCookie.toString());
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.ok("로그아웃 완료"));
     }
 
     @DeleteMapping("/sessions")
-    public ResponseEntity<Void> logoutFromAllDevices(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<Void>> logoutFromAllDevices(@AuthenticationPrincipal(expression = "id") Long userId,
                                                      HttpServletResponse response) {
         tokenService.revokeAllTokens(userId);
 
@@ -90,6 +92,6 @@ public class TokenController {
         ResponseCookie delCookie = CookieUtils.deleteCookie(RT_COOKIE);
         response.addHeader(HttpHeaders.SET_COOKIE, delCookie.toString());
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.ok("모든 세션 로그아웃 완료"));
     }
 }
