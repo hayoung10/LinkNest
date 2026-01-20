@@ -3,6 +3,7 @@ import axios, {
   type AxiosInstance,
   type InternalAxiosRequestConfig,
   type AxiosRequestConfig,
+  AxiosResponse,
 } from "axios";
 import type { ApiSuccess, ApiError } from "@/types/common";
 import { useAuthStore } from "@/stores/auth";
@@ -58,15 +59,14 @@ http.interceptors.response.use(
       }
     }
     throw error;
-  }
+  },
 );
 
 export default http;
 
-// // 성공 응답에서 data만 추출
-// export async function unwrap<T>(
-//   p: Promise<{ data: ApiSuccess<T> }>
-// ): Promise<T> {
-//   const { data } = await p;
-//   return data.data;
-// }
+export async function unwrap<T>(
+  p: Promise<AxiosResponse<ApiSuccess<T>>>,
+): Promise<T> {
+  const res = await p;
+  return res.data.data;
+}

@@ -1,10 +1,10 @@
-import http from "./http";
+import http, { unwrap } from "./http";
 import {
   UserPreferences,
   BookmarkSortOption,
   LayoutOption,
 } from "@/types/common";
-import { UserPreferencesRes } from "./types";
+import type { UserPreferencesRes } from "./types";
 import { mapUserPreferences } from "./mappers";
 
 export interface UserPreferencesUpdateReq {
@@ -16,17 +16,18 @@ export interface UserPreferencesUpdateReq {
 
 /** 조회 */
 export async function getUserPreferences(): Promise<UserPreferences> {
-  const { data } = await http.get<UserPreferencesRes>(`/users/me/preferences`);
+  const data = await unwrap<UserPreferencesRes>(
+    http.get(`/users/me/preferences`),
+  );
   return mapUserPreferences(data);
 }
 
 /** 수정 */
 export async function updateUserPreferences(
-  payload: UserPreferencesUpdateReq
+  payload: UserPreferencesUpdateReq,
 ): Promise<UserPreferences> {
-  const { data } = await http.patch<UserPreferencesRes>(
-    `/users/me/preferences`,
-    payload
+  const data = await unwrap<UserPreferencesRes>(
+    http.patch(`/users/me/preferences`, payload),
   );
   return mapUserPreferences(data);
 }

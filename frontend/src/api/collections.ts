@@ -1,6 +1,6 @@
-import http from "@/api/http";
+import http, { unwrap } from "@/api/http";
 import type { Collection, CollectionNode, ID } from "@/types/common";
-import {
+import type {
   CollectionNodeRes,
   CollectionPathRes,
   CollectionPositionRes,
@@ -32,26 +32,25 @@ export interface CollectionEmojiUpdateReq {
 
 /** 생성 */
 export async function createCollection(
-  payload: CollectionCreateReq
+  payload: CollectionCreateReq,
 ): Promise<Collection> {
-  const { data } = await http.post<CollectionRes>(`/collections`, payload);
+  const data = await unwrap<CollectionRes>(http.post(`/collections`, payload));
   return mapCollectionRes(data);
 }
 
 /** 단건 조회 */
 export async function getCollection(id: ID): Promise<Collection> {
-  const { data } = await http.get<CollectionRes>(`/collections/${id}`);
+  const data = await unwrap<CollectionRes>(http.get(`/collections/${id}`));
   return mapCollectionRes(data);
 }
 
 /** 수정 */
 export async function updateCollection(
   id: ID,
-  payload: CollectionUpdateReq
+  payload: CollectionUpdateReq,
 ): Promise<Collection> {
-  const { data } = await http.patch<CollectionRes>(
-    `/collections/${id}`,
-    payload
+  const data = await unwrap<CollectionRes>(
+    http.patch(`/collections/${id}`, payload),
   );
 
   // 북마크(children)는 호출부에서 기존 상태 유지
@@ -61,29 +60,27 @@ export async function updateCollection(
 /** 이모지 수정 */
 export async function updateCollectionEmoji(
   id: ID,
-  payload: CollectionEmojiUpdateReq
+  payload: CollectionEmojiUpdateReq,
 ): Promise<Collection> {
-  const { data } = await http.patch<CollectionRes>(
-    `/collections/${id}/emoji`,
-    payload
+  const data = await unwrap<CollectionRes>(
+    http.patch(`/collections/${id}/emoji`, payload),
   );
 
   return mapCollectionRes(data);
 }
 
-/** 삭제 (204 No Content) */
+/** 삭제 */
 export async function deleteCollection(id: ID): Promise<void> {
-  await http.delete(`/collections/${id}`);
+  await unwrap<void>(http.delete(`/collections/${id}`));
 }
 
 /** 이동 */
 export async function moveCollection(
   id: ID,
-  payload: CollectionMoveReq
+  payload: CollectionMoveReq,
 ): Promise<CollectionPositionRes> {
-  const { data } = await http.patch<CollectionPositionRes>(
-    `/collections/${id}/move`,
-    payload
+  const data = await unwrap<CollectionPositionRes>(
+    http.patch(`/collections/${id}/move`, payload),
   );
   return data;
 }
@@ -91,25 +88,24 @@ export async function moveCollection(
 /** 정렬 변경 */
 export async function reorderCollection(
   id: ID,
-  payload: CollectionReorderReq
+  payload: CollectionReorderReq,
 ): Promise<CollectionPositionRes> {
-  const { data } = await http.patch<CollectionPositionRes>(
-    `/collections/${id}/reorder`,
-    payload
+  const data = await unwrap<CollectionPositionRes>(
+    http.patch(`/collections/${id}/reorder`, payload),
   );
   return data;
 }
 
 /** 트리 조회 */
 export async function listTree(): Promise<CollectionNode[]> {
-  const { data } = await http.get<CollectionNodeRes[]>(`/collections/tree`);
+  const data = await unwrap<CollectionNodeRes[]>(http.get(`/collections/tree`));
   return mapCollectionNodeResList(data);
 }
 
 /** 경로 조회 */
 export async function getPath(id: ID): Promise<CollectionPathRes[]> {
-  const { data } = await http.get<CollectionPathRes[]>(
-    `/collections/${id}/path`
+  const data = await unwrap<CollectionPathRes[]>(
+    http.get(`/collections/${id}/path`),
   );
   return data;
 }
