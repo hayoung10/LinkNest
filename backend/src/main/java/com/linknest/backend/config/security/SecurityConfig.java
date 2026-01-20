@@ -54,7 +54,10 @@ public class SecurityConfig {
                         .requestMatchers("/files/**").permitAll()
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
                         .requestMatchers("/api/v1/auth/logout", "/api/v1/auth/sessions").authenticated()
-                        .requestMatchers("/api/v1/users/**", "/api/v1/bookmarks/**", "/api/v1/collections/**").authenticated()
+                        .requestMatchers("/api/v1/users/**",
+                                "/api/v1/bookmarks/**",
+                                "/api/v1/collections/**",
+                                "/api/v1/tags/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth

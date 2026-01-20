@@ -7,7 +7,6 @@ public enum ErrorCode {
     // 공통
     INVALID_INPUT_VALUE(HttpStatus.BAD_REQUEST, "잘못된 입력입니다."),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "허용되지 않은 메서드입니다."),
-    RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "리소스를 찾을 수 없습니다."),
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),
@@ -30,10 +29,14 @@ public enum ErrorCode {
     COLLECTION_PARENT_SELF(HttpStatus.BAD_REQUEST, "컬렉션을 자기 자신으로 이동할 수 없습니다."),
     COLLECTION_CYCLE_DETECTED(HttpStatus.BAD_REQUEST, "컬렉션 이동으로 인해 순환 구조가 발생합니다."),
 
+    // tag
+    TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "태그를 찾을 수 없습니다."),
+    TAG_NAME_DUPLICATED(HttpStatus.CONFLICT, "이미 사용 중인 태그 이름입니다."),
+    TAG_IN_USE(HttpStatus.BAD_REQUEST, "사용 중인 태그는 삭제할 수 없습니다."),
+
     // refresh token
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다."),
     EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 만료되었습니다."),
-    REUSED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 재사용되었습니다."),
     MISMATCH_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "리프레시 토큰이 일치하지 않습니다.");
 
 
