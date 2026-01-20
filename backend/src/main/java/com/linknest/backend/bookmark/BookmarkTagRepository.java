@@ -3,6 +3,7 @@ package com.linknest.backend.bookmark;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -11,30 +12,30 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             "from BookmarkTag bt " +
             "   join bt.bookmark b " +
             "where b.user.id = :userId and bt.tag.id = :tagId")
-    long countDistinctBookmarksByUserIdAndTagId(Long userId, Long tagId);
+    long countDistinctBookmarksByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
 
     @Query("select b.id " +
             "from BookmarkTag bt " +
             "   join bt.bookmark b " +
             "where b.user.id = :userId and bt.tag.id = :tagId")
-    List<Long> findAllBookmarkIdsByUserIdAndTagId(Long userId, Long tagId);
+    List<Long> findAllBookmarkIdsByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
 
     @Query("select case when count(bt) > 0 then true else false end " +
             "from BookmarkTag bt " +
-            "   join bt.Bookmark b " +
-            "where b.user.id = :userId and bt.tag.id = :id")
-    boolean existsByUserIdAndTagId(Long userId, Long id);
+            "   join bt.bookmark b " +
+            "where b.user.id = :userId and bt.tag.id = :tagId")
+    boolean existsByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
 
-    boolean existsByBookmarkIdAndTagId(Long bookmarkId, Long tagId);
+    boolean existsByBookmark_IdAndTag_Id(Long bookmarkId, Long tagId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from BookmarkTag bt " +
             "where bt.bookmark.id = :bookmarkId and bt.tag.id = :tagId")
-    void deleteByBookmarkIdAndTagId(Long bookmarkId, Long tagId);
+    void deleteByBookmarkIdAndTagId(@Param("bookmarkId") Long bookmarkId, @Param("tagId") Long tagId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update BookmarkTag bt " +
             "set bt.tag.id = :toTagId " +
             "where bt.bookmark.id = :bookmarkId and bt.tag.id = :fromTagId")
-    int replaceTagOnBookmark(Long bookmarkId, Long fromTagId, Long toTagId);
+    int replaceTagOnBookmark(@Param("bookmarkId") Long bookmarkId, @Param("fromTagId") Long fromTagId, @Param("toTagId") Long toTagId);
 }

@@ -80,7 +80,7 @@ public class TagService {
 
         for(Long bookmarkId : bookmarkIds) {
             // 이미 targetId로 설정되어 있는 경우
-            if(bookmarkTagRepository.existsByBookmarkIdAndTagId(bookmarkId, targetTagId)) {
+            if(bookmarkTagRepository.existsByBookmark_IdAndTag_Id(bookmarkId, targetTagId)) {
                 bookmarkTagRepository.deleteByBookmarkIdAndTagId(bookmarkId, id);
                 continue;
             }
