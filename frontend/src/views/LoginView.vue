@@ -21,7 +21,7 @@ import { useRouter } from "vue-router";
 const auth = useAuthStore();
 const router = useRouter();
 
-type Provider = "google" | "kakao" | "naver";
+type Provider = "google" | "kakao";
 
 // 새로고침 시 세션 복원 -> 이미 로그인 상태면 대시보드로 우회
 onMounted(async () => {

@@ -158,8 +158,6 @@ const providerLabel = computed(() => {
       return "Google";
     case "KAKAO":
       return "카카오";
-    case "NAVER":
-      return "네이버";
     default:
       return "이메일";
   }
@@ -190,7 +188,7 @@ const onToggleKeepSignedIn = async () => {
     await auth.refresh(); // RT 쿠키 갱신
 
     toast.success(
-      next ? "로그인 상태 유지를 켰습니다." : "로그인 상태 유지를 껐습니다."
+      next ? "로그인 상태 유지를 켰습니다." : "로그인 상태 유지를 껐습니다.",
     );
   } catch (e) {
     console.error("로그인 상태 유지 설정 변경 실패:", e);
@@ -206,7 +204,7 @@ const onLogoutAllDevices = async () => {
 
   const ok = window.confirm(
     "정말 모든 기기에서 로그아웃하시겠어요?\n" +
-      "현재 브라우저를 포함해 모든 세션이 해제됩니다."
+      "현재 브라우저를 포함해 모든 세션이 해제됩니다.",
   );
   if (!ok) return;
 
@@ -235,7 +233,7 @@ const onDeleteAccount = async () => {
 
   const ok = window.confirm(
     "정말 계정을 삭제하시겠어요?\n" +
-      "모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다."
+      "모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.",
   );
   if (!ok) return;
 
