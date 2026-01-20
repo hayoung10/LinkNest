@@ -1,6 +1,7 @@
 package com.linknest.backend.bookmark;
 
 import com.linknest.backend.bookmark.dto.*;
+import com.linknest.backend.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -23,90 +24,90 @@ public class BookmarkController {
     private final BookmarkService service;
 
     @PostMapping
-    public ResponseEntity<BookmarkRes> create(@AuthenticationPrincipal(expression = "id") Long userId,
-                                              @RequestBody @Valid BookmarkCreateReq req) {
-        BookmarkRes res = service.create(userId, req);
+    public ResponseEntity<ApiResponse<BookmarkRes>> create(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                          @RequestBody @Valid BookmarkCreateReq req) {
+        BookmarkRes data = service.create(userId, req);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(res.id())
+                .buildAndExpand(data.id())
                 .toUri();
 
-        return ResponseEntity.created(location).body(res);
+        return ResponseEntity.created(location).body(ApiResponse.ok("북마크 생성", data));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookmarkRes> get(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<BookmarkRes>> get(@AuthenticationPrincipal(expression = "id") Long userId,
                                            @PathVariable @Min(1) Long id) {
-        BookmarkRes res = service.get(userId, id);
-        return ResponseEntity.ok(res);
+        BookmarkRes data = service.get(userId, id);
+        return ResponseEntity.ok(ApiResponse.ok("북마크 조회", data));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<BookmarkRes> update(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<BookmarkRes>> update(@AuthenticationPrincipal(expression = "id") Long userId,
                                               @PathVariable @Min(1) Long id,
                               @RequestBody @Valid BookmarkUpdateReq req) {
-        BookmarkRes res = service.update(userId, id, req);
-        return ResponseEntity.ok(res);
+        BookmarkRes data = service.update(userId, id, req);
+        return ResponseEntity.ok(ApiResponse.ok("북마크 수정", data));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal(expression = "id") Long userId,
                                        @PathVariable @Min(1) Long id) {
         service.delete(userId, id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.ok("북마크 삭제 완료"));
     }
 
     @GetMapping
-    public ResponseEntity<List<BookmarkRes>> listBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<List<BookmarkRes>>> listBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
                                                            @RequestParam @Min(1) Long collectionId) {
-        List<BookmarkRes> res = service.listByCollection(userId, collectionId);
-        return ResponseEntity.ok(res);
+        List<BookmarkRes> data = service.listByCollection(userId, collectionId);
+        return ResponseEntity.ok(ApiResponse.ok("북마크 목록 조회", data));
     }
 
     @PatchMapping("/{id}/move")
-    public ResponseEntity<Void> move(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<Void>> move(@AuthenticationPrincipal(expression = "id") Long userId,
                                      @PathVariable @Min(1) Long id,
                                      @RequestBody @Valid BookmarkMoveReq req) {
         service.move(userId, id, req.targetCollectionId());
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.ok("북마크 이동 완료"));
     }
 
     @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BookmarkRes> uploadCover(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<BookmarkRes>> uploadCover(@AuthenticationPrincipal(expression = "id") Long userId,
                                                    @PathVariable @Min(1) Long id,
                                                    @RequestPart("file") MultipartFile coverImage) {
-        BookmarkRes res = service.uploadCover(userId, id, coverImage);
-        return ResponseEntity.ok(res);
+        BookmarkRes data = service.uploadCover(userId, id, coverImage);
+        return ResponseEntity.ok(ApiResponse.ok("북마크 커버 업로드", data));
     }
 
     @DeleteMapping("/{id}/cover")
-    public ResponseEntity<BookmarkRes> removeCover(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<BookmarkRes>> removeCover(@AuthenticationPrincipal(expression = "id") Long userId,
                                                    @PathVariable @Min(1) Long id) {
-        BookmarkRes res = service.removeCover(userId, id);
-        return ResponseEntity.ok(res);
+        BookmarkRes data = service.removeCover(userId, id);
+        return ResponseEntity.ok(ApiResponse.ok("북마크 커버 삭제", data));
     }
 
     @PatchMapping("/{id}/image-mode")
-    public ResponseEntity<BookmarkRes> updateImageMode(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<BookmarkRes>> updateImageMode(@AuthenticationPrincipal(expression = "id") Long userId,
                                                        @PathVariable @Min(1) Long id,
                                                        @RequestBody @Valid BookmarkImageModeUpdateReq req) {
-        BookmarkRes res = service.updateImageMode(userId, id, req.imageMode());
-        return ResponseEntity.ok(res);
+        BookmarkRes data = service.updateImageMode(userId, id, req.imageMode());
+        return ResponseEntity.ok(ApiResponse.ok("북마크 이미지 모드 변경", data));
     }
 
     @PatchMapping("/{id}/favorite")
-    public ResponseEntity<BookmarkRes> updateFavorite(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<BookmarkRes>> updateFavorite(@AuthenticationPrincipal(expression = "id") Long userId,
                                                       @PathVariable @Min(1) Long id,
                                                       @RequestBody @Valid BookmarkFavoriteUpdateReq req) {
-        BookmarkRes res = service.updateFavorite(userId, id, req.isFavorite());
-        return ResponseEntity.ok(res);
+        BookmarkRes data = service.updateFavorite(userId, id, req.isFavorite());
+        return ResponseEntity.ok(ApiResponse.ok("즐겨찾기 변경", data));
     }
 
     @GetMapping("/favorites")
-    public ResponseEntity<List<BookmarkRes>> listFavorites(@AuthenticationPrincipal(expression = "id") Long userId) {
-        List<BookmarkRes> res = service.listByFavorites(userId);
-        return ResponseEntity.ok(res);
+    public ResponseEntity<ApiResponse<List<BookmarkRes>>> listFavorites(@AuthenticationPrincipal(expression = "id") Long userId) {
+        List<BookmarkRes> data = service.listByFavorites(userId);
+        return ResponseEntity.ok(ApiResponse.ok("즐겨찾기 목록 조회", data));
     }
 }

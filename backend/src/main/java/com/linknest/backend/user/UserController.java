@@ -1,5 +1,6 @@
 package com.linknest.backend.user;
 
+import com.linknest.backend.common.response.ApiResponse;
 import com.linknest.backend.common.utils.CookieUtils;
 import com.linknest.backend.user.dto.UserRes;
 import com.linknest.backend.user.dto.UserUpdateReq;
@@ -23,33 +24,33 @@ public class UserController {
     private final UserService service;
 
     @GetMapping
-    public ResponseEntity<UserRes> me(@AuthenticationPrincipal(expression = "id") Long userId) {
-        UserRes res = service.get(userId);
-        return ResponseEntity.ok(res);
+    public ResponseEntity<ApiResponse<UserRes>> me(@AuthenticationPrincipal(expression = "id") Long userId) {
+        UserRes data = service.get(userId);
+        return ResponseEntity.ok(ApiResponse.ok("내 정보 조회", data));
     }
 
     @PatchMapping
-    public ResponseEntity<UserRes> update(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<UserRes>> update(@AuthenticationPrincipal(expression = "id") Long userId,
                                           @RequestBody @Valid UserUpdateReq req) {
-        UserRes res = service.update(userId, req);
-        return ResponseEntity.ok(res);
+        UserRes data = service.update(userId, req);
+        return ResponseEntity.ok(ApiResponse.ok("내 정보 수정", data));
     }
 
     @PatchMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<UserRes> updateProfileImage(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<UserRes>> updateProfileImage(@AuthenticationPrincipal(expression = "id") Long userId,
                                                       @RequestPart("file") MultipartFile profileImage) {
-        UserRes res = service.updateProfileImage(userId, profileImage);
-        return ResponseEntity.ok(res);
+        UserRes data = service.updateProfileImage(userId, profileImage);
+        return ResponseEntity.ok(ApiResponse.ok("프로필 이미지 수정", data));
     }
 
     @DeleteMapping(value = "/profile-image")
-    public ResponseEntity<UserRes> deleteProfileImage(@AuthenticationPrincipal(expression = "id") Long userId) {
-        UserRes res = service.deleteProfileImage(userId);
-        return ResponseEntity.ok(res);
+    public ResponseEntity<ApiResponse<UserRes>> deleteProfileImage(@AuthenticationPrincipal(expression = "id") Long userId) {
+        UserRes data = service.deleteProfileImage(userId);
+        return ResponseEntity.ok(ApiResponse.ok("프로필 이미지 삭제", data));
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> delete(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal(expression = "id") Long userId,
                                        HttpServletResponse response) {
         service.delete(userId);
 
@@ -57,6 +58,6 @@ public class UserController {
         ResponseCookie delCookie = CookieUtils.deleteCookie("refresh_token");
         response.addHeader(HttpHeaders.SET_COOKIE, delCookie.toString());
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.ok("회원 탈퇴 완료"));
     }
 }

@@ -57,9 +57,4 @@ public class Collection {
     @LastModifiedDate
     @Column(nullable = false)
     private Instant updatedAt;
-
-    public void addBookmark(Bookmark b) {
-        bookmarks.add(b);
-        b.setCollection(this);
-    }
 }

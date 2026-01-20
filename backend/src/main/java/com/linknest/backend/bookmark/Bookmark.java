@@ -70,10 +70,6 @@ public class Bookmark {
     @Column(nullable = false)
     private Instant updatedAt;
 
-    public void moveTo(Collection target) {
-        this.collection = target;
-    }
-
     public enum ImageMode {
         AUTO, CUSTOM, NONE
     }

@@ -36,7 +36,6 @@ public class BookmarkService {
     private final CollectionRepository collectionRepository;
     private final UserRepository userRepository;
     private final TagRepository tagRepository;
-    private final BookmarkTagRepository bookmarkTagRepository;
     private final UserPreferencesService userPreferencesService;
     private final BookmarkPreviewService previewService;
 

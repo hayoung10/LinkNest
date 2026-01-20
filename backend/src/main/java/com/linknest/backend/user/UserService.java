@@ -6,7 +6,6 @@ import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.storage.Storage;
 import com.linknest.backend.user.dto.UserRes;
 import com.linknest.backend.user.dto.UserUpdateReq;
-import com.linknest.backend.userpreferences.UserPreferencesRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +20,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper mapper;
     private final Storage storage;
-    private final UserPreferencesRepository userPreferencesRepository;
     private final TokenService tokenService;
 
     public UserRes get(Long id) {
