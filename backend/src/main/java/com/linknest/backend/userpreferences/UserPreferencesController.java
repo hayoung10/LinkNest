@@ -1,5 +1,6 @@
 package com.linknest.backend.userpreferences;
 
+import com.linknest.backend.common.response.ApiResponse;
 import com.linknest.backend.userpreferences.dto.UserPreferencesRes;
 import com.linknest.backend.userpreferences.dto.UserPreferencesUpdateReq;
 import lombok.RequiredArgsConstructor;
@@ -16,15 +17,15 @@ public class UserPreferencesController {
     private final UserPreferencesService service;
 
     @GetMapping
-    public ResponseEntity<UserPreferencesRes> get(@AuthenticationPrincipal(expression = "id") Long userId) {
-        UserPreferencesRes res = service.get(userId);
-        return ResponseEntity.ok(res);
+    public ResponseEntity<ApiResponse<UserPreferencesRes>> get(@AuthenticationPrincipal(expression = "id") Long userId) {
+        UserPreferencesRes data = service.get(userId);
+        return ResponseEntity.ok(ApiResponse.ok("환경설정 조회", data));
     }
 
     @PatchMapping
-    public ResponseEntity<UserPreferencesRes> update(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<UserPreferencesRes>> update(@AuthenticationPrincipal(expression = "id") Long userId,
                                                      @RequestBody UserPreferencesUpdateReq req) {
-        UserPreferencesRes res = service.update(userId, req);
-        return ResponseEntity.ok(res);
+        UserPreferencesRes data = service.update(userId, req);
+        return ResponseEntity.ok(ApiResponse.ok("환경설정 수정", data));
     }
 }
