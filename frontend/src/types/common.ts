@@ -4,7 +4,7 @@ export type ID = number;
 // API 성공/실패 응답 규약
 export type ApiSuccess<T> = {
   status: number;
-  code: "OK";
+  code: string;
   message: string;
   data: T;
 };
@@ -18,7 +18,7 @@ export type ApiError = {
 };
 
 export type Role = "ROLE_USER" | "ROLE_ADMIN";
-export type Provider = "GOOGLE" | "KAKAO" | "NAVER";
+export type Provider = "GOOGLE" | "KAKAO";
 
 export interface User {
   id: ID;
@@ -87,4 +87,10 @@ export interface UserPreferences {
   defaultLayout: LayoutOption;
   openInNewTab: boolean;
   keepSignedIn: boolean;
+}
+
+export interface Tag {
+  id: ID;
+  name: string;
+  bookmarkCount: number;
 }

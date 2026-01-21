@@ -81,3 +81,9 @@ export interface UserPreferencesRes {
   openInNewTab: boolean;
   keepSignedIn: boolean;
 }
+
+export interface TagRes {
+  id: ID;
+  name: string;
+  bookmarkCount: number;
+}

@@ -213,8 +213,6 @@ const providerLabel = computed(() => {
       return "Google";
     case "KAKAO":
       return "카카오";
-    case "NAVER":
-      return "네이버";
     default:
       return "이메일";
   }
@@ -233,7 +231,7 @@ watch(
       editableName.value = newName ?? "";
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // 이름 변경 여부

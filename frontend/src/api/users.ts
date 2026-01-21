@@ -1,6 +1,6 @@
-import http from "./http";
+import http, { unwrap } from "./http";
 import type { User } from "@/types/common";
-import { UserRes } from "./types";
+import type { UserRes } from "./types";
 import { mapUserRes } from "./mappers";
 
 export interface UserUpdateReq {
@@ -9,13 +9,13 @@ export interface UserUpdateReq {
 
 /** 조회 */
 export async function getMe(): Promise<User> {
-  const { data } = await http.get<UserRes>(`/users/me`);
+  const data = await unwrap<UserRes>(http.get(`/users/me`));
   return mapUserRes(data);
 }
 
 /** 이름 수정 */
 export async function updateUser(payload: UserUpdateReq): Promise<User> {
-  const { data } = await http.patch<UserRes>(`/users/me`, payload);
+  const data = await unwrap<UserRes>(http.patch(`/users/me`, payload));
   return mapUserRes(data);
 }
 
@@ -24,9 +24,8 @@ export async function updateProfileImage(file: File): Promise<User> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const { data } = await http.patch<UserRes>(
-    `/users/me/profile-image`,
-    formData
+  const data = await unwrap<UserRes>(
+    http.patch(`/users/me/profile-image`, formData),
   );
 
   return mapUserRes(data);
@@ -34,11 +33,11 @@ export async function updateProfileImage(file: File): Promise<User> {
 
 /** 프로필 이미지 삭제 */
 export async function deleteProfileImage(): Promise<User> {
-  const { data } = await http.delete(`/users/me/profile-image`);
+  const data = await unwrap<UserRes>(http.delete(`/users/me/profile-image`));
   return mapUserRes(data);
 }
 
-/** 계정 삭제 (204 No Content) */
+/** 계정 삭제 */
 export async function deleteAccount(): Promise<void> {
-  await http.delete(`/users/me`);
+  await unwrap<void>(http.delete(`/users/me`));
 }

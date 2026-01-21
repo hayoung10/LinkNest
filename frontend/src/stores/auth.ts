@@ -1,9 +1,15 @@
 import { defineStore } from "pinia";
-import http from "@/api/http";
+import http, { unwrap } from "@/api/http";
 import type { User } from "@/types/common";
 import * as UserApi from "@/api/users";
 
-type OAuthProvider = "google" | "kakao" | "naver";
+type OAuthProvider = "google" | "kakao";
+
+type TokenRefreshRes = {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+};
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -30,7 +36,7 @@ export const useAuthStore = defineStore("auth", {
 
     /** 소셜 OAuth 시작 */
     startOAuth(provider: OAuthProvider) {
-      const apiBase = import.meta.env.VITE_APP_BASE_URL;
+      const backendBaseUrl = import.meta.env.VITE_APP_BASE_URL as string;
 
       const nonce = crypto.getRandomValues(new Uint32Array(2)).join("-");
       const redirect = sessionStorage.getItem("oauth:redirect") || "/workspace";
@@ -38,8 +44,8 @@ export const useAuthStore = defineStore("auth", {
 
       const state = base64url(JSON.stringify({ n: nonce, r: redirect }));
 
-      window.location.href = `${apiBase}/oauth2/authorization/${provider}?state=${encodeURIComponent(
-        state
+      window.location.href = `${backendBaseUrl}/oauth2/authorization/${provider}?state=${encodeURIComponent(
+        state,
       )}`;
     },
 
@@ -51,9 +57,7 @@ export const useAuthStore = defineStore("auth", {
 
       // 새 refresh 요청 시작
       this._refreshPromise = (async () => {
-        const { data } = await http.post<{ accessToken: string }>(
-          "/auth/refresh"
-        );
+        const data = await unwrap<TokenRefreshRes>(http.post("/auth/refresh"));
         this.setAccessToken(data.accessToken);
       })().finally(() => {
         this._refreshPromise = null;
@@ -65,7 +69,7 @@ export const useAuthStore = defineStore("auth", {
     /** 로그아웃 */
     async logout() {
       try {
-        await http.post("/auth/logout");
+        await unwrap<void>(http.post("/auth/logout"));
       } catch (e) {
         console.warn("logout request failed:", e);
       } finally {
@@ -76,7 +80,7 @@ export const useAuthStore = defineStore("auth", {
     /** 모든 기기에서 로그아웃 */
     async logoutAllSessions() {
       try {
-        await http.delete("/auth/sessions");
+        await unwrap<void>(http.delete("/auth/sessions"));
       } catch (e) {
         console.warn("logout all sessions request failed:", e);
       } finally {
