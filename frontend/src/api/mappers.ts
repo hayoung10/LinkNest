@@ -2,6 +2,7 @@ import {
   Bookmark,
   Collection,
   CollectionNode,
+  Tag,
   User,
   UserPreferences,
 } from "@/types/common";
@@ -9,6 +10,7 @@ import {
   BookmarkRes,
   CollectionNodeRes,
   CollectionRes,
+  TagRes,
   UserPreferencesRes,
   UserRes,
 } from "./types";
@@ -78,7 +80,7 @@ export function mapCollectionNodeRes(dto: CollectionNodeRes): CollectionNode {
 }
 
 export function mapCollectionNodeResList(
-  list: CollectionNodeRes[] | null | undefined
+  list: CollectionNodeRes[] | null | undefined,
 ): CollectionNode[] {
   if (!list?.length) return [];
   return list.map(mapCollectionNodeRes);
@@ -96,5 +98,13 @@ export function mapUserPreferences(dto: UserPreferencesRes): UserPreferences {
     defaultLayout: layout === "CARD" || layout === "LIST" ? layout : "LIST",
     openInNewTab: dto.openInNewTab,
     keepSignedIn: dto.keepSignedIn,
+  };
+}
+
+export function mapTagRes(dto: TagRes): Tag {
+  return {
+    id: dto.id,
+    name: dto.name,
+    bookmarkCount: dto.bookmarkCount,
   };
 }
