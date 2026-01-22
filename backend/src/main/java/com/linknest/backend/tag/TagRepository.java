@@ -13,7 +13,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TagRepository extends JpaRepository<Tag, Long> {
-    List<Tag> findByUserIdAndNameIn(Long userId, Collection<String> names);
+    Optional<Tag> findByIdAndUserId(Long id, Long userId);
+
+    List<Tag> findByUserIdAndNameKeyIn(Long userId, Collection<String> nameKeys);
+
+    Optional<Tag> findByUserIdAndNameKey(Long userId, String nameKey);
 
     @Query(value = "select t.id from tags t " +
             "left join bookmark_tags bt on bt.tag_id = t.id " +
@@ -80,11 +84,4 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "group by t.id, t.name " +
             "order by count(distinct b.id) asc, t.name asc")
     Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountAsc(Long userId, String q, Pageable pageable);
-
-    @Query("select t.id " +
-            "from BookmarkTag bt " +
-            "   join bt.tag t " +
-            "   join bt.bookmark b " +
-            "where b.user.id = :userId and lower(t.name) = lower(:name)")
-    Optional<Long> findTagIdByUserIdAndName(Long userId, String name);
 }
