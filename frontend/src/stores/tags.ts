@@ -1,9 +1,10 @@
 import { defineStore } from "pinia";
 import type { ID, Tag } from "@/types/common";
-import type { GetTagsParams, PageMeta, TagSort } from "@/api/tags";
+import type { GetTagsParams, TagSort } from "@/api/tags";
+import type { PageMeta } from "@/api/common";
 import * as TagApi from "@/api/tags";
 
-type MutateKey = "rename" | "merge" | "delete";
+type MutateKey = "create" | "rename" | "merge" | "delete";
 
 interface TagsState {
   loaded: boolean;
@@ -15,6 +16,7 @@ interface TagsState {
 
   items: Tag[];
   meta: PageMeta | null;
+  totalBookmarks: number | null;
 
   isLoading: boolean;
   isMutating: Record<MutateKey, boolean>;
@@ -30,14 +32,20 @@ export const useTagsStore = defineStore("tags", {
     size: 20,
     items: [],
     meta: null,
+    totalBookmarks: null,
     isLoading: false,
     isMutating: {
+      create: false,
       rename: false,
       merge: false,
       delete: false,
     },
     error: null,
   }),
+
+  getters: {
+    totalTagsCount: (s) => s.meta?.totalElements ?? s.items.length,
+  },
 
   actions: {
     resetAll() {
@@ -48,8 +56,10 @@ export const useTagsStore = defineStore("tags", {
       this.size = 20;
       this.items = [];
       this.meta = null;
+      this.totalBookmarks = null;
       this.isLoading = false;
       this.isMutating = {
+        create: false,
         rename: false,
         merge: false,
         delete: false,
@@ -78,6 +88,12 @@ export const useTagsStore = defineStore("tags", {
       if (this.loaded && !force) return;
 
       this.error = null;
+
+      if (this.page === 0) {
+        this.items = [];
+        this.meta = null;
+      }
+
       this.isLoading = true;
       try {
         const params: GetTagsParams = {
@@ -89,7 +105,16 @@ export const useTagsStore = defineStore("tags", {
 
         const res = await TagApi.getTags(params);
 
-        this.items = res.items;
+        this.totalBookmarks = res.totalBookmarks;
+
+        if (this.page === 0) {
+          this.items = res.items;
+        } else {
+          const existingIds = new Set(this.items.map((t) => t.id));
+          const toAppend = res.items.filter((t) => !existingIds.has(t.id));
+          this.items = [...this.items, ...toAppend];
+        }
+
         this.meta = res.meta;
         this.loaded = true;
       } catch (e) {
@@ -102,6 +127,21 @@ export const useTagsStore = defineStore("tags", {
 
     async reload() {
       await this.load(true);
+    },
+
+    async create(payload: TagApi.TagCreateReq) {
+      this.error = null;
+      this.isMutating.create = true;
+      try {
+        await TagApi.createTag(payload);
+
+        await this.reload();
+      } catch (e) {
+        this.error = e;
+        throw e;
+      } finally {
+        this.isMutating.create = false;
+      }
     },
 
     async rename(id: ID, payload: TagApi.TagUpdateReq) {

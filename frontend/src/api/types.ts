@@ -6,6 +6,7 @@ import type {
   Provider,
   Role,
 } from "@/types/common";
+import type { PageMeta } from "./common";
 
 /** === 백엔드 응답 DTO (Res) === */
 export interface UserRes {
@@ -85,5 +86,13 @@ export interface UserPreferencesRes {
 export interface TagRes {
   id: ID;
   name: string;
+  createdAt: string;
+  updatedAt: string;
   bookmarkCount: number;
+}
+
+export interface TagsRes {
+  items: TagRes[];
+  meta: PageMeta;
+  totalBookmarks: number;
 }

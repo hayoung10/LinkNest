@@ -1,6 +1,7 @@
 import http, { unwrap } from "@/api/http";
 import type { ID, Tag } from "@/types/common";
-import type { TagRes } from "./types";
+import type { TagRes, TagsRes } from "./types";
+import type { PageMeta } from "./common";
 import { mapTagRes } from "./mappers";
 
 export type TagSort =
@@ -11,6 +12,10 @@ export type TagSort =
   | "COUNT_DESC"
   | "COUNT_ASC";
 
+export interface TagCreateReq {
+  name: string;
+}
+
 export interface TagUpdateReq {
   name: string;
 }
@@ -19,18 +24,6 @@ export interface TagMergeReq {
   targetTagId: ID;
 }
 
-export type PageMeta = {
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-};
-
-export type PageResponse<T> = {
-  items: T[];
-  meta: PageMeta;
-};
-
 export interface GetTagsParams {
   q?: string;
   sort?: TagSort;
@@ -38,17 +31,22 @@ export interface GetTagsParams {
   size?: number;
 }
 
+/** 생성 */
+export async function createTag(payload: TagCreateReq): Promise<Tag> {
+  const data = await unwrap<TagRes>(http.post(`/tags`, payload));
+  return mapTagRes(data);
+}
+
 /** 태그 목록 조회 */
 export async function getTags(
   params: GetTagsParams = {},
-): Promise<PageResponse<Tag>> {
-  const data = await unwrap<PageResponse<TagRes>>(
-    http.get(`/tags`, { params }),
-  );
+): Promise<{ items: Tag[]; meta: PageMeta; totalBookmarks: number }> {
+  const data = await unwrap<TagsRes>(http.get(`/tags`, { params }));
 
   return {
     items: data.items.map(mapTagRes),
     meta: data.meta,
+    totalBookmarks: data.totalBookmarks,
   };
 }
 
