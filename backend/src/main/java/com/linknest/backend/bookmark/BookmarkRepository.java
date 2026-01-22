@@ -34,4 +34,6 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "order by " + "" +
             "   case when b.title is null or b.title = '' then 1 else 0 end, b.title asc, b.createdAt desc")
     List<Bookmark> findAllFavoritesSortedByTitle(@Param("userId") Long userId);
+
+    long countByUserId(Long userId);
 }

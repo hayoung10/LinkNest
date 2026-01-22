@@ -1,14 +1,12 @@
 package com.linknest.backend.tag;
 
+import com.linknest.backend.bookmark.BookmarkRepository;
 import com.linknest.backend.bookmark.BookmarkTagRepository;
 import com.linknest.backend.common.dto.PageResponse;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.tag.domain.TagSort;
-import com.linknest.backend.tag.dto.TagCreateReq;
-import com.linknest.backend.tag.dto.TagMergeReq;
-import com.linknest.backend.tag.dto.TagUpdateReq;
-import com.linknest.backend.tag.dto.TagRes;
+import com.linknest.backend.tag.dto.*;
 import com.linknest.backend.user.User;
 import com.linknest.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +28,7 @@ public class TagService {
 
     private final TagRepository tagRepository;
     private final BookmarkTagRepository bookmarkTagRepository;
+    private final BookmarkRepository bookmarkRepository;
     private final UserRepository userRepository;
     private final TagMapper tagMapper;
 
@@ -71,7 +70,7 @@ public class TagService {
         return tagMapper.toResWithCount(saved, 0L);
     }
 
-    public PageResponse<TagRes> getTags(Long userId, String q, TagSort sort, int page, int size) {
+    public TagsRes getTags(Long userId, String q, TagSort sort, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
 
         Page<TagRes> result = switch(sort) {
@@ -83,13 +82,9 @@ public class TagService {
             case COUNT_ASC -> tagRepository.findAllByUserIdAndNameLikeOrderByBookmarkCountAsc(userId, q, pageable);
         };
 
-        return PageResponse.of(
-                result.getContent(),
-                result.getNumber(),
-                result.getSize(),
-                result.getTotalElements(),
-                result.getTotalPages()
-        );
+        long totalBookmarks = bookmarkRepository.countByUserId(userId);
+
+        return TagsRes.of(result, totalBookmarks);
     }
 
     @Transactional

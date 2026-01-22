@@ -20,68 +20,68 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     Optional<Tag> findByUserIdAndNameKey(Long userId, String nameKey);
 
     @Query(value = "select t.id from tags t " +
-            "left join bookmark_tags bt on bt.tag_id = t.id " +
-            "where bt.tag_id is null and t.created_at < :cutoff " +
+            "where t.created_at < :cutoff " +
+            "and not exists (select 1 from bookmark_tags bt where bt.tag_id = t.id) " +
             "limit :batchSize", nativeQuery = true)
     List<Long> findOrphanTagIds(@Param("cutoff") Instant cutoff, @Param("batchSize") int batchSize);
 
-    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, count(distinct b.id)) " +
-            "from BookmarkTag bt " +
-            "   join bt.tag t " +
-            "   join bt.bookmark b " +
-            "where b.user.id = :userId " +
+    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
+            "from Tag t " +
+            "   left join t.bookmarkTags bt " +
+            "   left join bt.bookmark b " +
+            "where t.user.id = :userId " +
             "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
-            "group by t.id, t.name, t.createdAt " +
+            "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.createdAt desc")
     Page<TagRes> findAllByUserIdAndNameLikeOrderByCreatedAtDesc(Long userId, String q, Pageable pageable);
 
-    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, count(distinct b.id)) " +
-            "from BookmarkTag bt " +
-            "   join bt.tag t " +
-            "   join bt.bookmark b " +
-            "where b.user.id = :userId " +
+    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
+            "from Tag t " +
+            "   left join t.bookmarkTags bt " +
+            "   left join bt.bookmark b " +
+            "where t.user.id = :userId " +
             "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
-            "group by t.id, t.name, t.createdAt " +
+            "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.createdAt asc")
     Page<TagRes> findAllByUserIdAndNameLikeOrderByCreatedAtAsc(Long userId, String q, Pageable pageable);
 
-    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, count(distinct b.id)) " +
-            "from BookmarkTag bt " +
-            "   join bt.tag t " +
-            "   join bt.bookmark b " +
-            "where b.user.id = :userId " +
+    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
+            "from Tag t " +
+            "   left join t.bookmarkTags bt " +
+            "   left join bt.bookmark b " +
+            "where t.user.id = :userId " +
             "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
-            "group by t.id, t.name " +
+            "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.name asc")
     Page<TagRes> findAllByUserIdAndNameLikeOrderByNameAsc(Long userId, String q, Pageable pageable);
 
-    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, count(distinct b.id)) " +
-            "from BookmarkTag bt " +
-            "   join bt.tag t " +
-            "   join bt.bookmark b " +
-            "where b.user.id = :userId " +
+    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
+            "from Tag t " +
+            "   left join t.bookmarkTags bt " +
+            "   left join bt.bookmark b " +
+            "where t.user.id = :userId " +
             "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
-            "group by t.id, t.name " +
+            "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.name desc")
     Page<TagRes> findAllByUserIdAndNameLikeOrderByNameDesc(Long userId, String q, Pageable pageable);
 
-    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, count(distinct b.id)) " +
-            "from BookmarkTag bt " +
-            "   join bt.tag t " +
-            "   join bt.bookmark b " +
-            "where b.user.id = :userId " +
+    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
+            "from Tag t " +
+            "   left join t.bookmarkTags bt " +
+            "   left join bt.bookmark b " +
+            "where t.user.id = :userId " +
             "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
-            "group by t.id, t.name " +
+            "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by count(distinct b.id) desc, t.name asc")
     Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(Long userId, String q, Pageable pageable);
 
-    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, count(distinct b.id)) " +
-            "from BookmarkTag bt " +
-            "   join bt.tag t " +
-            "   join bt.bookmark b " +
-            "where b.user.id = :userId " +
+    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
+            "from Tag t " +
+            "   left join t.bookmarkTags bt " +
+            "   left join bt.bookmark b " +
+            "where t.user.id = :userId " +
             "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
-            "group by t.id, t.name " +
+            "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by count(distinct b.id) asc, t.name asc")
     Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountAsc(Long userId, String q, Pageable pageable);
 }

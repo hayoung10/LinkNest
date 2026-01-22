@@ -3,10 +3,7 @@ package com.linknest.backend.tag;
 import com.linknest.backend.common.dto.PageResponse;
 import com.linknest.backend.common.response.ApiResponse;
 import com.linknest.backend.tag.domain.TagSort;
-import com.linknest.backend.tag.dto.TagCreateReq;
-import com.linknest.backend.tag.dto.TagMergeReq;
-import com.linknest.backend.tag.dto.TagUpdateReq;
-import com.linknest.backend.tag.dto.TagRes;
+import com.linknest.backend.tag.dto.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -40,12 +37,12 @@ public class TagController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<TagRes>>> getTags(@AuthenticationPrincipal(expression = "id") Long userId,
-                                                                     @RequestParam(required = false) String q,
-                                                                     @RequestParam(defaultValue = "NAME_ASC") TagSort sort,
-                                                                     @RequestParam(defaultValue = "0") int page,
-                                                                     @RequestParam(defaultValue = "20") int size) {
-        PageResponse<TagRes> data = service.getTags(userId, q, sort, page, size);
+    public ResponseEntity<ApiResponse<TagsRes>> getTags(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                        @RequestParam(required = false) String q,
+                                                        @RequestParam(defaultValue = "NAME_ASC") TagSort sort,
+                                                        @RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "20") int size) {
+        TagsRes data = service.getTags(userId, q, sort, page, size);
         return ResponseEntity.ok(ApiResponse.ok("태그 목록 조회", data));
     }
 
