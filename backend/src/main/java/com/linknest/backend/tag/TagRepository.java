@@ -30,58 +30,58 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   left join t.bookmarkTags bt " +
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
-            "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
+            "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.createdAt desc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByCreatedAtDesc(Long userId, String q, Pageable pageable);
+    Page<TagRes> findAllByUserIdAndNameLikeOrderByCreatedAtDesc(Long userId, String pattern, Pageable pageable);
 
     @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
             "from Tag t " +
             "   left join t.bookmarkTags bt " +
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
-            "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
+            "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.createdAt asc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByCreatedAtAsc(Long userId, String q, Pageable pageable);
+    Page<TagRes> findAllByUserIdAndNameLikeOrderByCreatedAtAsc(Long userId, String pattern, Pageable pageable);
 
     @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
             "from Tag t " +
             "   left join t.bookmarkTags bt " +
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
-            "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
+            "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.name asc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByNameAsc(Long userId, String q, Pageable pageable);
+    Page<TagRes> findAllByUserIdAndNameLikeOrderByNameAsc(Long userId, String pattern, Pageable pageable);
 
     @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
             "from Tag t " +
             "   left join t.bookmarkTags bt " +
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
-            "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
+            "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.name desc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByNameDesc(Long userId, String q, Pageable pageable);
+    Page<TagRes> findAllByUserIdAndNameLikeOrderByNameDesc(Long userId, String pattern, Pageable pageable);
 
     @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
             "from Tag t " +
             "   left join t.bookmarkTags bt " +
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
-            "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
+            "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by count(distinct b.id) desc, t.name asc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(Long userId, String q, Pageable pageable);
+    Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(Long userId, String pattern, Pageable pageable);
 
     @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
             "from Tag t " +
             "   left join t.bookmarkTags bt " +
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
-            "   and (:q is null or :q = '' or lower(t.name) like lower(concat('%', :q, '%'))) " +
+            "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by count(distinct b.id) asc, t.name asc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountAsc(Long userId, String q, Pageable pageable);
+    Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountAsc(Long userId, String pattern, Pageable pageable);
 }

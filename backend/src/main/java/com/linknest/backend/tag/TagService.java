@@ -2,12 +2,10 @@ package com.linknest.backend.tag;
 
 import com.linknest.backend.bookmark.BookmarkRepository;
 import com.linknest.backend.bookmark.BookmarkTagRepository;
-import com.linknest.backend.common.dto.PageResponse;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.tag.domain.TagSort;
 import com.linknest.backend.tag.dto.*;
-import com.linknest.backend.user.User;
 import com.linknest.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,22 +30,6 @@ public class TagService {
     private final UserRepository userRepository;
     private final TagMapper tagMapper;
 
-    public String normalizeName(String tagName) {
-        if(tagName == null) throw new BusinessException(ErrorCode.TAG_NAME_INVALID);
-
-        // 공백 제거
-        String name = tagName.trim().replaceAll("\\s+", "");
-
-        if(name.isBlank()) throw new BusinessException(ErrorCode.TAG_NAME_INVALID);
-        if(name.length() > 50) throw new BusinessException(ErrorCode.TAG_NAME_TOO_LONG);
-
-        return name;
-    }
-
-    public String toNameKey(String tagName) {
-        return normalizeName(tagName).toLowerCase(Locale.ROOT);
-    }
-
     @Transactional
     public TagRes create(Long userId, TagCreateReq req) {
         String displayName = normalizeName(req.name());
@@ -71,15 +53,19 @@ public class TagService {
     }
 
     public TagsRes getTags(Long userId, String q, TagSort sort, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(Math.max(1, size), 100);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        String pattern = toLikePattern(q);
 
         Page<TagRes> result = switch(sort) {
-            case NEWEST -> tagRepository.findAllByUserIdAndNameLikeOrderByCreatedAtDesc(userId, q, pageable);
-            case OLDEST -> tagRepository.findAllByUserIdAndNameLikeOrderByCreatedAtAsc(userId, q, pageable);
-            case NAME_ASC -> tagRepository.findAllByUserIdAndNameLikeOrderByNameAsc(userId, q, pageable);
-            case NAME_DESC -> tagRepository.findAllByUserIdAndNameLikeOrderByNameDesc(userId, q, pageable);
-            case COUNT_DESC -> tagRepository.findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(userId, q, pageable);
-            case COUNT_ASC -> tagRepository.findAllByUserIdAndNameLikeOrderByBookmarkCountAsc(userId, q, pageable);
+            case NEWEST -> tagRepository.findAllByUserIdAndNameLikeOrderByCreatedAtDesc(userId, pattern, pageable);
+            case OLDEST -> tagRepository.findAllByUserIdAndNameLikeOrderByCreatedAtAsc(userId, pattern, pageable);
+            case NAME_ASC -> tagRepository.findAllByUserIdAndNameLikeOrderByNameAsc(userId, pattern, pageable);
+            case NAME_DESC -> tagRepository.findAllByUserIdAndNameLikeOrderByNameDesc(userId, pattern, pageable);
+            case COUNT_DESC -> tagRepository.findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(userId, pattern, pageable);
+            case COUNT_ASC -> tagRepository.findAllByUserIdAndNameLikeOrderByBookmarkCountAsc(userId, pattern, pageable);
         };
 
         long totalBookmarks = bookmarkRepository.countByUserId(userId);
@@ -193,6 +179,36 @@ public class TagService {
         LinkedHashSet<Tag> result = new LinkedHashSet<>();
         for(String k : keys) result.add(byKey.get(k));
         return result;
+    }
+
+    private String normalizeName(String tagName) {
+        if(tagName == null) throw new BusinessException(ErrorCode.TAG_NAME_INVALID);
+
+        // 공백 제거
+        String name = tagName.trim().replaceAll("\\s+", "");
+
+        if(name.isBlank()) throw new BusinessException(ErrorCode.TAG_NAME_INVALID);
+        if(name.length() > 50) throw new BusinessException(ErrorCode.TAG_NAME_TOO_LONG);
+
+        return name;
+    }
+
+    private String toNameKey(String tagName) {
+        return normalizeName(tagName).toLowerCase(Locale.ROOT);
+    }
+
+    private String toLikePattern(String q) {
+        if(q == null) return null;
+
+        String s = q.trim();
+        if(s.isBlank()) return null;
+
+        s = s.toLowerCase(Locale.ROOT)
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+
+        return "%" + s + "%";
     }
 
     private Tag requireOwnedTag(Long userId, Long id) {
