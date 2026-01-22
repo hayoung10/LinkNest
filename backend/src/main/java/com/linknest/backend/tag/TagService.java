@@ -5,6 +5,7 @@ import com.linknest.backend.common.dto.PageResponse;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.tag.domain.TagSort;
+import com.linknest.backend.tag.dto.TagCreateReq;
 import com.linknest.backend.tag.dto.TagMergeReq;
 import com.linknest.backend.tag.dto.TagUpdateReq;
 import com.linknest.backend.tag.dto.TagRes;
@@ -46,6 +47,28 @@ public class TagService {
 
     public String toNameKey(String tagName) {
         return normalizeName(tagName).toLowerCase(Locale.ROOT);
+    }
+
+    @Transactional
+    public TagRes create(Long userId, TagCreateReq req) {
+        String displayName = normalizeName(req.name());
+        String nameKey = toNameKey(displayName);
+
+        // 중복 체크
+        tagRepository.findByUserIdAndNameKey(userId, nameKey)
+                .ifPresent(existingTag -> {
+                    throw new BusinessException(ErrorCode.TAG_NAME_DUPLICATED);
+                });
+
+        // Tag 생성
+        Tag tag = Tag.builder()
+                .user(userRepository.getReferenceById(userId))
+                .name(displayName)
+                .nameKey(nameKey)
+                .build();
+
+        Tag saved = tagRepository.save(tag);
+        return tagMapper.toResWithCount(saved, 0L);
     }
 
     public PageResponse<TagRes> getTags(Long userId, String q, TagSort sort, int page, int size) {

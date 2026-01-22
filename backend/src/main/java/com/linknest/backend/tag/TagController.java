@@ -3,6 +3,7 @@ package com.linknest.backend.tag;
 import com.linknest.backend.common.dto.PageResponse;
 import com.linknest.backend.common.response.ApiResponse;
 import com.linknest.backend.tag.domain.TagSort;
+import com.linknest.backend.tag.dto.TagCreateReq;
 import com.linknest.backend.tag.dto.TagMergeReq;
 import com.linknest.backend.tag.dto.TagUpdateReq;
 import com.linknest.backend.tag.dto.TagRes;
@@ -12,6 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
 
 import static com.linknest.backend.common.constants.AppConstants.API_PREFIX;
 
@@ -20,6 +24,20 @@ import static com.linknest.backend.common.constants.AppConstants.API_PREFIX;
 @RequestMapping(API_PREFIX + "/tags")
 public class TagController {
     private final TagService service;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<TagRes>> create(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                      @RequestBody @Valid TagCreateReq req) {
+        TagRes data = service.create(userId, req);
+
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(data.id())
+                .toUri();
+
+        return ResponseEntity.created(location).body(ApiResponse.ok("태그 생성 완료", data));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<TagRes>>> getTags(@AuthenticationPrincipal(expression = "id") Long userId,
