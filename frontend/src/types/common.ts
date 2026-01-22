@@ -92,5 +92,7 @@ export interface UserPreferences {
 export interface Tag {
   id: ID;
   name: string;
+  createdAt: string;
+  updatedAt: string;
   bookmarkCount: number;
 }

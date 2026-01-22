@@ -105,6 +105,8 @@ export function mapTagRes(dto: TagRes): Tag {
   return {
     id: dto.id,
     name: dto.name,
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
     bookmarkCount: dto.bookmarkCount,
   };
 }
