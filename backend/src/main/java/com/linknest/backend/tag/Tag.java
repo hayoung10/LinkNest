@@ -15,8 +15,11 @@ import java.util.Set;
 
 @Entity
 @Table(name = "tags",
-        uniqueConstraints = @UniqueConstraint(name = "uk_tags_user_name", columnNames = {"user_id", "name"}),
-        indexes = @Index(name = "idx_tags_user", columnList = "user_id")
+        uniqueConstraints = @UniqueConstraint(name = "uk_tags_user_name_key", columnNames = {"user_id", "name_key"}),
+        indexes = {
+                @Index(name = "idx_tags_user", columnList = "user_id"),
+                @Index(name = "idx_tags_user_name_key", columnList = "user_id, name_key")
+        }
 )
 @EntityListeners(AuditingEntityListener.class)
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -26,6 +29,9 @@ public class Tag {
 
     @Column(nullable = false, length = 50)
     private String name;
+
+    @Column(name = "name_key", nullable = false, length = 50)
+    private String nameKey;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)

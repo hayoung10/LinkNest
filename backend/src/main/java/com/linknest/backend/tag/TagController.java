@@ -3,15 +3,16 @@ package com.linknest.backend.tag;
 import com.linknest.backend.common.dto.PageResponse;
 import com.linknest.backend.common.response.ApiResponse;
 import com.linknest.backend.tag.domain.TagSort;
-import com.linknest.backend.tag.dto.TagMergeReq;
-import com.linknest.backend.tag.dto.TagUpdateReq;
-import com.linknest.backend.tag.dto.TagRes;
+import com.linknest.backend.tag.dto.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
 
 import static com.linknest.backend.common.constants.AppConstants.API_PREFIX;
 
@@ -21,13 +22,27 @@ import static com.linknest.backend.common.constants.AppConstants.API_PREFIX;
 public class TagController {
     private final TagService service;
 
+    @PostMapping
+    public ResponseEntity<ApiResponse<TagRes>> create(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                      @RequestBody @Valid TagCreateReq req) {
+        TagRes data = service.create(userId, req);
+
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(data.id())
+                .toUri();
+
+        return ResponseEntity.created(location).body(ApiResponse.ok("태그 생성 완료", data));
+    }
+
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<TagRes>>> getTags(@AuthenticationPrincipal(expression = "id") Long userId,
-                                                                     @RequestParam(required = false) String q,
-                                                                     @RequestParam(defaultValue = "NAME_ASC") TagSort sort,
-                                                                     @RequestParam(defaultValue = "0") int page,
-                                                                     @RequestParam(defaultValue = "20") int size) {
-        PageResponse<TagRes> data = service.getTags(userId, q, sort, page, size);
+    public ResponseEntity<ApiResponse<TagsRes>> getTags(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                        @RequestParam(required = false) String q,
+                                                        @RequestParam(defaultValue = "NAME_ASC") TagSort sort,
+                                                        @RequestParam(defaultValue = "0") int page,
+                                                        @RequestParam(defaultValue = "20") int size) {
+        TagsRes data = service.getTags(userId, q, sort, page, size);
         return ResponseEntity.ok(ApiResponse.ok("태그 목록 조회", data));
     }
 

@@ -33,6 +33,8 @@ public enum ErrorCode {
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "태그를 찾을 수 없습니다."),
     TAG_NAME_DUPLICATED(HttpStatus.CONFLICT, "이미 사용 중인 태그 이름입니다."),
     TAG_IN_USE(HttpStatus.BAD_REQUEST, "사용 중인 태그는 삭제할 수 없습니다."),
+    TAG_NAME_INVALID(HttpStatus.BAD_REQUEST, "태그 이름은 비어 있을 수 없습니다."),
+    TAG_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "태그 이름은 50자를 초과할 수 없습니다."),
 
     // refresh token
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다."),

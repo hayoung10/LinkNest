@@ -11,7 +11,7 @@ import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.storage.Storage;
 import com.linknest.backend.tag.Tag;
-import com.linknest.backend.tag.TagRepository;
+import com.linknest.backend.tag.TagService;
 import com.linknest.backend.user.UserRepository;
 import com.linknest.backend.userpreferences.UserPreferencesService;
 import com.linknest.backend.userpreferences.domain.DefaultBookmarkSort;
@@ -30,14 +30,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BookmarkService {
-    private static final int MAX_TAGS = 3;
-
     private final BookmarkRepository bookmarkRepository;
     private final CollectionRepository collectionRepository;
     private final UserRepository userRepository;
-    private final TagRepository tagRepository;
     private final UserPreferencesService userPreferencesService;
     private final BookmarkPreviewService previewService;
+    private final TagService tagService;
 
     private final BookmarkMapper mapper;
     private final Storage storage;
@@ -274,57 +272,31 @@ public class BookmarkService {
     private void updateBookmarkTags(Bookmark bookmark, List<String> tagNames) {
         if(tagNames == null) return;
 
-        Set<String> names = tagNames.stream()
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(t -> !t.isBlank())
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Long userId = bookmark.getUser().getId();
 
-        if(names.size() > MAX_TAGS) {
-            throw new BusinessException(ErrorCode.TAG_LIMIT_EXCEEDED);
-        }
+        Set<Tag> tags = tagService.getOrCreateByName(userId, tagNames);
 
-        if(names.isEmpty()) {
+        if(tags.isEmpty()) {
             bookmark.getBookmarkTags().clear();
             return;
         }
 
-        Long userId = bookmark.getUser().getId();
+        // 목표 tagId 집합
+        Set<Long> targetTagIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
 
         // 기존 태그 조회
-        Map<String, Tag> byName = tagRepository.findByUserIdAndNameIn(userId, names).stream()
-                .collect(Collectors.toMap(Tag::getName, Function.identity()));
-
-        // 없는 태그는 생성
-        List<Tag> toCreate = names.stream()
-                .filter(n -> !byName.containsKey(n))
-                .map(n -> Tag.builder()
-                        .user(bookmark.getUser())
-                        .name(n)
-                        .build())
-                .toList();
-
-        if(!toCreate.isEmpty()) {
-            tagRepository.saveAll(toCreate).forEach(t -> byName.put(t.getName(), t));
-        }
-
-        // 목표 tagId 집합
-        Set<Long> targetTagIds = names.stream()
-                .map(n -> byName.get(n).getId())
-                .collect(Collectors.toSet());
-
         Set<Long> existingTagIds = bookmark.getBookmarkTags().stream()
                 .map(bt -> bt.getTag().getId())
                 .collect(Collectors.toSet());
 
-        // 제거: 목표 집합에 없는 BookmarkTag 제거
+        // 제거: 목표 집합에 없는 관계 제거
         bookmark.getBookmarkTags().removeIf(bt -> !targetTagIds.contains(bt.getTag().getId()));
 
-        // 추가
-        for(String name: names) {
-            Tag tag = byName.get(name);
-            if(existingTagIds.contains(tag.getId())) continue;
-            bookmark.getBookmarkTags().add(BookmarkTag.create(bookmark, tag));
+        // 추가: 없는 관계만 추가
+        Map<Long, Tag> byId = tags.stream().collect(Collectors.toMap(Tag::getId, Function.identity()));
+        for(Long tagId : targetTagIds) {
+            if(existingTagIds.contains(tagId)) continue;
+            bookmark.getBookmarkTags().add(BookmarkTag.create(bookmark, byId.get(tagId)));
         }
     }
 }
