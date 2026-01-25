@@ -84,10 +84,10 @@ export const useTagsStore = defineStore("tags", {
       this.loaded = false;
     },
 
-    async load(force = false) {
+    async load(force = false, opts?: { silent?: boolean }) {
       if (this.loaded && !force) return;
 
-      this.error = null;
+      if (!opts?.silent) this.error = null;
 
       if (this.page === 0) {
         this.items = [];
@@ -118,7 +118,7 @@ export const useTagsStore = defineStore("tags", {
         this.meta = res.meta;
         this.loaded = true;
       } catch (e) {
-        this.error = e;
+        if (!opts?.silent) this.error = e;
         throw e;
       } finally {
         this.isLoading = false;
@@ -126,18 +126,23 @@ export const useTagsStore = defineStore("tags", {
     },
 
     async reload() {
-      await this.load(true);
+      await this.load(true, { silent: true });
+    },
+
+    async safeReload() {
+      try {
+        await this.load(true);
+      } catch {
+        // mutation 이후 목록 갱신 실패는 UI를 깨지 않기 위해 무시
+      }
     },
 
     async create(payload: TagApi.TagCreateReq) {
-      this.error = null;
       this.isMutating.create = true;
       try {
         await TagApi.createTag(payload);
-
-        await this.reload();
+        await this.safeReload();
       } catch (e) {
-        this.error = e;
         throw e;
       } finally {
         this.isMutating.create = false;
@@ -145,16 +150,21 @@ export const useTagsStore = defineStore("tags", {
     },
 
     async rename(id: ID, payload: TagApi.TagUpdateReq) {
-      this.error = null;
       this.isMutating.rename = true;
       try {
         const updated = await TagApi.renameTag(id, payload);
 
         const idx = this.items.findIndex((t) => t.id === id);
-        if (idx >= 0) this.items[idx] = updated;
-        else await this.reload();
+        if (idx >= 0) {
+          this.items = this.items.map((t) => (t.id === id ? updated : t));
+        } else {
+          await this.safeReload();
+        }
+
+        if (this.q.trim()) {
+          await this.safeReload();
+        }
       } catch (e) {
-        this.error = e;
         throw e;
       } finally {
         this.isMutating.rename = false;
@@ -162,13 +172,11 @@ export const useTagsStore = defineStore("tags", {
     },
 
     async merge(id: ID, payload: TagApi.TagMergeReq) {
-      this.error = null;
       this.isMutating.merge = true;
       try {
         await TagApi.mergeTag(id, payload);
-        await this.reload();
+        await this.safeReload();
       } catch (e) {
-        this.error = e;
         throw e;
       } finally {
         this.isMutating.merge = false;
@@ -176,13 +184,14 @@ export const useTagsStore = defineStore("tags", {
     },
 
     async delete(id: ID) {
-      this.error = null;
       this.isMutating.delete = true;
       try {
         await TagApi.deleteTag(id);
-        await this.reload();
+
+        this.items = this.items.filter((t) => t.id !== id);
+
+        await this.safeReload();
       } catch (e) {
-        this.error = e;
         throw e;
       } finally {
         this.isMutating.delete = false;

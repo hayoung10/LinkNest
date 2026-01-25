@@ -6,7 +6,6 @@
       class="flex items-center gap-3 w-full px-2 py-2 rounded-md hover:bg-accent transition-colors"
       :aria-expanded="menuOpen"
       aria-haspopup="menu"
-      :aria-controls="panelId"
       @click.stop="toggleMenu"
     >
       <!-- 아바타 -->
@@ -35,7 +34,7 @@
       <!-- 화살표 아이콘(^) -->
       <ChevronIcon
         :size="16"
-        direction="up"
+        :direction="menuOpen ? 'up' : 'down'"
         class="text-muted-foreground"
         aria-hidden="true"
       />
@@ -44,7 +43,7 @@
     <!-- 드롭다운 메뉴 -->
     <teleport to="#modals" v-if="menuOpen">
       <div
-        :id="panelId"
+        ref="panelEl"
         class="panel w-56"
         :style="panelStyle"
         role="menu"
@@ -70,21 +69,22 @@
           role="menuitem"
           @click="handleOpenSettings"
         >
-          <svg
-            class="menu-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path
-              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0A1.65 1.65 0 0 0 9 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0A1.65 1.65 0 0 0 20.91 11H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
-            />
-          </svg>
+          <SettingsIcon klass="menu-icon" aria-hidden="true" />
           설정
         </button>
 
-        <div class="divider" />
+        <!-- 태그 관리 -->
+        <button
+          v-if="props.showTagManagement"
+          class="menu-item"
+          role="menuitem"
+          @click="handleOpenTagManagement"
+        >
+          <TagIcon klass="menu-icon" aria-hidden="true" :strokeWidth="2" />
+          태그 관리
+        </button>
+
+        <div class="divider" v-if="props.showTagManagement" />
 
         <!-- 로그아웃 -->
         <button
@@ -97,6 +97,9 @@
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
           >
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <path d="M16 17l5-5-5-5" />
@@ -110,13 +113,28 @@
 </template>
 
 <script setup lang="ts">
-import ChevronIcon from "@/components/icons/ChevronIcon.vue";
-import { useAuthStore } from "@/stores/auth";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import type { CSSProperties } from "vue";
+import ChevronIcon from "@/components/icons/ChevronIcon.vue";
+import SettingsIcon from "@/components/icons/SettingsIcon.vue";
+import TagIcon from "@/components/icons/TagIcon.vue";
+import { useAuthStore } from "@/stores/auth";
 
-const emit = defineEmits<{ (e: "open-settings"): void; (e: "logout"): void }>();
+type Placement = "top" | "bottom";
+
+const props = withDefaults(
+  defineProps<{
+    showTagManagement?: boolean;
+  }>(),
+  { showTagManagement: true },
+);
+
+const emit = defineEmits<{
+  (e: "open-settings"): void;
+  (e: "open-tag-management"): void;
+  (e: "logout"): void;
+}>();
 
 const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
@@ -127,11 +145,12 @@ const initials = computed(() => {
 });
 
 const menuOpen = ref(false);
+
 const triggerEl = ref<HTMLElement | null>(null);
+const panelEl = ref<HTMLElement | null>(null);
 const firstItemRef = ref<HTMLElement | null>(null);
 
 const ignoreNextDocClick = ref(false);
-const panelId = "user-menu-panel";
 
 const pos = ref({ top: 0, left: 0 });
 const panelWidth = 224;
@@ -147,15 +166,20 @@ const panelStyle = computed<CSSProperties>(() => ({
 
 function updatePosition() {
   const trigger = triggerEl.value;
-  const panel = document.getElementById(panelId);
+  const panel = panelEl.value;
   if (!trigger || !panel) return;
 
   const t = trigger.getBoundingClientRect();
-  const ph = panel?.offsetHeight ?? 0;
+  const ph = panel.offsetHeight || 0;
 
   // 기본은 위, 공간 없으면 아래에 배치
-  let top = t.top - ph - gap;
-  if (top < 8) top = t.bottom + gap;
+  const spaceAbove = t.top - gap;
+  const spaceBelow = window.innerHeight - t.bottom - gap;
+
+  const placeAbove = spaceAbove >= ph || spaceAbove >= spaceBelow;
+
+  let top = placeAbove ? t.top - ph - gap : t.bottom + gap;
+
   top = Math.max(8, Math.min(top, window.innerHeight - ph - 8));
 
   let left = t.right - panelWidth; // 우측 정렬
@@ -180,7 +204,12 @@ async function openMenu() {
   await nextTick();
   await new Promise(requestAnimationFrame);
 
-  updatePosition();
+  for (let i = 0; i < 3; i++) {
+    updatePosition();
+    await new Promise(requestAnimationFrame);
+    if ((panelEl.value?.offsetHeight ?? 0) > 0) break;
+  }
+
   firstItemRef.value?.focus();
   requestAnimationFrame(() => {
     ignoreNextDocClick.value = false;
@@ -191,16 +220,15 @@ async function openMenu() {
 function onDocClick(e: MouseEvent) {
   if (!menuOpen.value || ignoreNextDocClick.value) return;
   const t = e.target as Node | null;
-  const panel = document.getElementById(panelId);
-  if (panel?.contains(t) || triggerEl.value?.contains(t)) return;
+  if (panelEl.value?.contains(t) || triggerEl.value?.contains(t)) return;
   closeMenu();
 }
 
 onMounted(() =>
-  document.addEventListener("click", onDocClick, { capture: true })
+  document.addEventListener("click", onDocClick, { capture: true }),
 );
 onBeforeUnmount(() =>
-  document.removeEventListener("click", onDocClick, { capture: true })
+  document.removeEventListener("click", onDocClick, { capture: true }),
 );
 
 // 액션 핸들러
@@ -208,6 +236,12 @@ function handleOpenSettings() {
   closeMenu();
   emit("open-settings");
 }
+
+function handleOpenTagManagement() {
+  closeMenu();
+  emit("open-tag-management");
+}
+
 function handleLogout() {
   closeMenu();
   emit("logout");
@@ -223,7 +257,9 @@ function handleLogout() {
   border: 1px solid color-mix(in oklab, currentColor 12%, transparent);
   background: color-mix(in oklab, var(--color-bg, #fff) 100%, transparent);
   color: var(--popover-foreground, inherit);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.06);
   padding: 4px;
   font-size: 14px;
   line-height: 20px;
@@ -251,8 +287,8 @@ function handleLogout() {
 
 /** 키보드 포커스 접근성 */
 .menu-item:focus-visible {
-  box-shadow: 0 0 0 2px
-      color-mix(in oklab, var(--ring, #3b82f6) 55%, transparent),
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--ring, #3b82f6) 55%, transparent),
     0 0 0 4px var(--popover, #fff);
 }
 

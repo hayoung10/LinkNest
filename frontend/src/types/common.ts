@@ -52,6 +52,29 @@ export interface Bookmark {
   updatedAt: ISODateTime;
 }
 
+export interface TaggedBookmark {
+  id: ID;
+
+  collectionId: ID;
+  collectionName: string;
+  collectionEmoji: string | null;
+
+  url: string;
+  title: string | null;
+  description: string | null;
+
+  emoji: string | null;
+  autoImageUrl: string | null;
+  customImageUrl: string | null;
+  imageMode: ImageMode;
+
+  isFavorite: boolean;
+  tags: string[];
+
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
 export interface Collection {
   id: ID;
   name: string;

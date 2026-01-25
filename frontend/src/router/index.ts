@@ -13,6 +13,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/views/WorkspaceView.vue"),
     meta: { requiresAuth: true },
   },
+  {
+    path: "/tags",
+    name: "tags",
+    component: () => import("@/views/TagManagementView.vue"),
+    meta: { requiresAuth: true },
+  },
 
   // 게스트 전용
   {
