@@ -126,6 +126,7 @@
     <footer class="mt-auto border-t border-border px-3 py-3">
       <UserMenu
         @open-settings="$emit('open-settings')"
+        @open-tag-management="() => router.push({ name: 'tags' })"
         @logout="$emit('logout')"
       />
     </footer>
@@ -193,17 +194,24 @@
 </template>
 
 <script setup lang="ts">
-import { ComponentPublicInstance, computed, nextTick, ref, watch } from "vue";
-import { CollectionNode, UserMenu } from "@/features/workspace";
-import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
-import PlusIcon from "@/components/icons/PlusIcon.vue";
-import LogoIcon from "@/components/icons/LogoIcon.vue";
-import { useWorkspaceStore } from "@/stores/workspace";
+import {
+  computed,
+  nextTick,
+  ref,
+  watch,
+  type ComponentPublicInstance,
+} from "vue";
 import { storeToRefs } from "pinia";
-import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useDroppable } from "@vue-dnd-kit/core";
-import { DropResult } from "@/types/dnd";
+import router from "@/router";
 import { useToastStore } from "@/stores/toast";
+import { useWorkspaceStore } from "@/stores/workspace";
+import type { ID, CollectionNode as CollectionNodeModel } from "@/types/common";
+import type { DropResult } from "@/types/dnd";
+import { CollectionNode, UserMenu } from "@/features/workspace";
+import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
+import LogoIcon from "@/components/icons/LogoIcon.vue";
+import PlusIcon from "@/components/icons/PlusIcon.vue";
 import StarIcon from "@/components/icons/StarIcon.vue";
 
 defineOptions({ inheritAttrs: false });
@@ -241,7 +249,7 @@ const isEmpty = computed(
   () =>
     !isLoadingCollections.value &&
     !hasError.value &&
-    collectionNodes.value.length === 0
+    collectionNodes.value.length === 0,
 );
 const isCollectionMutating = computed(
   () =>
@@ -250,12 +258,12 @@ const isCollectionMutating = computed(
     isMutating.value.updateCollectionEmoji ||
     isMutating.value.deleteCollection ||
     isMutating.value.moveCollection ||
-    isMutating.value.reorderCollection
+    isMutating.value.reorderCollection,
 );
 const rootIds = computed<ID[]>(() =>
   (childrenByParent.value["root"] ?? []).filter(
-    (id) => !!collectionById.value[id]
-  )
+    (id) => !!collectionById.value[id],
+  ),
 );
 
 function handleSelectCollection(node: CollectionNodeModel) {
@@ -304,7 +312,7 @@ async function startRename(payload: { id: ID; name: string }) {
   await nextTick();
   requestAnimationFrame(() => {
     const el = document.getElementById(
-      `col-rename-${id}`
+      `col-rename-${id}`,
     ) as HTMLInputElement | null;
     el?.focus();
     el?.select();
@@ -388,7 +396,9 @@ const rootDroppable = useDroppable({
   groups: ["collections"],
   disabled: computed(
     () =>
-      isLoadingCollections.value || hasError.value || isCollectionMutating.value
+      isLoadingCollections.value ||
+      hasError.value ||
+      isCollectionMutating.value,
   ),
   data: { type: "collection-root" },
   events: {
@@ -495,7 +505,7 @@ async function onDndDrop(payload: DndDropPayload) {
   const targetParentId = target.parentId ?? null;
   const key = targetParentId == null ? "root" : String(targetParentId);
   const siblings = (childrenByParent.value[key] ?? []).filter(
-    (id) => !!collectionById.value[id]
+    (id) => !!collectionById.value[id],
   );
 
   const baseIndex = siblings.indexOf(targetId);
@@ -528,7 +538,7 @@ function showDndError(type: DropResult["type"]) {
   toast.error(
     type === "move"
       ? "컬렉션 이동에 실패했습니다. 다시 시도해주세요."
-      : "컬렉션 순서 변경에 실패했습니다."
+      : "컬렉션 순서 변경에 실패했습니다.",
   );
 }
 
@@ -550,6 +560,6 @@ watch(
 
     if (editingId.value != null && !alive.has(editingId.value)) cancelRename();
   },
-  { deep: false }
+  { deep: false },
 );
 </script>

@@ -3,6 +3,7 @@ import {
   Collection,
   CollectionNode,
   Tag,
+  TaggedBookmark,
   User,
   UserPreferences,
 } from "@/types/common";
@@ -108,5 +109,24 @@ export function mapTagRes(dto: TagRes): Tag {
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
     bookmarkCount: dto.bookmarkCount,
+  };
+}
+
+/** === 백엔드 응답 DTO -> 도메인 모델 매핑 === */
+export function toBookmarkFromTagged(b: TaggedBookmark): Bookmark {
+  return {
+    id: b.id,
+    collectionId: b.collectionId,
+    url: b.url,
+    title: b.url,
+    description: b.description,
+    emoji: b.emoji,
+    autoImageUrl: b.autoImageUrl,
+    customImageUrl: b.customImageUrl,
+    imageMode: b.imageMode,
+    isFavorite: b.isFavorite,
+    tags: b.tags ?? [],
+    createdAt: b.createdAt,
+    updatedAt: b.updatedAt,
   };
 }
