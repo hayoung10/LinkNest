@@ -73,49 +73,6 @@
             @open-settings="onOpenSettings"
           />
         </template>
-
-        <!-- 북마크 상세 패널 -->
-        <SidePanel
-          :open="selectedBookmarkId != null"
-          width="min(640px, 92vw)"
-          side="right"
-          @close="selectedBookmarkId = null"
-        >
-          <!-- 상태 분기 -->
-          <BaseError
-            v-if="hasTaggedError"
-            title="북마크를 불러올 수 없습니다"
-            :description="taggedErrorMessage"
-            :onRetry="refreshTagged"
-          />
-
-          <BaseLoading
-            v-else-if="isDetailPending"
-            label="북마크 정보를 불러오는 중…"
-          />
-
-          <BaseEmpty
-            v-else-if="selectedBookmarkForDetail == null"
-            title="북마크를 선택해주세요."
-            description="북마크를 선택하면 상세 정보를 볼 수 있습니다."
-          />
-
-          <BookmarkDetail
-            v-else
-            :bookmark="selectedBookmarkForDetail"
-            :collection-name="
-              selectedTaggedBookmark?.collectionName ?? undefined
-            "
-            :collection-emoji="
-              selectedTaggedBookmark?.collectionEmoji ?? undefined
-            "
-            @close="selectedBookmarkId = null"
-            @unfavorite="onUnfavoriteFromDetail"
-            @update-bookmark="onUpdateBookmark"
-            @delete-bookmark="onDeleteBookmark"
-            @replace-bookmark="onReplaceBookmark"
-          />
-        </SidePanel>
       </section>
     </main>
 
@@ -136,7 +93,6 @@ import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import SidePanel from "@/components/overlays/SidePanel.vue";
-import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import Settings from "@/features/settings/Settings.vue";
 import UserMenu from "@/features/workspace/menus/UserMenu.vue";
 import {
@@ -145,13 +101,10 @@ import {
   TaggedBookmarkList,
   TaggedBookmarkCard,
 } from "@/features/tags";
-import BookmarkDetail from "@/features/workspace/components/BookmarkDetail.vue";
-import type { ID, Bookmark, TaggedBookmark } from "@/types/common";
+import type { ID } from "@/types/common";
 import { useAuthStore } from "@/stores/auth";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useToastStore } from "@/stores/toast";
-import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
-import { toBookmarkFromTagged } from "@/api/mappers";
 
 type Mode = "dashboard" | "bookmarks";
 
@@ -160,12 +113,9 @@ const router = useRouter();
 const auth = useAuthStore();
 const toast = useToastStore();
 const preferences = usePreferencesStore();
-const tagged = useTaggedBookmarksStore();
 
 const { defaultLayout } = storeToRefs(preferences);
 const isList = computed(() => defaultLayout.value === "LIST");
-
-const { items, isLoading, error } = storeToRefs(tagged);
 
 const selectedTagId = ref<ID | null>(null);
 const mode = ref<Mode>("dashboard");
@@ -173,32 +123,6 @@ const isSettingsOpen = ref(false);
 
 const focusBookmarkId = ref<ID | null>(null);
 const selectedBookmarkId = ref<ID | null>(null);
-
-const hasTaggedError = computed(() => !!error.value);
-const taggedErrorMessage = computed(() => {
-  if (!error.value) return undefined;
-  return "네트워크 상태를 확인한 뒤 다시 시도해주세요.";
-});
-
-const selectedTaggedBookmark = computed<TaggedBookmark | null>(() => {
-  if (!selectedBookmarkId.value) return null;
-  return items.value.find((b) => b.id === selectedBookmarkId.value) ?? null;
-});
-
-const selectedBookmarkForDetail = computed<Bookmark | null>(() => {
-  const tb = selectedTaggedBookmark.value;
-  return tb ? toBookmarkFromTagged(tb) : null;
-});
-
-const isDetailOpen = computed(() => selectedBookmarkId.value != null);
-const isDetailPending = computed(() => {
-  return (
-    isDetailOpen.value &&
-    selectedBookmarkForDetail.value == null &&
-    isLoading.value &&
-    !hasTaggedError.value
-  );
-});
 
 function goBack() {
   if (window.history.length > 1) router.back();
@@ -248,26 +172,6 @@ async function onLogout() {
     console.error("[TagManagementView] 로그아웃 실패:", e);
     toast.error("로그아웃에 실패했습니다.");
   }
-}
-
-function onUnfavoriteFromDetail(id: ID) {
-  // TODO: tagged bookmarks 전용 즐겨찾기 토글 구현 후, 처리 예정
-}
-
-async function onUpdateBookmark(payload: any) {
-  // TODO
-}
-
-async function onDeleteBookmark(id: ID) {
-  // TODO
-}
-
-function onReplaceBookmark(updated: Bookmark) {
-  // TODO
-}
-
-async function refreshTagged() {
-  tagged.safeReload();
 }
 
 watch(
