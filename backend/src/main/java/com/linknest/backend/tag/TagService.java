@@ -136,13 +136,11 @@ public class TagService {
 
     @Transactional
     public void delete(Long userId, Long id) {
-        requireOwnedTag(userId, id);
+        Tag tag = requireOwnedTag(userId, id);
 
-        if(bookmarkTagRepository.existsByUserIdAndTagId(userId, id)) {
-            throw new BusinessException(ErrorCode.TAG_IN_USE);
-        }
+        bookmarkTagRepository.deleteByUserIdAndTagId(userId, id);
 
-        tagRepository.deleteById(id);
+        tagRepository.delete(tag);
     }
 
     // ==========================================================

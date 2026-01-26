@@ -24,12 +24,6 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             "where b.user.id = :userId and bt.tag.id = :tagId")
     List<Long> findAllBookmarkIdsByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
 
-    @Query("select case when count(bt) > 0 then true else false end " +
-            "from BookmarkTag bt " +
-            "   join bt.bookmark b " +
-            "where b.user.id = :userId and bt.tag.id = :tagId")
-    boolean existsByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
-
     boolean existsByBookmark_IdAndTag_Id(Long bookmarkId, Long tagId);
 
     // -------------------- Single Bookmark Ops --------------------
@@ -45,6 +39,11 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
     int replaceTagOnBookmark(@Param("bookmarkId") Long bookmarkId, @Param("fromTagId") Long fromTagId, @Param("toTagId") Long toTagId);
 
     // -------------------- Bulk Ops (TagService) --------------------
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete BookmarkTag bt " +
+            "where bt.bookmark.user.id = :userId and bt.tag.id = :tagId")
+    int deleteByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete BookmarkTag bt " +
             "where bt.bookmark.user.id = :userId and bt.tag.id = :tagId and bt.bookmark.id in :bookmarkIds")
