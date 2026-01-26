@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
+    // -------------------- Bookmarks (Collection) --------------------
     List<Bookmark> findAllByUserIdAndCollectionIdOrderByCreatedAtDesc(Long userId, Long collectionId);
     List<Bookmark> findAllByUserIdAndCollectionIdOrderByCreatedAtAsc(Long userId, Long collectionId);
 
@@ -25,6 +26,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "group by b.collection.id")
     List<IdCount> countByCollectionIds(@Param("collectionIds") List<Long> collectionIds);
 
+    // -------------------- Favorite Bookmarks --------------------
     List<Bookmark> findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtDesc(Long userId);
 
     List<Bookmark> findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtAsc(Long userId);
@@ -35,5 +37,8 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   case when b.title is null or b.title = '' then 1 else 0 end, b.title asc, b.createdAt desc")
     List<Bookmark> findAllFavoritesSortedByTitle(@Param("userId") Long userId);
 
+    // -------------------- Bookmark Ownership Validation --------------------
     long countByUserId(Long userId);
+
+    long countByUserIdAndIdIn(Long userId, List<Long> ids);
 }

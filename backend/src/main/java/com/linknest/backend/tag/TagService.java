@@ -2,11 +2,15 @@ package com.linknest.backend.tag;
 
 import com.linknest.backend.bookmark.BookmarkRepository;
 import com.linknest.backend.bookmark.BookmarkTagRepository;
+import com.linknest.backend.common.dto.PageResponse;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.tag.domain.TagSort;
 import com.linknest.backend.tag.dto.*;
+import com.linknest.backend.tag.mapper.TaggedBookmarkMapper;
 import com.linknest.backend.user.UserRepository;
+import com.linknest.backend.userpreferences.UserPreferencesService;
+import com.linknest.backend.userpreferences.domain.DefaultBookmarkSort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +32,10 @@ public class TagService {
     private final BookmarkTagRepository bookmarkTagRepository;
     private final BookmarkRepository bookmarkRepository;
     private final UserRepository userRepository;
+    private final UserPreferencesService userPreferencesService;
+
     private final TagMapper tagMapper;
+    private final TaggedBookmarkMapper taggedBookmarkMapper;
 
     @Transactional
     public TagRes create(Long userId, TagCreateReq req) {
@@ -137,6 +144,79 @@ public class TagService {
         tagRepository.deleteById(id);
     }
 
+    // ==========================================================
+    // Tagged Bookmarks
+    // ==========================================================
+
+    public PageResponse<TaggedBookmarkRes> getTaggedBookmarks(Long userId, Long id, int page, int size) {
+        requireOwnedTag(userId, id);
+
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(Math.max(1, size), 100);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        DefaultBookmarkSort sort = userPreferencesService.getDefaultBookmarkSort(userId);
+
+        Page<TaggedBookmarkRow> rows = switch (sort) {
+            case NEWEST -> bookmarkTagRepository.findTaggedBookmarksNewest(userId, id, pageable);
+            case OLDEST -> bookmarkTagRepository.findTaggedBookmarksOldest(userId, id, pageable);
+            case TITLE -> bookmarkTagRepository.findTaggedBookmarksSortedByTitle(userId, id, pageable);
+        };
+
+        List<Long> bookmarkIds = rows.getContent().stream()
+                .map(TaggedBookmarkRow::id)
+                .distinct()
+                .toList();
+
+        if(bookmarkIds.isEmpty()) {
+            return PageResponse.of(rows.map(taggedBookmarkMapper::toRes));
+        }
+
+        // tags 조회
+        List<BookmarkTagNameRow> tagRows = bookmarkTagRepository.findTagNamesByBookmarkIds(bookmarkIds);
+
+        Map<Long, List<String>> tagsByBookmarkId = tagRows.stream()
+                .collect(Collectors.groupingBy(
+                        BookmarkTagNameRow::bookmarkId,
+                        Collectors.mapping(BookmarkTagNameRow::tagName, Collectors.toList())
+                ));
+
+        // rows에 tags 주입
+        Page<TaggedBookmarkRow> enriched = rows.map(row ->
+                row.withTags(tagsByBookmarkId.getOrDefault(row.id(), List.of()))
+        );
+
+        return PageResponse.of(enriched.map(taggedBookmarkMapper::toRes));
+    }
+
+    @Transactional
+    public void detachTagFromBookmarks(Long userId, Long id, TagDetachReq req) {
+        requireOwnedTag(userId, id);
+        requireOwnedBookmarks(userId, req.bookmarkIds());
+
+        bookmarkTagRepository.deleteByUserIdAndTagIdAndBookmarkIdIn(userId, id, req.bookmarkIds());
+    }
+
+    @Transactional
+    public void replaceTagOnBookmarks(Long userId, Long id, TagReplaceReq req) {
+        Long targetTagId = req.targetTagId();
+
+        if(id.equals(targetTagId)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        requireOwnedTag(userId, id);
+        requireOwnedTag(userId, targetTagId);
+        requireOwnedBookmarks(userId, req.bookmarkIds());
+
+        bookmarkTagRepository.deleteMergeConflictsInBookmarks(userId, id, targetTagId, req.bookmarkIds());
+        bookmarkTagRepository.replaceTagInBookmarks(userId, id, targetTagId, req.bookmarkIds());
+    }
+
+    // ==========================================================
+    // 공통 유틸 (BookmarkService)
+    // ==========================================================
+
     @Transactional
     public Set<Tag> getOrCreateByName(Long userId, Collection<String> tagNames) {
         if(tagNames == null) return Set.of();
@@ -181,6 +261,10 @@ public class TagService {
         return result;
     }
 
+    // ==========================================================
+    // 내부 유틸
+    // ==========================================================
+
     private String normalizeName(String tagName) {
         if(tagName == null) throw new BusinessException(ErrorCode.TAG_NAME_INVALID);
 
@@ -214,5 +298,12 @@ public class TagService {
     private Tag requireOwnedTag(Long userId, Long id) {
         return tagRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TAG_NOT_FOUND));
+    }
+
+    private void requireOwnedBookmarks(Long userId, List<Long> bookmarkIds) {
+        long ownedCount = bookmarkRepository.countByUserIdAndIdIn(userId, bookmarkIds);
+        if(ownedCount != bookmarkIds.size()) {
+            throw new BusinessException(ErrorCode.BOOKMARK_NOT_FOUND);
+        }
     }
 }
