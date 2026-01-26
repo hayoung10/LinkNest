@@ -68,4 +68,32 @@ public class TagController {
         service.delete(userId, id);
         return ResponseEntity.ok(ApiResponse.ok("태그 삭제 완료",null));
     }
+
+    // =============================
+    // Tagged Bookmarks
+    // =============================
+    @GetMapping("/{id}/bookmarks")
+    public ResponseEntity<ApiResponse<PageResponse>> getTaggedBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                                        @PathVariable @Min(1) Long id,
+                                                                        @RequestParam(defaultValue = "0") int page,
+                                                                        @RequestParam(defaultValue = "20") int size) {
+        PageResponse<TaggedBookmarkRes> data = service.getTaggedBookmarks(userId, id, page, size);
+        return ResponseEntity.ok(ApiResponse.ok("태그 북마크 목록 조회", data));
+    }
+
+    @PostMapping("/{id}/detach")
+    public ResponseEntity<ApiResponse<Void>> detachTagFromBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                                    @PathVariable @Min(1) Long id,
+                                                                    @RequestBody @Valid TagDetachReq req) {
+        service.detachTagFromBookmarks(userId, id, req);
+        return ResponseEntity.ok(ApiResponse.ok("태그 제거 완료", null));
+    }
+
+    @PostMapping("/{id}/replace")
+    public ResponseEntity<ApiResponse<Void>> replaceTagOnBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                                   @PathVariable @Min(1) Long id,
+                                                                   @RequestBody @Valid TagReplaceReq req) {
+        service.replaceTagOnBookmarks(userId, id, req);
+        return ResponseEntity.ok(ApiResponse.ok("태그 교체 완료", null));
+    }
 }

@@ -1,5 +1,6 @@
-package com.linknest.backend.tag;
+package com.linknest.backend.tag.mapper;
 
+import com.linknest.backend.tag.Tag;
 import com.linknest.backend.tag.dto.TagRes;
 import com.linknest.backend.tag.dto.TagUpdateReq;
 import org.mapstruct.*;
