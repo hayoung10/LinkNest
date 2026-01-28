@@ -10,8 +10,8 @@ public record TagDetachReq(
         List<@Min(1) Long> bookmarkIds
 ) {
         public TagDetachReq {
-                bookmarkIds = bookmarkIds.stream()
-                        .distinct()
-                        .toList();
+                if(bookmarkIds != null) {
+                        bookmarkIds = bookmarkIds.stream().distinct().toList();
+                }
         }
 }

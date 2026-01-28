@@ -15,8 +15,8 @@ public record TagReplaceReq(
         Long targetTagId
 ) {
         public TagReplaceReq {
-                bookmarkIds = bookmarkIds.stream()
-                        .distinct()
-                        .toList();
+                if(bookmarkIds != null) {
+                        bookmarkIds = bookmarkIds.stream().distinct().toList();
+                }
         }
 }
