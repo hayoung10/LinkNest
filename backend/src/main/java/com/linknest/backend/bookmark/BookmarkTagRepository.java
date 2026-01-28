@@ -1,5 +1,6 @@
 package com.linknest.backend.bookmark;
 
+import com.linknest.backend.tag.Tag;
 import com.linknest.backend.tag.dto.BookmarkTagNameRow;
 import com.linknest.backend.tag.dto.TaggedBookmarkRow;
 import org.springframework.data.domain.Page;
@@ -18,13 +19,17 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             "where b.user.id = :userId and bt.tag.id = :tagId")
     long countDistinctBookmarksByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
 
+    // -------------------- BookmarkIds Query --------------------
     @Query("select b.id " +
             "from BookmarkTag bt " +
             "   join bt.bookmark b " +
             "where b.user.id = :userId and bt.tag.id = :tagId")
     List<Long> findAllBookmarkIdsByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
 
-    boolean existsByBookmark_IdAndTag_Id(Long bookmarkId, Long tagId);
+    @Query("select bt.bookmark.id from BookmarkTag bt " +
+            "where bt.bookmark.user.id = :userId and bt.tag.id = :toTagId and bt.bookmark.id in :bookmarkIds")
+    List<Long> findBookmarkIdsByUserIdAndTagIdAndBookmarkIdIn(@Param("userId") Long userId, @Param("toTagId") Long toTagId,
+                                                              @Param("bookmarkIds") List<Long> bookmarkIds);
 
     // -------------------- Single Bookmark Ops --------------------
     @Modifying(clearAutomatically = true, flushAutomatically = true)
@@ -38,7 +43,7 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             "where bt.bookmark.id = :bookmarkId and bt.tag.id = :fromTagId")
     int replaceTagOnBookmark(@Param("bookmarkId") Long bookmarkId, @Param("fromTagId") Long fromTagId, @Param("toTagId") Long toTagId);
 
-    // -------------------- Bulk Ops (TagService) --------------------
+    // -------------------- Bulk Ops --------------------
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete BookmarkTag bt " +
             "where bt.bookmark.user.id = :userId and bt.tag.id = :tagId")
@@ -51,19 +56,11 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
                                               @Param("tagId") Long tagId, @Param("bookmarkIds") List<Long> bookmarkIds);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("delete from BookmarkTag bt " +
-            "where bt.bookmark.user.id = :userId and bt.tag.id = :fromTagId and bt.bookmark.id in :bookmarkIds " +
-            "   and bt.bookmark.id in (select bt2.bookmark.id from BookmarkTag bt2 " +
-            "                       where bt2.tag.id = :toTagId and bt2.bookmark.id in :bookmarkIds)")
-    int deleteMergeConflictsInBookmarks(@Param("userId") Long userId, @Param("fromTagId") Long fromTagId,
-                                        @Param("toTagId") Long toTagId, @Param("bookmarkIds") List<Long> bookmarkIds);
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update BookmarkTag bt " +
-            "set bt.tag.id = :toTagId " +
+            "set bt.tag = :toTag " +
             "where bt.bookmark.user.id = :userId and bt.tag.id = :fromTagId and bt.bookmark.id in :bookmarkIds")
-    int replaceTagInBookmarks(@Param("userId") Long userId, @Param("fromTagId") Long fromTagId,
-                              @Param("toTagId") Long toTagId, @Param("bookmarkIds") List<Long> bookmarkIds);
+    int replaceTagOnBookmarks(@Param("userId") Long userId, @Param("fromTagId") Long fromTagId,
+                              @Param("toTag") Tag toTag, @Param("bookmarkIds") List<Long> bookmarkIds);
 
     // -------------------- Tagged Bookmarks (Paging) --------------------
     @Query(value = "select new com.linknest.backend.tag.dto.TaggedBookmarkRow(" +
