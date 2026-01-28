@@ -123,15 +123,14 @@ public class TagService {
         List<Long> bookmarkIds = bookmarkTagRepository.findAllBookmarkIdsByUserIdAndTagId(userId, id);
         if(bookmarkIds.isEmpty()) return;
 
-        for(Long bookmarkId : bookmarkIds) {
-            // 이미 targetId로 설정되어 있는 경우
-            if(bookmarkTagRepository.existsByBookmark_IdAndTag_Id(bookmarkId, targetTagId)) {
-                bookmarkTagRepository.deleteByBookmarkIdAndTagId(bookmarkId, id);
-                continue;
-            }
-            // 없으면 id -> targetTagId 치환
-            bookmarkTagRepository.replaceTagOnBookmark(bookmarkId, id, targetTagId);
+        // 충돌 제거
+        List<Long> conflictIds = bookmarkTagRepository.findBookmarkIdsByUserIdAndTagIdAndBookmarkIdIn(userId, targetTagId, bookmarkIds);
+        if(conflictIds.isEmpty()) {
+            bookmarkTagRepository.deleteByUserIdAndTagIdAndBookmarkIdIn(userId, id, conflictIds);
         }
+
+        Tag toTag = tagRepository.getReferenceById(targetTagId);
+        bookmarkTagRepository.replaceTagOnBookmarks(userId, id, toTag, bookmarkIds);
     }
 
     @Transactional
@@ -208,8 +207,19 @@ public class TagService {
         requireOwnedTag(userId, targetTagId);
         requireOwnedBookmarks(userId, req.bookmarkIds());
 
-        bookmarkTagRepository.deleteMergeConflictsInBookmarks(userId, id, targetTagId, req.bookmarkIds());
-        bookmarkTagRepository.replaceTagInBookmarks(userId, id, targetTagId, req.bookmarkIds());
+        List<Long> bookmarkIds = req.bookmarkIds();
+
+        Set<Long> conflictSet = new HashSet<>(
+                bookmarkTagRepository.findBookmarkIdsByUserIdAndTagIdAndBookmarkIdIn(userId, targetTagId, bookmarkIds)
+        );
+
+        for(Long bookmarkId : bookmarkIds) {
+            if(conflictSet.contains(bookmarkId)) {
+                bookmarkTagRepository.deleteByBookmarkIdAndTagId(bookmarkId, id);
+            } else {
+                bookmarkTagRepository.replaceTagOnBookmark(bookmarkId, id, targetTagId);
+            }
+        }
     }
 
     // ==========================================================
