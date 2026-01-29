@@ -49,12 +49,23 @@
 
       <!-- 검색 -->
       <input
-        v-model.trim="qInput"
+        v-model="qInput"
         type="text"
         class="w-full rounded-md px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60"
-        placeholder="태그 검색"
-        :disabled="isLoading || hasError"
+        placeholder="태그 검색 (2글자 이상)"
+        :disabled="hasError"
+        @compositionstart="onCompositionStart"
+        @compositionend="onCompositionEnd"
       />
+      <span
+        v-if="isReloading"
+        class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      >
+        <span
+          class="inline-block size-4 rounded full border-2 border-current border-t-transparent animate-spin"
+        />
+      </span>
     </div>
 
     <!-- 리스트 -->
@@ -201,13 +212,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, nextTick, ref, watch } from "vue";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  nextTick,
+  ref,
+  watch,
+} from "vue";
 import { storeToRefs } from "pinia";
 import type { ID } from "@/types/common";
 import type { TagSort } from "@/api/tags";
+import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useTagsStore } from "@/stores/tags";
 import { useToastStore } from "@/stores/toast";
-import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
 import { getErrorMessage } from "@/utils/errorMessage";
@@ -215,10 +233,7 @@ import { getErrorMessage } from "@/utils/errorMessage";
 defineOptions({ name: "TagSidebar" });
 
 const props = defineProps<{ selectedTagId: ID | null }>();
-
-const emit = defineEmits<{
-  (e: "select-tag", id: ID): void;
-}>();
+const emit = defineEmits<{ (e: "select-tag", id: ID): void }>();
 
 const tagsStore = useTagsStore();
 const toast = useToastStore();
@@ -226,7 +241,23 @@ const toast = useToastStore();
 const { items, q, sort, page, meta, isLoading, error, loaded } =
   storeToRefs(tagsStore);
 
-const filtered = computed(() => items.value);
+const sortOptions: Array<{ value: TagSort; label: string }> = [
+  { value: "NAME_ASC", label: "이름 A→Z" },
+  { value: "NAME_DESC", label: "이름 Z→A" },
+  { value: "NEWEST", label: "최신순" },
+  { value: "OLDEST", label: "오래된순" },
+  { value: "COUNT_DESC", label: "사용 많은순" },
+  { value: "COUNT_ASC", label: "사용 적은순" },
+];
+
+const filtered = computed(() => {
+  const qq = (qInput.value ?? "").trim().normalize("NFC");
+  if (!qq) return items.value;
+
+  return items.value.filter((t) =>
+    (t.name ?? "").normalize("NFC").includes(qq),
+  );
+});
 
 const hasError = computed(() => !!error.value);
 const isInitialLoading = computed(() => isLoading.value && !loaded.value);
@@ -247,21 +278,68 @@ const totalCount = computed(
 );
 const loadedCount = computed(() => filtered.value.length);
 
-const qInput = ref(q.value);
+// ------------------------
+// Search
+// ------------------------
+const qInput = ref(q.value ?? "");
 const isLoadingMore = ref(false);
 
-const sortOptions: Array<{ value: TagSort; label: string }> = [
-  { value: "NAME_ASC", label: "이름 A→Z" },
-  { value: "NAME_DESC", label: "이름 Z→A" },
-  { value: "NEWEST", label: "최신순" },
-  { value: "OLDEST", label: "오래된순" },
-  { value: "COUNT_DESC", label: "사용 많은순" },
-  { value: "COUNT_ASC", label: "사용 적은순" },
-];
+let qTimer: ReturnType<typeof setTimeout> | null = null;
 
+function clearTimer() {
+  if (!qTimer) return;
+  clearTimeout(qTimer);
+  qTimer = null;
+}
+
+async function runSearch(raw: string) {
+  const nextQ = raw.trim().normalize("NFC");
+
+  tagsStore.setQuery({ q: nextQ, page: 0 });
+
+  if (nextQ.length === 0) {
+    await tagsStore.safeReload();
+    return;
+  }
+
+  if (nextQ.length < 2) return;
+
+  // 2글자 이상: 검색
+  await tagsStore.safeReload();
+}
+
+function scheduleSearch(raw: string) {
+  clearTimer();
+
+  qTimer = setTimeout(async () => {
+    if (isComposing.value) return;
+
+    runSearch(raw).catch(() => {});
+  }, 250);
+}
+
+const isComposing = ref(false);
+const isReloading = computed(() => isLoading.value && !isLoadingMore.value);
+
+function onCompositionStart() {
+  isComposing.value = true;
+}
+
+function onCompositionEnd(e: CompositionEvent) {
+  isComposing.value = false;
+  scheduleSearch(qInput.value);
+}
+
+onBeforeUnmount(() => {
+  clearTimer();
+});
+
+// ------------------------
+// Actions
+// ------------------------
 async function onRetry() {
   try {
-    await tagsStore.reload();
+    await tagsStore.safeReload();
   } catch {
     toast.error("태그를 불러오지 못했습니다.");
   }
@@ -282,29 +360,29 @@ async function onLoadMore() {
   }
 }
 
-let qTimer: ReturnType<typeof setTimeout> | null = null;
-
-onBeforeMount(() => {
-  if (qTimer) clearTimeout(qTimer);
-});
-
 onMounted(async () => {
   try {
     await tagsStore.load();
   } catch {}
 });
 
+// ------------------------
+// Watchers
+// ------------------------
+watch(
+  () => q.value,
+  (next) => {
+    const v = next ?? "";
+    if (qInput.value === v) return;
+    qInput.value = v;
+  },
+);
+
 watch(
   () => qInput.value,
   (next) => {
-    if (qTimer) clearTimeout(qTimer);
-
-    qTimer = setTimeout(async () => {
-      tagsStore.setQuery({ q: next, page: 0 });
-      try {
-        await tagsStore.load(true);
-      } catch {}
-    }, 300);
+    if (isComposing.value) return;
+    scheduleSearch(next);
   },
 );
 
@@ -315,14 +393,16 @@ watch(
 
     tagsStore.setQuery({ sort: next, page: 0 });
     try {
-      await tagsStore.load(true);
+      await tagsStore.safeReload();
     } catch {
       toast.error("정렬을 적용하지 못했습니다.");
     }
   },
 );
 
-// 새 태그 추가 다이얼로그
+// ------------------------
+// Dialog
+// ------------------------
 const showAddDialog = ref(false);
 
 const createInputRef = ref<HTMLInputElement | null>(null);

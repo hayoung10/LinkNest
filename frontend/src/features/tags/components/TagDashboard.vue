@@ -185,23 +185,29 @@
             <h3 class="text-base font-semibold">사용 중인 북마크</h3>
 
             <button
-              v-if="previewItems.length > 0"
+              v-if="hasMore"
               type="button"
               class="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border text-sm hover:bg-accent hover:border-zinc-300/70 dark:hover:border-zinc-600/60 hover:shadow-md transition-all"
               @click="onClickOpenAll"
             >
-              모두 보기
+              모두 보기 ({{ tag?.bookmarkCount ?? 0 }})
               <span aria-hidden="true">→</span>
             </button>
           </div>
 
           <div class="mt-4 rounded-2xl border border-border bg-card p-4">
-            <div v-if="isPreviewLoading" class="space-y-3">
+            <div v-if="previewLoading" class="space-y-3">
               <div
                 v-for="i in 4"
                 :key="i"
                 class="h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse"
               />
+            </div>
+
+            <div v-else-if="previewError" class="py-10 text-center">
+              <div class="text-sm text-zinc-500 dark:text-zinc-400">
+                북마크 미리보기를 불러오지 못했습니다.
+              </div>
             </div>
 
             <div
@@ -427,13 +433,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
-import type { ID } from "@/types/common";
+import type { ID, TaggedBookmark } from "@/types/common";
 import { useTagsStore } from "@/stores/tags";
 import { useToastStore } from "@/stores/toast";
 import { BaseEmpty } from "@/components/ui";
 import TagIcon from "@/components/icons/TagIcon.vue";
 import { getErrorMessage } from "@/utils/errorMessage";
 import { TagHeader } from "@/features/tags";
+import * as TagApi from "@/api/tags";
 
 defineOptions({ name: "TagDashboard" });
 
@@ -442,13 +449,12 @@ const props = defineProps<{ tagId: ID | null }>();
 const emit = defineEmits<{
   (e: "open-bookmarks", payload?: { tagId: ID; focusBookmarkId?: ID }): void;
   (e: "open-settings"): void;
-  (e: "rename", tagId: ID, newName: string): void;
   (e: "merge", tagId: ID): void;
   (e: "delete", tagId: ID): void;
 }>();
 
-const tagsStore = useTagsStore();
 const toast = useToastStore();
+const tagsStore = useTagsStore();
 
 const { items, totalBookmarks, isMutating } = storeToRefs(tagsStore);
 
@@ -485,11 +491,6 @@ const usageBarWidth = computed(
   () => `${Math.min(100, Math.max(0, usagePercent.value))}%`,
 );
 
-function onClickMerge() {
-  if (props.tagId == null) return;
-  emit("merge", props.tagId);
-}
-
 // ------------------------
 // 북마크 미리보기
 // ------------------------
@@ -500,62 +501,52 @@ type BookmarkPreview = {
 };
 
 const PREVIEW_LIMIT = 5;
-const isPreviewLoading = ref(false);
-const previewItems = ref<BookmarkPreview[]>([]);
+
+const previewItems = ref<TaggedBookmark[]>([]);
+const previewLoading = ref(false);
 const previewError = ref<unknown | null>(null);
 
-async function fetchPreview(tagId: ID) {
-  // TODO: preview API 연동 예정
+const hasPreview = computed(() => previewItems.value.length > 0);
+const hasMore = computed(() => {
+  const cnt = tag.value?.bookmarkCount ?? 0;
+  return cnt > PREVIEW_LIMIT;
+});
 
-  // 더미 데이터
-  previewItems.value = [
-    {
-      id: 101,
-      title: "Vue 3 Composition API 정리",
-      url: "https://vuejs.org/guide/extras/composition-api-faq.html",
-    },
-    {
-      id: 102,
-      title: "Spring Security JWT 구조",
-      url: "https://docs.spring.io/spring-security/reference/",
-    },
-    {
-      id: 103,
-      title: "Pinia vs Vuex 비교",
-      url: "https://pinia.vuejs.org/introduction.html",
-    },
-  ];
-}
-
-async function refreshPreview() {
+async function loadPreview(tagId: ID) {
+  previewLoading.value = true;
   previewError.value = null;
-
-  const id = props.tagId;
-  if (id == null) {
-    previewItems.value = [];
-    return;
-  }
-
-  if (!tag.value || (tag.value.bookmarkCount ?? 0) === 0) {
-    previewItems.value = [];
-    return;
-  }
-
-  isPreviewLoading.value = true;
   try {
-    await fetchPreview(id);
+    const res = await TagApi.getTaggedBookmarks(tagId, {
+      page: 0,
+      size: PREVIEW_LIMIT,
+    });
+    previewItems.value = res.items ?? [];
   } catch (e) {
     previewError.value = e;
     previewItems.value = [];
   } finally {
-    isPreviewLoading.value = false;
+    previewLoading.value = false;
+  }
+}
+
+async function safeReloadPreview(tagId: ID) {
+  try {
+    await loadPreview(tagId);
+  } catch (e) {
+    toast.error(getErrorMessage(e, "미리보기를 불러오지 못했습니다."));
   }
 }
 
 watch(
   () => props.tagId,
-  () => {
-    refreshPreview();
+  (id) => {
+    if (!id) {
+      previewItems.value = [];
+      previewError.value = null;
+      previewLoading.value = false;
+      return;
+    }
+    safeReloadPreview(Number(id));
   },
   { immediate: true },
 );
@@ -615,7 +606,7 @@ async function handleRename() {
     await tagsStore.rename(props.tagId, { name: renameName.value });
     showRenameDialog.value = false;
   } catch (e) {
-    toast.error(getErrorMessage(emit, "이름 변경에 실패했습니다."));
+    toast.error(getErrorMessage(e, "이름 변경에 실패했습니다."));
   }
 }
 
@@ -635,6 +626,7 @@ async function handleMerge() {
       targetTagId: Number(mergeTargetId.value),
     });
     showMergeDialog.value = false;
+    emit("merge", props.tagId);
   } catch (e) {
     toast.error(getErrorMessage(e, "태그 병합에 실패했습니다."));
   }
@@ -652,6 +644,7 @@ async function handleDelete() {
   try {
     await tagsStore.delete(props.tagId);
     showDeleteDialog.value = false;
+    emit("delete", props.tagId);
   } catch (e) {
     toast.error(getErrorMessage(e, "태그 삭제에 실패했습니다."));
   }
