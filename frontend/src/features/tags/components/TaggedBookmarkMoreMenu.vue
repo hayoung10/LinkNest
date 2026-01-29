@@ -29,12 +29,60 @@
 
         <div class="divider" />
 
-        <button class="menu-item" role="menuitem" disabled title="TODO">
-          태그에서 제거
-        </button>
-        <button class="menu-item" role="menuitem" disabled title="TODO">
-          다른 태그로 교체
-        </button>
+        <template v-if="mode === 'menu'">
+          <button
+            class="menu-item"
+            role="menuitem"
+            :disabled="isTagMutating"
+            @click="handleDetach"
+          >
+            태그에서 제거
+          </button>
+          <button
+            class="menu-item"
+            role="menuitem"
+            :disabled="isTagMutating || replaceCandidates.length === 0"
+            @click="openReplace"
+          >
+            다른 태그로 교체
+          </button>
+        </template>
+
+        <!-- 교체 모드 -->
+        <template v-else>
+          <div class="px-2 py-1.5 text-[12px] text-zinc-500 dark:text-zinc-400">
+            교체할 태그 선택
+          </div>
+
+          <select
+            v-model="targetTagId"
+            class="w-full rounded-md px-2 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+          >
+            <option value="" disabled>선택하세요</option>
+            <option v-for="t in replaceCandidates" :key="t.id" :value="t.id">
+              {{ t.name }} ({{ t.bookmarkCount }})
+            </option>
+          </select>
+
+          <div class="mt-2 flex gap-2 px-1">
+            <button
+              type="button"
+              class="menu-item flex-1 text-center"
+              @click="cancelReplace"
+              :disabled="isTagMutating"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              class="menu-item flex-1 text-center"
+              @click="handleReplace"
+              :disabled="isTagMutating || !canReplace"
+            >
+              적용
+            </button>
+          </div>
+        </template>
       </div>
     </teleport>
   </div>
@@ -43,16 +91,52 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeMount, onMounted, ref } from "vue";
 import type { CSSProperties } from "vue";
+import type { ID } from "@/types/common";
+import { storeToRefs } from "pinia";
+import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
+import { useTagsStore } from "@/stores/tags";
+import { useToastStore } from "@/stores/toast";
+import { getErrorMessage } from "@/utils/errorMessage";
 
 const props = withDefaults(
   defineProps<{
     align?: "left" | "right";
+    tagId: ID;
+    bookmarkId: ID;
   }>(),
   { align: "right" },
 );
 
-const emit = defineEmits<{ (e: "open-workspace"): void }>();
+const emit = defineEmits<{
+  (e: "open-workspace"): void;
+  (e: "tags-changed"): void;
+}>();
 
+const toast = useToastStore();
+const taggedStore = useTaggedBookmarksStore();
+const tagsStore = useTagsStore();
+
+const { isMutating } = storeToRefs(taggedStore);
+const { items: tagItems } = storeToRefs(tagsStore);
+
+const isTagMutating = computed(
+  () => !!(isMutating.value.detach || isMutating.value.replace),
+);
+
+// state
+const mode = ref<"menu" | "replace">("menu");
+const targetTagId = ref<ID | "">("");
+
+const replaceCandidates = computed(() => {
+  return tagItems.value.filter((t) => t.id !== props.tagId);
+});
+
+const canReplace = computed(() => {
+  if (!targetTagId.value) return false;
+  return String(targetTagId.value) !== String(props.tagId);
+});
+
+// position
 const open = ref(false);
 const triggerEl = ref<HTMLElement | null>(null);
 const panelEl = ref<HTMLElement | null>(null);
@@ -94,6 +178,8 @@ function toggle() {
 function close() {
   if (!open.value) return;
   open.value = false;
+  mode.value = "menu";
+  targetTagId.value = "";
 }
 
 async function openMenu() {
@@ -108,7 +194,46 @@ function handleOpenWorkspace() {
   emit("open-workspace");
 }
 
-// 바깥 클릭 닫기
+// actions
+async function handleDetach() {
+  try {
+    await taggedStore.detachFromBookmarks([props.bookmarkId], {
+      reload: false,
+    });
+    emit("tags-changed");
+    close();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "태그 제거에 실패했습니다."));
+  }
+}
+
+function openReplace() {
+  mode.value = "replace";
+  targetTagId.value = "";
+  nextTick(updatePosition);
+}
+
+function cancelReplace() {
+  mode.value = "menu";
+  targetTagId.value = "";
+  nextTick(updatePosition);
+}
+
+async function handleReplace() {
+  if (!canReplace.value) return;
+
+  try {
+    const toTagId = Number(targetTagId.value);
+    await taggedStore.replaceOnBookmarks(toTagId, [props.bookmarkId], {
+      reload: false,
+    });
+    emit("tags-changed");
+    close();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "태그 교체에 실패했습니다."));
+  }
+}
+
 function onDocClick(e: MouseEvent) {
   if (!open.value) return;
   const t = e.target as Node | null;
