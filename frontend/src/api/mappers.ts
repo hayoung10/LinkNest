@@ -112,13 +112,13 @@ export function mapTagRes(dto: TagRes): Tag {
   };
 }
 
-/** === 백엔드 응답 DTO -> 도메인 모델 매핑 === */
+/** === TaggedBookmark -> Bookmark 매핑 === */
 export function toBookmarkFromTagged(b: TaggedBookmark): Bookmark {
   return {
     id: b.id,
     collectionId: b.collectionId,
     url: b.url,
-    title: b.url,
+    title: b.title,
     description: b.description,
     emoji: b.emoji,
     autoImageUrl: b.autoImageUrl,
