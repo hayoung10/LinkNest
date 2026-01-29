@@ -47,6 +47,8 @@
             :tag-id="selectedTagId"
             @open-bookmarks="onOpenBookmarks"
             @open-settings="onOpenSettings"
+            @merge="onMerged"
+            @delete="onDeleted"
           />
         </template>
 
@@ -60,6 +62,7 @@
             @select-bookmark="onSelectBookmark"
             @back="backToDashboard"
             @open-settings="onOpenSettings"
+            @tags-changed="onTagsChanged"
           />
 
           <TaggedBookmarkCard
@@ -71,6 +74,7 @@
             @select-bookmark="onSelectBookmark"
             @back="backToDashboard"
             @open-settings="onOpenSettings"
+            @tags-changed="onTagsChanged"
           />
         </template>
       </section>
@@ -89,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import SidePanel from "@/components/overlays/SidePanel.vue";
@@ -105,6 +109,8 @@ import type { ID } from "@/types/common";
 import { useAuthStore } from "@/stores/auth";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useToastStore } from "@/stores/toast";
+import { useTagsStore } from "@/stores/tags";
+import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
 
 type Mode = "dashboard" | "bookmarks";
 
@@ -113,6 +119,8 @@ const router = useRouter();
 const auth = useAuthStore();
 const toast = useToastStore();
 const preferences = usePreferencesStore();
+const tagsStore = useTagsStore();
+const taggedStore = useTaggedBookmarksStore();
 
 const { defaultLayout } = storeToRefs(preferences);
 const isList = computed(() => defaultLayout.value === "LIST");
@@ -162,6 +170,35 @@ function onSelectBookmark(id: ID) {
   selectedBookmarkId.value = id;
   isSettingsOpen.value = false;
 }
+
+async function onMerged() {
+  selectedTagId.value = null;
+  await tagsStore.safeReload();
+}
+
+async function onDeleted() {
+  selectedTagId.value = null;
+  await tagsStore.safeReload();
+}
+
+async function onTagsChanged() {
+  tagsStore.setQuery({ page: 0 });
+  await tagsStore.safeReload();
+
+  taggedStore.safeReload();
+}
+
+async function refreshTagsOnEnter() {
+  await tagsStore.safeReload();
+}
+
+onMounted(async () => {
+  try {
+    await refreshTagsOnEnter();
+  } catch {
+    // BaseError/토스트로 처리
+  }
+});
 
 async function onLogout() {
   try {

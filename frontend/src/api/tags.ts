@@ -1,7 +1,7 @@
 import http, { unwrap } from "@/api/http";
-import type { ID, Tag } from "@/types/common";
+import type { ID, Tag, TaggedBookmark } from "@/types/common";
 import type { TagRes, TagsRes } from "./types";
-import type { PageMeta } from "./common";
+import type { PageMeta, PageResponse } from "./common";
 import { mapTagRes } from "./mappers";
 
 export type TagSort =
@@ -29,6 +29,20 @@ export interface GetTagsParams {
   sort?: TagSort;
   page?: number;
   size?: number;
+}
+
+export interface GetTaggedBookmarksParams {
+  page?: number;
+  size?: number;
+}
+
+export interface TagDetachReq {
+  bookmarkIds: ID[];
+}
+
+export interface TagReplaceReq {
+  targetTagId: ID;
+  bookmarkIds: ID[];
 }
 
 /** 생성 */
@@ -64,4 +78,30 @@ export async function mergeTag(id: ID, payload: TagMergeReq): Promise<void> {
 /** 삭제 */
 export async function deleteTag(id: ID): Promise<void> {
   await unwrap<void>(http.delete(`/tags/${id}`));
+}
+
+/** 태그된 북마크 목록 조회 (페이징) */
+export async function getTaggedBookmarks(
+  id: ID,
+  params: GetTaggedBookmarksParams = {},
+): Promise<PageResponse<TaggedBookmark>> {
+  return unwrap<PageResponse<TaggedBookmark>>(
+    http.get(`/tags/${id}/bookmarks`, { params }),
+  );
+}
+
+/** 선택한 북마크들에서 태그 제거 */
+export async function detachTagFromBookmarks(
+  id: ID,
+  payload: TagDetachReq,
+): Promise<void> {
+  await unwrap<void>(http.post(`/tags/${id}/detach`, payload));
+}
+
+/** 선택한 북마크들에서 태그를 다른 태그로 교체 */
+export async function replaceTagOnBookmarks(
+  id: ID,
+  payload: TagReplaceReq,
+): Promise<void> {
+  await unwrap<void>(http.post(`/tags/${id}/replace`, payload));
 }
