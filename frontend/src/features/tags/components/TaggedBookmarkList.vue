@@ -41,6 +41,20 @@
 
           <!-- 북마크 리스트 -->
           <template v-else>
+            <!-- 선택 툴바 -->
+            <TaggedBookmarkSelectionToolbar
+              :selected-count="selectedCount"
+              :all-checked="allChecked"
+              :isTagMutating="isTagMutating"
+              :candidates="replaceCandidates"
+              :target-tag-id="bulkTargetTagId"
+              :can-replace="canBulkReplace"
+              @toggle-all="toggleAll"
+              @detach="handleBulkDetach"
+              @replace="handleBulkReplace"
+              @update:target-tag-id="(v) => (bulkTargetTagId = v)"
+            />
+
             <div ref="listWrapRef" class="min-h-0 overflow-y-auto pr-1">
               <ul class="mt-0" role="list" aria-label="태그 북마크 리스트 목록">
                 <template v-for="b in items" :key="b.id">
@@ -48,20 +62,45 @@
                     :data-bid="String(b.id)"
                     class="group px-2 py-3 rounded-md cursor-pointer select-none transition-colors"
                     :class="[
-                      isActive(b)
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 ring-1 ring-blue-300'
+                      isChecked(b.id)
+                        ? 'bg-blue-50 ring-1 ring-blue-300'
                         : isFocused(b)
-                          ? 'bg-amber-50 ring-1 ring-amber-300 dark:bg-amber-900/20'
+                          ? 'bg-amber-50 ring-1 ring-amber-300'
                           : 'hover:bg-zinc-100 dark:hover:bg-zinc-800',
                     ]"
                   >
-                    <button
+                    <div
                       type="button"
                       class="w-full text-left"
-                      @click="onSelect(b)"
+                      @click="toggleChecked(b.id)"
+                      @keydown.enter.prevent="toggleChecked(b.id)"
+                      @keydown.space.prevent="toggleChecked(b.id)"
                       :title="displayTitle(b)"
                     >
                       <div class="flex items-stretch gap-3 px-3">
+                        <!-- 체크박스 -->
+                        <div class="shrink-0 pt-2">
+                          <div
+                            class="size-5"
+                            :class="[
+                              isChecked(b.id)
+                                ? 'opacity-100 pointer-events-auto'
+                                : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto',
+                              'transition-opacity',
+                            ]"
+                          >
+                            <input
+                              type="checkbox"
+                              class="size-5 rounded border-zinc-300 text-blue-600 focus:ring-2 focus:ring-blue-500/40 dark:border-zinc-600 dark:bg-zinc-900"
+                              :checked="isChecked(b.id)"
+                              @click.stop="toggleChecked(b.id)"
+                              :aria-label="
+                                isChecked(b.id) ? '선택 해제' : '선택'
+                              "
+                            />
+                          </div>
+                        </div>
+
                         <!-- favorite (TODO: disabled) -->
                         <div class="shrink-0 pt-2">
                           <button
@@ -173,8 +212,12 @@
                                 class="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-opacity"
                               >
                                 <TaggedBookmarkMoreMenu
+                                  v-if="props.tagId != null"
                                   align="right"
+                                  :tag-id="props.tagId"
+                                  :bookmark-id="b.id"
                                   @open-workspace="onOpenWorkspace(b)"
+                                  @tags-changed="$emit('tags-changed')"
                                 />
                               </div>
                             </div>
@@ -233,7 +276,7 @@
                           </div>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   </li>
 
                   <li aria-hidden="true">
@@ -263,10 +306,15 @@ import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
 import StarIcon from "@/components/icons/StarIcon.vue";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
+import {
+  TaggedBookmarkMoreMenu,
+  TagHeader,
+  TaggedBookmarkSelectionToolbar,
+} from "@/features/tags";
 import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
-import { useWorkspaceStore } from "@/stores/workspace";
 import { useToastStore } from "@/stores/toast";
-import { TaggedBookmarkMoreMenu, TagHeader } from "@/features/tags";
+import { useTagsStore } from "@/stores/tags";
+import { getErrorMessage } from "@/utils/errorMessage";
 
 const props = defineProps<{
   tagId: ID | null;
@@ -278,13 +326,16 @@ const emit = defineEmits<{
   (e: "select-bookmark", id: ID): void;
   (e: "back"): void;
   (e: "open-settings"): void;
+  (e: "tags-changed"): void;
 }>();
 
 const toast = useToastStore();
-const workspace = useWorkspaceStore();
-const tagged = useTaggedBookmarksStore();
+const taggedStore = useTaggedBookmarksStore();
+const tagsStore = useTagsStore();
 
-const { items, isLoading, error, loaded } = storeToRefs(tagged);
+const { items, isLoading, error, loaded, isMutating } =
+  storeToRefs(taggedStore);
+const { items: tagItems } = storeToRefs(tagsStore);
 
 const hasSelection = computed(() => props.tagId != null);
 
@@ -303,8 +354,12 @@ const isEmpty = computed(
     items.value.length === 0,
 );
 
+const isTagMutating = computed(
+  () => !!(isMutating.value.detach || isMutating.value.replace),
+);
+
 function onRetry() {
-  tagged.safeReload();
+  taggedStore.safeReload();
 }
 
 function isFavoriteMutating(id: ID) {
@@ -316,6 +371,9 @@ async function onToggleFavorite(b: TaggedBookmark) {
   return;
 }
 
+// ------------------------
+// Display
+// ------------------------
 function displayTitle(b: TaggedBookmark): string {
   const t = (b.title ?? "").trim();
   return t || "(제목 없음)";
@@ -394,9 +452,94 @@ function onOpenWorkspace(b: TaggedBookmark) {
   console.log("[TaggedBookmarkCard] open workspace:", b.id);
 }
 
+// ------------------------
+// Selection
+// ------------------------
+const selectedIds = ref<Set<ID>>(new Set());
+
+const selectedCount = computed(() => selectedIds.value.size);
+const selectedList = computed(() => Array.from(selectedIds.value));
+
+function isChecked(id: ID) {
+  return selectedIds.value.has(id);
+}
+
+function toggleChecked(id: ID) {
+  const next = new Set(selectedIds.value);
+  next.has(id) ? next.delete(id) : next.add(id);
+  selectedIds.value = next;
+}
+
+function clearSelection() {
+  selectedIds.value = new Set();
+}
+
+const allChecked = computed(() => {
+  if (items.value.length === 0) return false;
+  return items.value.every((b) => selectedIds.value.has(b.id));
+});
+
+function toggleAll() {
+  if (allChecked.value) {
+    clearSelection();
+  } else {
+    selectedIds.value = new Set(items.value.map((b) => b.id));
+  }
+}
+
+// ------------------------
+// detach / replace
+// ------------------------
+const bulkTargetTagId = ref<ID | "">("");
+
+const replaceCandidates = computed(() => {
+  const current = props.tagId;
+  if (current == null) return [];
+  return tagItems.value.filter((t) => String(t.id) !== String(current));
+});
+
+const canBulkReplace = computed(() => {
+  if (!props.tagId) return false;
+  if (!bulkTargetTagId.value) return false;
+  return String(bulkTargetTagId.value) !== String(props.tagId);
+});
+
+async function handleBulkDetach() {
+  if (!props.tagId) return;
+  if (selectedCount.value === 0) return;
+
+  try {
+    await taggedStore.detachFromBookmarks(selectedList.value);
+    emit("tags-changed");
+    clearSelection();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "태그 제거에 실패했습니다."));
+  }
+}
+
+async function handleBulkReplace() {
+  if (!props.tagId) return;
+  if (selectedCount.value === 0) return;
+  if (!canBulkReplace.value) return;
+
+  try {
+    const toTagId = Number(bulkTargetTagId.value);
+    await taggedStore.replaceOnBookmarks(toTagId, selectedList.value);
+    emit("tags-changed");
+    clearSelection();
+    bulkTargetTagId.value = "";
+  } catch (e) {
+    toast.error(getErrorMessage(e, "태그 교체에 실패했습니다."));
+  }
+}
+
+// ------------------------
+// Focus scroll
+// ------------------------
 const listWrapRef = ref<HTMLElement | null>(null);
 
 function isFocused(b: TaggedBookmark): boolean {
+  if (selectedCount.value > 0) return false;
   return props.focusBookmarkId === b.id;
 }
 
@@ -413,6 +556,29 @@ async function scrollToFocus() {
   el.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
+// ------------------------
+// watchers
+// ------------------------
+watch(
+  () => props.tagId,
+  () => {
+    clearSelection();
+    bulkTargetTagId.value = "";
+  },
+);
+
+watch(
+  () => items.value.map((b) => b.id).join(","),
+  () => {
+    const current = new Set(items.value.map((b) => b.id));
+    const next = new Set<ID>();
+    selectedIds.value.forEach((id) => {
+      if (current.has(id)) next.add(id);
+    });
+    selectedIds.value = next;
+  },
+);
+
 watch(
   () => props.focusBookmarkId,
   () => scrollToFocus(),
@@ -422,13 +588,13 @@ watch(
 watch(
   () => props.tagId,
   async (next) => {
-    tagged.setContext(next);
+    taggedStore.setContext(next);
     if (next != null) {
       try {
-        await tagged.load(true);
+        await taggedStore.load(true);
         await scrollToFocus();
       } catch {
-        // 화면에서 BaseError가 처리
+        // BaseError가 처리
       }
     }
   },
