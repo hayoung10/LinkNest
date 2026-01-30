@@ -192,5 +192,17 @@ export const useTaggedBookmarksStore = defineStore("taggedBookmarks", {
         this.isMutating.replace = false;
       }
     },
+
+    patchTaggedBookmarkFavorite(id: ID, isFavorite: boolean) {
+      const idx = this.items.findIndex((x) => x.id === id);
+      if (idx === -1) return;
+
+      const current = this.items[idx];
+      this.items = [
+        ...this.items.slice(0, idx),
+        { ...current, isFavorite },
+        ...this.items.slice(idx + 1),
+      ];
+    },
   },
 });

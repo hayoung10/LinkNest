@@ -616,7 +616,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       if (idx >= 0) this.bookmarks.splice(idx, 1, updated);
     },
 
-    async toggleBookmarkFavorite(bookmark: Bookmark) {
+    async toggleBookmarkFavorite(bookmark: Bookmark): Promise<Bookmark> {
       this.mutateError.toggleBookmarkFavorite = null;
       setMutating(this.isMutating, "toggleBookmarkFavorite", true);
       try {
@@ -626,10 +626,11 @@ export const useWorkspaceStore = defineStore("workspace", {
 
         if (this.viewMode === "favorites" && !updated.isFavorite) {
           this.bookmarks = this.bookmarks.filter((b) => b.id !== updated.id);
-          return;
+          return updated;
         }
 
         this.replaceBookmark(updated);
+        return updated;
       } catch (e) {
         fail(
           this.mutateError,
