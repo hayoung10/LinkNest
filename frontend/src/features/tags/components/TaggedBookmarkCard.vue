@@ -104,13 +104,12 @@
                     <!-- favorite (TODO: disabled) -->
                     <button
                       type="button"
-                      class="absolute top-2 left-10 z-20 inline-flex items-center justify-center size-8 rounded-md bg-white/85 backdrop-blur border border-white/60 shadow-sm hover:bg-white dark:bg-zinc-900/70 dark:border-zinc-700/60 dark:hover:bg-zinc-800 transition-colors"
-                      :disabled="true"
-                      title="태그 화면에서는 즐겨찾기 변경을 지원하지 않습니다."
+                      class="absolute top-2 left-8 z-20 inline-flex items-center justify-center size-8 hover:bg-white/60 dark:hover:bg-zinc-800/60 transition-colors disabled:opacity-50"
+                      :disabled="isFavoriteMutating(b.id)"
                       :aria-label="
                         b.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'
                       "
-                      @click.stop.prevent
+                      @click.stop.prevent="onToggleFavorite(b)"
                     >
                       <StarIcon
                         :size="18"
@@ -118,7 +117,7 @@
                         :klass="
                           b.isFavorite
                             ? 'text-amber-400'
-                            : 'text-zinc-500/80 dark:text-zinc-200/80'
+                            : 'text-zinc-500/70 dark:text-zinc-200/70'
                         "
                       />
                     </button>
@@ -280,7 +279,9 @@ import {
 import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
 import { useToastStore } from "@/stores/toast";
 import { useTagsStore } from "@/stores/tags";
+import { useWorkspaceStore } from "@/stores/workspace";
 import { getErrorMessage } from "@/utils/errorMessage";
+import { toBookmarkFromTagged } from "@/api/mappers";
 
 const props = defineProps<{
   tagId: ID | null;
@@ -298,10 +299,12 @@ const emit = defineEmits<{
 const toast = useToastStore();
 const taggedStore = useTaggedBookmarksStore();
 const tagsStore = useTagsStore();
+const workspace = useWorkspaceStore();
 
 const { items, isLoading, error, loaded, isMutating } =
   storeToRefs(taggedStore);
 const { items: tagItems } = storeToRefs(tagsStore);
+const { isMutating: workspaceMutating } = storeToRefs(workspace);
 
 const hasSelection = computed(() => props.tagId != null);
 
@@ -329,12 +332,23 @@ function onRetry() {
 }
 
 function isFavoriteMutating(id: ID) {
-  return true;
+  return (
+    isTagMutating.value || !!workspaceMutating.value.toggleBookmarkFavorite
+  );
 }
 
 async function onToggleFavorite(b: TaggedBookmark) {
-  // TODO: tagged bookmarks 전용 toggle API 연결 후 활성화
-  return;
+  if (isFavoriteMutating(b.id)) return;
+
+  try {
+    const updated = await workspace.toggleBookmarkFavorite(
+      toBookmarkFromTagged(b),
+    );
+
+    taggedStore.patchTaggedBookmarkFavorite(b.id, updated.isFavorite);
+  } catch (e) {
+    toast.error("즐겨찾기 변경에 실패했습니다.");
+  }
 }
 
 // ------------------------
