@@ -114,7 +114,7 @@
 
       <!-- 북마크 카드 -->
       <template v-else>
-        <div class="flex-1 min-h-0 overflow-y-auto pr-1">
+        <div ref="listWrapRef" class="flex-1 min-h-0 overflow-y-auto pr-1">
           <div
             class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr"
             aria-label="북마크 카드 목록"
@@ -122,8 +122,15 @@
             <article
               v-for="b in bookmarks"
               :key="b.id"
+              :data-bid="String(b.id)"
               class="group relative flex flex-col rounded-xl border border-zinc-200 bg-white/90 hover:bg-zinc-50 shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer"
-              :class="isActive(b) ? 'ring-2 ring-blue-500 border-blue-500' : ''"
+              :class="[
+                isActive(b)
+                  ? 'ring-2 ring-blue-500 border-blue-500'
+                  : isFocused(b)
+                    ? 'ring-2 ring-amber-400 bg-amber-50'
+                    : '',
+              ]"
               @click="onSelect(b)"
               :title="displayTitle(b)"
             >
@@ -265,7 +272,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import type { Bookmark, CollectionNode, ID } from "@/types/common";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
@@ -282,6 +289,7 @@ import { useToastStore } from "@/stores/toast";
 const props = defineProps<{
   collection: CollectionNode | null;
   selectedBookmarkId?: ID | null;
+  focusBookmarkId?: ID | null;
 }>();
 
 const emit = defineEmits<{
@@ -420,6 +428,35 @@ watch(
   [() => selectedCollectionId.value, () => collectionNodes.value],
   ([cid]) => refreshPath(cid),
   { immediate: true, deep: true },
+);
+
+// ------------------------
+// Focus scroll
+// ------------------------
+const listWrapRef = ref<HTMLElement | null>(null);
+
+function isFocused(b: Bookmark): boolean {
+  if (props.selectedBookmarkId != null) return false;
+  return props.focusBookmarkId === b.id;
+}
+
+async function scrollToFocus() {
+  const id = props.focusBookmarkId;
+  if (!id) return;
+
+  await nextTick();
+  const el = listWrapRef.value?.querySelector<HTMLElement>(
+    `[data-bid="${id}"]`,
+  );
+  if (!el) return;
+
+  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+watch(
+  () => props.focusBookmarkId,
+  () => scrollToFocus(),
+  { immediate: true },
 );
 </script>
 

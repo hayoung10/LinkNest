@@ -63,6 +63,7 @@
             @back="backToDashboard"
             @open-settings="onOpenSettings"
             @tags-changed="onTagsChanged"
+            @open-workspace="onOpenWorkspace"
           />
 
           <TaggedBookmarkCard
@@ -75,6 +76,7 @@
             @back="backToDashboard"
             @open-settings="onOpenSettings"
             @tags-changed="onTagsChanged"
+            @open-workspace="onOpenWorkspace"
           />
         </template>
       </section>
@@ -190,6 +192,16 @@ async function onTagsChanged() {
 
 async function refreshTagsOnEnter() {
   await tagsStore.safeReload();
+}
+
+function onOpenWorkspace(payload: { bookmarkId: ID; collectionId: ID }) {
+  router.push({
+    name: "workspace",
+    query: {
+      focusBookmarkId: String(payload.bookmarkId),
+      collectionId: String(payload.collectionId),
+    },
+  });
 }
 
 onMounted(async () => {

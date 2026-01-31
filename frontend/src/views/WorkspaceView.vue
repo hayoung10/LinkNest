@@ -36,6 +36,7 @@
           :key="'list-' + (selectedCollectionId || 'none')"
           :collection="selectedCollection"
           :selected-bookmark-id="selectedBookmarkId"
+          :focus-bookmark-id="focusBookmarkId"
           @open-add="openAddPanel"
           @select-bookmark="onSelectBookmark"
         />
@@ -45,6 +46,7 @@
           :key="'card-' + (selectedCollectionId || 'none')"
           :collection="selectedCollection"
           :selected-bookmark-id="selectedBookmarkId"
+          :focus-bookmark-id="focusBookmarkId"
           @open-add="openAddPanel"
           @select-bookmark="onSelectBookmark"
         />
@@ -120,7 +122,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import {
   WorkspaceSidebar,
   BookmarkList,
@@ -137,7 +140,6 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import * as BookmarkApi from "@/api/bookmarks";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/stores/auth";
-import { useRouter } from "vue-router";
 import { usePreferencesStore } from "@/stores/preferences";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useToastStore } from "@/stores/toast";
@@ -151,6 +153,10 @@ type UpdateBookmarkPayload = {
   tags?: string[];
 };
 
+const router = useRouter();
+const route = useRoute();
+
+const auth = useAuthStore();
 const toast = useToastStore();
 const workspace = useWorkspaceStore();
 const preferences = usePreferencesStore();
@@ -164,9 +170,6 @@ const {
   collectionById,
 } = storeToRefs(workspace);
 const { defaultLayout, defaultBookmarkSort } = storeToRefs(preferences);
-
-const auth = useAuthStore();
-const router = useRouter();
 
 const selectedCollection = computed<CollectionNode | null>(() => {
   const sid = selectedCollectionId.value;
@@ -201,6 +204,25 @@ const isDetailPending = computed(() => {
     !hasBookmarksError.value
   );
 });
+
+const queryCollectionId = computed<ID | null>(() =>
+  parseQueryId(route.query.collectionId),
+);
+
+const queryFocusBookmarkId = computed<ID | null>(() =>
+  parseQueryId(route.query.focusBookmarkId),
+);
+
+const focusBookmarkId = ref<ID | null>(null);
+const skipNextRefresh = ref(false);
+
+function parseQueryId(v: unknown): ID | null {
+  const s = Array.isArray(v) ? v[0] : v;
+  if (s == null || s === "") return null;
+
+  const n = Number(s);
+  return Number.isFinite(n) ? (n as ID) : null;
+}
 
 onMounted(() => {
   workspace.fetchCollectionTree();
@@ -274,7 +296,7 @@ async function onOpenAllBookmarks(collectionId: ID) {
     if (urls.length > 10) {
       const ok = window.confirm(
         `총 ${urls.length}개의 북마크를 새 탭에서 여시겠습니까?\n` +
-          "브라우저 설정에 따라 일부 탭은 차단될 수 있습니다."
+          "브라우저 설정에 따라 일부 탭은 차단될 수 있습니다.",
       );
       if (!ok) return;
     }
@@ -291,6 +313,10 @@ async function onOpenAllBookmarks(collectionId: ID) {
 function onSelectBookmark(id: ID) {
   selectedBookmarkId.value = id;
   isSettingsOpen.value = false;
+
+  if (focusBookmarkId.value != null) {
+    onFocusDone(focusBookmarkId.value);
+  }
 }
 
 function openAddPanel() {
@@ -411,6 +437,24 @@ async function refreshBookmarks() {
   }
 }
 
+function onFocusDone(id: ID) {
+  focusBookmarkId.value = null;
+
+  if (String(route.query.focusBookmarkId ?? "") !== String(id)) return;
+
+  router.replace({
+    query: {
+      ...route.query,
+      focusBookmarkId: undefined,
+      collectionId: undefined,
+    },
+  });
+}
+
+// ------------------------
+// Watchers
+// ------------------------
+
 // 화면 컨텍스트 변화(모드/선택) → 목록 리프레시
 watch(
   () => [viewMode.value, selectedCollectionId.value] as const,
@@ -419,13 +463,18 @@ watch(
 
     if (mode === prevMode && cid === prevCid) return;
 
+    if (skipNextRefresh.value) {
+      skipNextRefresh.value = false;
+      return;
+    }
+
     selectedBookmarkId.value = null;
     isAddOpen.value = false;
     isSettingsOpen.value = false;
 
     await refreshBookmarks();
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // favorites 모드에서, 선택된 북마크가 목록에서 빠지면 패널 닫기
@@ -437,7 +486,7 @@ watch(
 
     const exists = list.some((b) => b.id === sid);
     if (!exists) selectedBookmarkId.value = null;
-  }
+  },
 );
 
 // 정렬 변경 → 목록 리프레시
@@ -446,6 +495,31 @@ watch(
   async (sort, prevSort) => {
     if (sort === prevSort) return;
     await refreshBookmarks();
-  }
+  },
+);
+
+// query: collectionId/focusBookmarkId → workspace 이동
+watch(
+  () => [queryCollectionId.value, queryFocusBookmarkId.value] as const,
+  async ([cid, bid]) => {
+    if (cid == null) return;
+
+    skipNextRefresh.value = true;
+
+    if (selectedCollectionId.value !== cid) {
+      workspace.selectCollection(cid);
+    }
+
+    selectedBookmarkId.value = null;
+    isAddOpen.value = false;
+    isSettingsOpen.value = false;
+
+    await workspace.fetchBookmarks(cid);
+
+    focusBookmarkId.value = bid ?? null;
+
+    await nextTick();
+  },
+  { immediate: true },
 );
 </script>
