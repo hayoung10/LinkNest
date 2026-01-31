@@ -205,17 +205,24 @@ const isDetailPending = computed(() => {
   );
 });
 
-const queryCollectionId = computed<ID | null>(() => {
-  const v = route.query.collectionId;
-  return v ? Number(v) : null;
-});
+const queryCollectionId = computed<ID | null>(() =>
+  parseQueryId(route.query.collectionId),
+);
 
-const queryFocusBookmarkId = computed<ID | null>(() => {
-  const v = route.query.focusBookmarkId;
-  return v ? Number(v) : null;
-});
+const queryFocusBookmarkId = computed<ID | null>(() =>
+  parseQueryId(route.query.focusBookmarkId),
+);
 
 const focusBookmarkId = ref<ID | null>(null);
+const skipNextRefresh = ref(false);
+
+function parseQueryId(v: unknown): ID | null {
+  const s = Array.isArray(v) ? v[0] : v;
+  if (s == null || s === "") return null;
+
+  const n = Number(s);
+  return Number.isFinite(n) ? (n as ID) : null;
+}
 
 onMounted(() => {
   workspace.fetchCollectionTree();
@@ -456,6 +463,11 @@ watch(
 
     if (mode === prevMode && cid === prevCid) return;
 
+    if (skipNextRefresh.value) {
+      skipNextRefresh.value = false;
+      return;
+    }
+
     selectedBookmarkId.value = null;
     isAddOpen.value = false;
     isSettingsOpen.value = false;
@@ -492,12 +504,15 @@ watch(
   async ([cid, bid]) => {
     if (cid == null) return;
 
+    skipNextRefresh.value = true;
+
     if (selectedCollectionId.value !== cid) {
       workspace.selectCollection(cid);
-      selectedBookmarkId.value = null;
-      isAddOpen.value = false;
-      isSettingsOpen.value = false;
     }
+
+    selectedBookmarkId.value = null;
+    isAddOpen.value = false;
+    isSettingsOpen.value = false;
 
     await workspace.fetchBookmarks(cid);
 
