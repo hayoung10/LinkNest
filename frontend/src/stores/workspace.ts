@@ -30,6 +30,7 @@ interface WorkspaceState {
   error: Record<LoadKey, string | null>;
   isMutating: Record<MutateKey, boolean>;
   mutateError: Record<MutateKey, string | null>;
+  expandedIds: ID[];
 }
 
 function setLoading(
@@ -91,6 +92,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       moveBookmark: null,
       toggleBookmarkFavorite: null,
     },
+    expandedIds: [],
   }),
 
   getters: {
@@ -137,6 +139,9 @@ export const useWorkspaceStore = defineStore("workspace", {
     isFavoriteView(): boolean {
       return this.viewMode === "favorites";
     },
+    expandedSet(state): Set<ID> {
+      return new Set(state.expandedIds);
+    },
   },
 
   actions: {
@@ -176,10 +181,15 @@ export const useWorkspaceStore = defineStore("workspace", {
         moveBookmark: null,
         toggleBookmarkFavorite: null,
       };
+      this.expandedIds = [];
     },
     selectCollection(id: ID | null) {
       this.viewMode = "collection";
       this.selectedCollectionId = id;
+
+      if (id != null) {
+        this.expandAncestors(id);
+      }
     },
     selectFavorites() {
       this.viewMode = "favorites";
@@ -198,6 +208,37 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.collectionNodes = this.collectionNodes.map((n) =>
         n.id === collectionId ? { ...n, bookmarkCount: Math.max(0, count) } : n,
       );
+    },
+    toggleExpanded(id: ID) {
+      const set = new Set(this.expandedIds);
+      set.has(id) ? set.delete(id) : set.add(id);
+      this.expandedIds = Array.from(set);
+    },
+    setExpanded(id: ID, expanded: boolean) {
+      const set = new Set(this.expandedIds);
+      expanded ? set.add(id) : set.delete(id);
+      this.expandedIds = Array.from(set);
+    },
+    collapseAll() {
+      this.expandedIds = [];
+    },
+    syncExpandedWithTree(validIds: Set<ID>) {
+      const next = this.expandedIds.filter((id) => validIds.has(id));
+      if (next.length !== this.expandedIds.length) {
+        this.expandedIds = next;
+      }
+    },
+    expandAncestors(collectionId: ID) {
+      const byId = this.collectionById;
+      const set = new Set(this.expandedIds);
+
+      let cur = byId[collectionId];
+      while (cur.parentId != null) {
+        set.add(cur.parentId);
+        cur = byId[cur.parentId];
+      }
+
+      this.expandedIds = Array.from(set);
     },
 
     /* ------------------------ 컬렉션 ------------------------ */
@@ -481,6 +522,13 @@ export const useWorkspaceStore = defineStore("workspace", {
       try {
         const nodes = await CollectionApi.listTree();
         this.collectionNodes = nodes;
+
+        const validIds = new Set(nodes.map((n) => n.id));
+        this.syncExpandedWithTree(validIds);
+
+        if (this.selectedCollectionId != null) {
+          this.expandAncestors(this.selectedCollectionId);
+        }
       } catch (e) {
         fail(
           this.error,

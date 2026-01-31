@@ -62,7 +62,7 @@
           :key="id"
           :node="collectionById[id]"
           :depth="0"
-          :expanded-ids="expandedIds"
+          :expanded-set="expandedSet"
           :selected-collection-id="selectedCollectionId"
           :editing-id="editingId"
           :draft-name="draftName"
@@ -239,6 +239,7 @@ const {
   isMutating,
   collectionById,
   childrenByParent,
+  expandedSet,
 } = storeToRefs(workspace);
 const toast = useToastStore();
 
@@ -285,15 +286,9 @@ function onRetryCollections() {
   return workspace.fetchCollectionTree();
 }
 
-// 확장 상태
-const expandedIds = ref<Set<ID>>(new Set());
-
-async function toggleExpand(id: ID) {
+function toggleExpand(id: ID) {
   if (isLoadingCollections.value || hasError.value) return;
-
-  const next = new Set(expandedIds.value);
-  next.has(id) ? next.delete(id) : next.add(id);
-  expandedIds.value = next;
+  workspace.toggleExpanded(id);
 }
 
 // 이름 변경하기
@@ -551,14 +546,11 @@ watch(showAddCollectionDialog, async (open) => {
 });
 
 watch(
-  collectionNodes,
+  collectionNodes.value,
   (nodes) => {
-    const alive = new Set(nodes.map((n) => n.id));
-    const next = new Set([...expandedIds.value].filter((id) => alive.has(id)));
-
-    if (next.size !== expandedIds.value.size) expandedIds.value = next;
-
-    if (editingId.value != null && !alive.has(editingId.value)) cancelRename();
+    const validIds = new Set(nodes.map((n) => n.id));
+    if (editingId.value != null && !validIds.has(editingId.value))
+      cancelRename();
   },
   { deep: false },
 );

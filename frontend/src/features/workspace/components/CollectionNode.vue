@@ -8,8 +8,8 @@
         isActive
           ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 font-medium ring-1 ring-blue-300'
           : !props.dndActiveId
-          ? 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
-          : '',
+            ? 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+            : '',
 
         draggable.isDragging.value ? 'opacity-60 scale-[0.99]' : '',
       ]"
@@ -154,7 +154,7 @@
           :key="childId"
           :node="collectionById[childId]"
           :depth="depth + 1"
-          :expanded-ids="expandedIds"
+          :expanded-set="expandedSet"
           :selected-collection-id="selectedCollectionId"
           :editing-id="editingId"
           :draft-name="draftName"
@@ -210,7 +210,7 @@ const props = withDefaults(
   defineProps<{
     node: CollectionNodeModel;
     depth?: number;
-    expandedIds: Set<ID>;
+    expandedSet: Set<ID>;
     selectedCollectionId?: ID | null;
     disabled?: boolean;
 
@@ -234,7 +234,7 @@ const props = withDefaults(
     isRenaming: false,
     dndActiveId: null,
     dndOver: null,
-  }
+  },
 );
 
 const emit = defineEmits<{
@@ -256,7 +256,7 @@ const emit = defineEmits<{
   (e: "dnd-drop", payload: DndDropPayload): void;
 }>();
 
-const expanded = computed(() => props.expandedIds.has(props.node.id));
+const expanded = computed(() => props.expandedSet.has(props.node.id));
 const isEditing = computed(() => props.editingId === props.node.id);
 const isActive = computed(() => props.selectedCollectionId === props.node.id);
 
@@ -279,7 +279,7 @@ const isDropTarget = computed(() => {
 const overZone = computed<DropZone>(() => props.dndOver?.zone ?? "middle");
 
 const disableDnd = computed(
-  () => props.disabled || isEditing.value || !!props.isRenaming
+  () => props.disabled || isEditing.value || !!props.isRenaming,
 );
 
 const droppable = useDroppable({
@@ -320,7 +320,7 @@ function setNodeEl(ref: TemplateRefType) {
 
   if (el) {
     const scroller = el.closest(
-      "[data-collection-scroll]"
+      "[data-collection-scroll]",
     ) as HTMLElement | null;
     scrollParentEl.value = scroller;
   }
