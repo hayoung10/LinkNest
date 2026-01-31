@@ -114,15 +114,18 @@
 
       <!-- 북마크 리스트 -->
       <template v-else>
-        <div class="flex-1 min-h-0 overflow-y-auto pr-1">
+        <div ref="listWrapRef" class="flex-1 min-h-0 overflow-y-auto pr-1">
           <ul class="mt-0" role="list" aria-label="북마크 목록">
             <template v-for="b in bookmarks" :key="b.id">
               <li
+                :data-bid="String(b.id)"
                 class="px-2 py-3 rounded-md cursor-pointer select-none transition-colors"
                 :class="
                   isActive(b)
                     ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 ring-1 ring-blue-300'
-                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    : isFocused(b)
+                      ? 'bg-amber-50 ring-1 ring-amber-300'
+                      : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
                 "
               >
                 <button
@@ -287,7 +290,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import type { Bookmark, CollectionNode, ID } from "@/types/common";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
@@ -304,6 +307,7 @@ import { useToastStore } from "@/stores/toast";
 const props = defineProps<{
   collection: CollectionNode | null;
   selectedBookmarkId?: ID | null;
+  focusBookmarkId?: ID | null;
 }>();
 
 const emit = defineEmits<{
@@ -332,7 +336,7 @@ const isEmpty = computed(
     hasSelection.value &&
     !isLoadingBookmarks.value &&
     !hasError.value &&
-    bookmarks.value.length === 0
+    bookmarks.value.length === 0,
 );
 
 const isAddDisabled = computed(
@@ -340,7 +344,7 @@ const isAddDisabled = computed(
     !hasSelection.value ||
     isLoadingBookmarks.value ||
     hasError.value ||
-    isMutating.value.createBookmark
+    isMutating.value.createBookmark,
 );
 
 const path = ref<CollectionPathRes[]>([]);
@@ -441,7 +445,36 @@ async function refreshPath(cid: ID | null) {
 watch(
   [() => selectedCollectionId.value, () => collectionNodes.value],
   ([cid]) => refreshPath(cid),
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
+);
+
+// ------------------------
+// Focus scroll
+// ------------------------
+const listWrapRef = ref<HTMLElement | null>(null);
+
+function isFocused(b: Bookmark): boolean {
+  if (props.selectedBookmarkId != null) return false;
+  return props.focusBookmarkId === b.id;
+}
+
+async function scrollToFocus() {
+  const id = props.focusBookmarkId;
+  if (!id) return;
+
+  await nextTick();
+  const el = listWrapRef.value?.querySelector<HTMLElement>(
+    `[data-bid="${id}"]`,
+  );
+  if (!el) return;
+
+  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+watch(
+  () => props.focusBookmarkId,
+  () => scrollToFocus(),
+  { immediate: true },
 );
 </script>
 

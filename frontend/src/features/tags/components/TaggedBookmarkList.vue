@@ -215,7 +215,8 @@
                                   align="right"
                                   :tag-id="props.tagId"
                                   :bookmark-id="b.id"
-                                  @open-workspace="onOpenWorkspace(b)"
+                                  :collection-id="b.collectionId"
+                                  @open-workspace="onOpenWorkspace"
                                   @tags-changed="$emit('tags-changed')"
                                 />
                               </div>
@@ -328,6 +329,7 @@ const emit = defineEmits<{
   (e: "back"): void;
   (e: "open-settings"): void;
   (e: "tags-changed"): void;
+  (e: "open-workspace", payload: { bookmarkId: ID; collectionId: ID }): void;
 }>();
 
 const toast = useToastStore();
@@ -461,9 +463,8 @@ function onSelect(b: TaggedBookmark) {
   emit("select-bookmark", b.id);
 }
 
-function onOpenWorkspace(b: TaggedBookmark) {
-  // TODO: 라우팅 연결 예정
-  console.log("[TaggedBookmarkCard] open workspace:", b.id);
+function onOpenWorkspace(payload: { bookmarkId: ID; collectionId: ID }) {
+  emit("open-workspace", payload);
 }
 
 // ------------------------

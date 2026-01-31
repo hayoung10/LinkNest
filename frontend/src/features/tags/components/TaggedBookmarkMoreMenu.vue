@@ -1,5 +1,5 @@
 <template>
-  <div class="relatvie">
+  <div class="relative">
     <!-- 트리거 -->
     <button
       ref="triggerEl"
@@ -103,12 +103,13 @@ const props = withDefaults(
     align?: "left" | "right";
     tagId: ID;
     bookmarkId: ID;
+    collectionId: ID;
   }>(),
   { align: "right" },
 );
 
 const emit = defineEmits<{
-  (e: "open-workspace"): void;
+  (e: "open-workspace", payload: { bookmarkId: ID; collectionId: ID }): void;
   (e: "tags-changed"): void;
 }>();
 
@@ -191,7 +192,10 @@ async function openMenu() {
 
 function handleOpenWorkspace() {
   close();
-  emit("open-workspace");
+  emit("open-workspace", {
+    bookmarkId: props.bookmarkId,
+    collectionId: props.collectionId,
+  });
 }
 
 // actions
