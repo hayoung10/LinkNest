@@ -473,6 +473,7 @@ import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import SaveIcon from "@/components/icons/SaveIcon.vue";
 import CloseIcon from "@/components/icons/CloseIcon.vue";
 import EditIcon from "@/components/icons/EditIcon.vue";
+import FolderIcon from "@/components/icons/FolderIcon.vue";
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css";
 import { storeToRefs } from "pinia";
@@ -499,7 +500,7 @@ const emit = defineEmits<{
       description: string;
       emoji?: string | null;
       tags?: string[];
-    }
+    },
   ): void;
   (e: "delete-bookmark", id: ID): void;
 
@@ -514,14 +515,14 @@ const { isMutating } = storeToRefs(workspace);
 const isModeUpdating = ref(false);
 
 const isBookmarkMutating = computed(
-  () => isMutating.value.updateBookmark || isMutating.value.deleteBookmark
+  () => isMutating.value.updateBookmark || isMutating.value.deleteBookmark,
 );
 const isCoverMutating = computed(
-  () => isBookmarkMutating.value || isModeUpdating.value
+  () => isBookmarkMutating.value || isModeUpdating.value,
 );
 
 const isFavoriteMutating = computed(
-  () => isMutating.value.toggleBookmarkFavorite
+  () => isMutating.value.toggleBookmarkFavorite,
 );
 
 defineExpose({ focusUrl });
@@ -541,7 +542,7 @@ const currentBookmark = computed<Bookmark>(() => {
 
 const hasTitle = computed(() => !!currentBookmark.value.title?.trim());
 const hasDescription = computed(
-  () => !!currentBookmark.value.description?.trim()
+  () => !!currentBookmark.value.description?.trim(),
 );
 
 const updatedAtText = computed(() => {
@@ -568,7 +569,7 @@ const isUrlValid = computed(() => {
   }
 });
 const canSave = computed(
-  () => isEditing.value && !!editedBookmark.value && isUrlValid.value
+  () => isEditing.value && !!editedBookmark.value && isUrlValid.value,
 );
 
 function displayTitle(b: Bookmark) {
