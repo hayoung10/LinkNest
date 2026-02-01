@@ -231,7 +231,7 @@
                             <span
                               v-for="t in visibleTags(b)"
                               :key="t"
-                              class="inline-flex items-center rounded-full bg-muted/40 border border-border/60 px-2 py-0.5 text-[11px] text-muted-foreground"
+                              class="inline-flex items-center rounded-full bg-muted/40 border border-border/60 px-2 py-0.5 text-[11px] text-blue-600/80 hover:text-blue-600 dark:text-blue-400/80 dark:hover:text-blue-400"
                               >{{ t }}</span
                             >
 
