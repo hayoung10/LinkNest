@@ -189,7 +189,9 @@
     <!-- 본문 -->
     <div class="flex-1 overflow-auto px-5 py-4 space-y-6">
       <!-- 커버 이미지 -->
-      <section class="rounded-2xl border border-border/60 bg-muted/20 p-4">
+      <section
+        class="rounded-2xl border border-border/60 bg-zinc-50/60 dark:bg-zinc-900/20 p-5"
+      >
         <div class="flex items-start gap-4">
           <!-- 좌: 미리보기 -->
           <div class="shrink-0">
@@ -215,7 +217,9 @@
           <!-- 우: 설정 -->
           <div class="min-w-0 flex-1">
             <div class="flex items-center justify-between gap-3">
-              <p class="text-sm font-semibold text-foreground">커버 이미지</p>
+              <p class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+                커버 이미지
+              </p>
 
               <!-- 모드 선택 -->
               <div
@@ -296,123 +300,146 @@
         </div>
       </section>
 
-      <!-- 링크 -->
-      <div class="space-y-2">
-        <template v-if="isEditing">
-          <label class="block text-sm text-foreground">링크 *</label>
-          <input
-            ref="urlRef"
-            v-model="editedBookmark!.url"
-            type="url"
-            :aria-invalid="editedBookmark!.url ? !isUrlValid : false"
-            class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
-            placeholder="https://example.com"
-          />
-          <p
-            v-if="editedBookmark!.url && !isUrlValid"
-            class="text-xs text-red-500 mt-1"
-          >
-            올바른 URL 형식이 아닙니다.
-          </p>
-        </template>
-        <template v-else>
-          <label class="block text-sm text-foreground">링크</label>
-          <div
-            class="border rounded-lg p-4 bg-white hover:bg-muted/20 transition-colors"
-          >
-            <div class="flex items-center justify-between gap-3 text-sm">
-              <div class="min-w-0 flex items-center gap-2">
-                <ExternalLinkIcon class="size-4 shrink-0 text-primary" />
-                <a
-                  :href="currentBookmark.url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-primary font-medium hover:underline truncate"
-                  :title="currentBookmark.url"
-                >
-                  {{ currentBookmark.url }}
-                </a>
-              </div>
-              <button
-                type="button"
-                :disabled="isBookmarkMutating"
-                class="text-xs px-2.5 py-1.5 rounded-md hover:bg-accent shrink-0"
-                @click="openUrl"
-              >
-                방문
-              </button>
-            </div>
-          </div>
-        </template>
-      </div>
-
-      <!-- 태그 -->
-      <div class="space-y-2">
-        <label class="block text-sm text-muted-foreground">태그</label>
-
-        <template v-if="isEditing">
-          <TagInput
-            v-model="editedBookmark!.tags"
-            :max="3"
-            placeholder="태그 입력 후 Enter로 추가"
-            :disabled="isBookmarkMutating"
-          />
-        </template>
-
-        <template v-else>
-          <div
-            v-if="(currentBookmark.tags?.length ?? 0) > 0"
-            class="flex flex-wrap gap-2"
-          >
-            <span
-              v-for="t in currentBookmark.tags"
-              :key="t"
-              class="inline-flex items-center rounded-full bg-muted/40 border border-border/60 px-2 py-1 text-xs"
-              >{{ t }}</span
-            >
-          </div>
-          <p v-else class="text-sm text-muted-foreground">(태그 없음)</p>
-        </template>
-      </div>
-
-      <!-- 설명 -->
-      <div class="space-y-2">
-        <label class="block text-sm text-foreground">설명</label>
-        <div class="h-px w-full bg-neutral-200 dark:bg-neutral-800 mt-4"></div>
-        <template v-if="isEditing">
-          <textarea
-            v-model="editedBookmark!.description"
-            class="min-h-[120px] resize-y w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
-            placeholder="(북마크에 대한 설명을 남겨보세요.)"
-          />
-        </template>
-        <template v-else>
-          <p
-            class="whitespace-pre-wrap min-h-[120px]"
-            :class="
-              hasDescription
-                ? 'text-foreground'
-                : 'text-neutral-400 dark:text-neutral-500'
-            "
-          >
-            {{
-              currentBookmark.description ??
-              "(북마크에 대한 설명을 남겨보세요.)"
-            }}
-          </p>
-        </template>
-      </div>
-
-      <!-- 삭제 버튼 -->
-      <div class="pt-6 flex justify-end">
-        <button
-          type="button"
-          :disabled="isBookmarkMutating"
-          @click="showDeleteDialog = true"
-          class="inline-flex items-center h-9 px-4 rounded-md border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50"
+      <div class="space-y-5">
+        <!-- 링크 -->
+        <section
+          class="rounded-2xl border border-border/60 bg-background p-5 border-l-4 border-l-blue-500/60"
         >
-          삭제
-        </button>
+          <label
+            class="block text-sm font-semibold tracking-wide text-zinc-500 dark:text-zinc-400"
+            >링크</label
+          >
+
+          <div class="mt-3">
+            <template v-if="isEditing">
+              <input
+                ref="urlRef"
+                v-model="editedBookmark!.url"
+                type="url"
+                :aria-invalid="editedBookmark!.url ? !isUrlValid : false"
+                class="w-full rounded-md px-3 py-2 text-sm bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400 placeholder:text-blue-400/70"
+                placeholder="https://example.com"
+              />
+              <p
+                v-if="editedBookmark!.url && !isUrlValid"
+                class="text-xs text-red-500 mt-1"
+              >
+                올바른 URL 형식이 아닙니다.
+              </p>
+            </template>
+
+            <template v-else>
+              <div
+                class="rounded-xl border border-border/60 bg-zinc-100/80 dark:bg-zinc-900/50 p-4 transition-colors hover:bg-blue-50/70 dark:hover:bg-blue-950/30"
+              >
+                <div class="flex items-center justify-between gap-3 text-sm">
+                  <div class="min-w-0 flex items-center gap-2">
+                    <ExternalLinkIcon
+                      class="size-4 shrink-0 text-blue-600 dark:text-blue-400"
+                    />
+                    <a
+                      :href="currentBookmark.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="truncate font-medium text-blue-700 dark:text-blue-300 underline-offset-2 hover:underline"
+                      :title="currentBookmark.url"
+                    >
+                      {{ currentBookmark.url }}
+                    </a>
+                  </div>
+                  <button
+                    type="button"
+                    :disabled="isBookmarkMutating"
+                    class="shrink-0 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50"
+                    @click="openUrl"
+                  >
+                    방문
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </section>
+
+        <!-- 태그 -->
+        <section class="rounded-2xl border border-border/60 bg-background p-5">
+          <label
+            class="block text-sm font-semibold tracking-wide text-zinc-500 dark:text-zinc-400"
+            >태그</label
+          >
+
+          <div class="mt-3">
+            <template v-if="isEditing">
+              <TagInput
+                v-model="editedBookmark!.tags"
+                :max="3"
+                placeholder="태그 입력 후 Enter로 추가"
+                :disabled="isBookmarkMutating"
+              />
+            </template>
+
+            <template v-else>
+              <div
+                v-if="(currentBookmark.tags?.length ?? 0) > 0"
+                class="flex flex-wrap gap-2"
+              >
+                <span
+                  v-for="t in currentBookmark.tags"
+                  :key="t"
+                  class="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300"
+                  >{{ t }}</span
+                >
+              </div>
+              <p v-else class="text-sm italic text-zinc-400 dark:text-zinc-500">
+                (태그 없음)
+              </p>
+            </template>
+          </div>
+        </section>
+
+        <!-- 설명 -->
+        <section class="rounded-2xl border border-border/60 bg-background p-5">
+          <label
+            class="block text-sm font-semibold tracking-wide text-zinc-500 dark:text-zinc-400"
+            >설명</label
+          >
+          <div class="mt-3">
+            <template v-if="isEditing">
+              <textarea
+                v-model="editedBookmark!.description"
+                class="min-h-[140px] resize-y w-full rounded-md px-3 py-2 text-sm bg-background dark:bg-background border border-border/60 focus:outline-none focus:ring-2 focus:ring-zinc-400/40"
+                placeholder="(북마크에 대한 설명을 남겨보세요.)"
+              />
+            </template>
+            <template v-else>
+              <p
+                class="whitespace-pre-wrap text-sm leading-relaxed min-h-[120px]"
+                :class="
+                  hasDescription
+                    ? 'text-zinc-800 dark:text-zinc-100'
+                    : 'italic text-zinc-400 dark:text-zinc-500'
+                "
+              >
+                {{
+                  currentBookmark.description ??
+                  "(북마크에 대한 설명을 남겨보세요.)"
+                }}
+              </p>
+            </template>
+          </div>
+        </section>
+
+        <!-- 삭제 버튼 -->
+        <div class="pt-1 flex justify-end">
+          <button
+            type="button"
+            :disabled="isBookmarkMutating"
+            @click="showDeleteDialog = true"
+            class="inline-flex items-center h-9 px-4 rounded-md border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-50"
+          >
+            삭제
+          </button>
+        </div>
       </div>
     </div>
 
@@ -473,6 +500,7 @@ import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import SaveIcon from "@/components/icons/SaveIcon.vue";
 import CloseIcon from "@/components/icons/CloseIcon.vue";
 import EditIcon from "@/components/icons/EditIcon.vue";
+import FolderIcon from "@/components/icons/FolderIcon.vue";
 import EmojiPicker from "vue3-emoji-picker";
 import "vue3-emoji-picker/css";
 import { storeToRefs } from "pinia";
@@ -499,7 +527,7 @@ const emit = defineEmits<{
       description: string;
       emoji?: string | null;
       tags?: string[];
-    }
+    },
   ): void;
   (e: "delete-bookmark", id: ID): void;
 
@@ -514,14 +542,14 @@ const { isMutating } = storeToRefs(workspace);
 const isModeUpdating = ref(false);
 
 const isBookmarkMutating = computed(
-  () => isMutating.value.updateBookmark || isMutating.value.deleteBookmark
+  () => isMutating.value.updateBookmark || isMutating.value.deleteBookmark,
 );
 const isCoverMutating = computed(
-  () => isBookmarkMutating.value || isModeUpdating.value
+  () => isBookmarkMutating.value || isModeUpdating.value,
 );
 
 const isFavoriteMutating = computed(
-  () => isMutating.value.toggleBookmarkFavorite
+  () => isMutating.value.toggleBookmarkFavorite,
 );
 
 defineExpose({ focusUrl });
@@ -541,7 +569,7 @@ const currentBookmark = computed<Bookmark>(() => {
 
 const hasTitle = computed(() => !!currentBookmark.value.title?.trim());
 const hasDescription = computed(
-  () => !!currentBookmark.value.description?.trim()
+  () => !!currentBookmark.value.description?.trim(),
 );
 
 const updatedAtText = computed(() => {
@@ -568,7 +596,7 @@ const isUrlValid = computed(() => {
   }
 });
 const canSave = computed(
-  () => isEditing.value && !!editedBookmark.value && isUrlValid.value
+  () => isEditing.value && !!editedBookmark.value && isUrlValid.value,
 );
 
 function displayTitle(b: Bookmark) {
