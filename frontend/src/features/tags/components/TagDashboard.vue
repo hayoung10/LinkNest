@@ -233,9 +233,9 @@
                   <div
                     class="size-10 rounded-xl bg-zinc-200 dark:bg-zinc-700 shrink-0 overflow-hidden grid place-items-center"
                   >
-                    <!-- TODO: favicon/cover 있으면 img -->
-                    <span class="text-xs text-zinc-600 dark:text-zinc-300"
-                      >🌐</span
+                    <span
+                      class="text-base leading-none text-zinc-700 dark:text-zinc-200"
+                      >{{ b.emoji || "🔖" }}</span
                     >
                   </div>
 
@@ -244,7 +244,7 @@
                       {{ b.title ?? b.url }}
                     </div>
                     <div
-                      class="text-sm text-zinc-500 dark:text-zinc-400 truncate"
+                      class="text-xs text-zinc-500 dark:text-zinc-400 truncate"
                     >
                       {{ b.url }}
                     </div>
