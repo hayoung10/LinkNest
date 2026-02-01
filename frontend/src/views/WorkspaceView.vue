@@ -366,7 +366,7 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
       title: payload.title,
       description: payload.description,
       emoji: payload.emoji ?? null,
-      tags: payload.tags?.length ? payload.tags : undefined,
+      tags: payload.tags ?? [],
     });
 
     const cid = selectedCollectionId.value;

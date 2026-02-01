@@ -526,7 +526,7 @@ const emit = defineEmits<{
       url: string;
       description: string;
       emoji?: string | null;
-      tags?: string[];
+      tags: string[];
     },
   ): void;
   (e: "delete-bookmark", id: ID): void;
@@ -643,9 +643,7 @@ function handleSave() {
 
   const title = (editedBookmark.value.title ?? "").trim();
   const description = (editedBookmark.value.description ?? "").trim();
-  const tags = editedBookmark.value.tags?.length
-    ? editedBookmark.value.tags
-    : undefined;
+  const tags = editedBookmark.value.tags ? [...editedBookmark.value.tags] : [];
 
   emit("update-bookmark", {
     id: editedBookmark.value.id,
