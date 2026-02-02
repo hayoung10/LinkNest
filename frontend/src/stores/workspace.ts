@@ -31,6 +31,8 @@ interface WorkspaceState {
   isMutating: Record<MutateKey, boolean>;
   mutateError: Record<MutateKey, string | null>;
   expandedIds: ID[];
+  _fetchCollectionTreeSeq: number;
+  _fetchBookmarksSeq: number;
 }
 
 function setLoading(
@@ -93,6 +95,8 @@ export const useWorkspaceStore = defineStore("workspace", {
       toggleBookmarkFavorite: null,
     },
     expandedIds: [],
+    _fetchCollectionTreeSeq: 0,
+    _fetchBookmarksSeq: 0,
   }),
 
   getters: {
@@ -182,6 +186,8 @@ export const useWorkspaceStore = defineStore("workspace", {
         toggleBookmarkFavorite: null,
       };
       this.expandedIds = [];
+      this._fetchCollectionTreeSeq = 0;
+      this._fetchBookmarksSeq = 0;
     },
     selectCollection(id: ID | null) {
       this.viewMode = "collection";
@@ -516,11 +522,16 @@ export const useWorkspaceStore = defineStore("workspace", {
     },
 
     async fetchCollectionTree() {
+      const seq = ++this._fetchCollectionTreeSeq;
+
       this.error.collectionTree = null;
       setLoading(this.isLoading, "collectionTree", true);
 
       try {
         const nodes = await CollectionApi.listTree();
+
+        if (seq !== this._fetchCollectionTreeSeq) return;
+
         this.collectionNodes = nodes;
 
         const validIds = new Set(nodes.map((n) => n.id));
@@ -530,6 +541,7 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.expandAncestors(this.selectedCollectionId);
         }
       } catch (e) {
+        if (seq !== this._fetchCollectionTreeSeq) return;
         fail(
           this.error,
           "collectionTree",
@@ -538,7 +550,9 @@ export const useWorkspaceStore = defineStore("workspace", {
         );
         throw e;
       } finally {
-        setLoading(this.isLoading, "collectionTree", false);
+        if (seq === this._fetchCollectionTreeSeq) {
+          setLoading(this.isLoading, "collectionTree", false);
+        }
       }
     },
 
@@ -606,12 +620,16 @@ export const useWorkspaceStore = defineStore("workspace", {
     },
 
     async fetchBookmarks(collectionId?: ID) {
+      const seq = ++this._fetchBookmarksSeq;
+
       this.error.bookmarks = null;
       setLoading(this.isLoading, "bookmarks", true);
       try {
         // 즐겨찾기 뷰
         if (this.viewMode === "favorites") {
           const list = await BookmarkApi.listFavorites();
+
+          if (seq !== this._fetchBookmarksSeq) return;
           this.bookmarks = list;
           return;
         }
@@ -623,14 +641,18 @@ export const useWorkspaceStore = defineStore("workspace", {
           return;
         }
         const list = await BookmarkApi.listBookmarks(cid);
-        this.bookmarks = list;
 
+        if (seq !== this._fetchBookmarksSeq) return;
+        this.bookmarks = list;
         this.setBookmarkCount(cid, list.length);
       } catch (e) {
+        if (seq !== this._fetchBookmarksSeq) return;
         fail(this.error, "bookmarks", e, "북마크 목록을 불러오지 못했습니다.");
         throw e;
       } finally {
-        setLoading(this.isLoading, "bookmarks", false);
+        if (seq === this._fetchBookmarksSeq) {
+          setLoading(this.isLoading, "bookmarks", false);
+        }
       }
     },
 

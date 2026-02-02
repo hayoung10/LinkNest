@@ -39,6 +39,7 @@
           :focus-bookmark-id="focusBookmarkId"
           @open-add="openAddPanel"
           @select-bookmark="onSelectBookmark"
+          @focus-done="onFocusDone"
         />
 
         <BookmarkCard
@@ -49,6 +50,7 @@
           :focus-bookmark-id="focusBookmarkId"
           @open-add="openAddPanel"
           @select-bookmark="onSelectBookmark"
+          @focus-done="onFocusDone"
         />
       </template>
 
@@ -215,6 +217,10 @@ const queryFocusBookmarkId = computed<ID | null>(() =>
 
 const focusBookmarkId = ref<ID | null>(null);
 const skipNextRefresh = ref(false);
+const openingFromQuery = ref(false);
+const isTreeReady = computed(
+  () => Object.keys(collectionById.value ?? {}).length > 0,
+);
 
 function parseQueryId(v: unknown): ID | null {
   const s = Array.isArray(v) ? v[0] : v;
@@ -313,10 +319,6 @@ async function onOpenAllBookmarks(collectionId: ID) {
 function onSelectBookmark(id: ID) {
   selectedBookmarkId.value = id;
   isSettingsOpen.value = false;
-
-  if (focusBookmarkId.value != null) {
-    onFocusDone(focusBookmarkId.value);
-  }
 }
 
 function openAddPanel() {
@@ -344,7 +346,7 @@ async function onAddBookmark(payload: {
       description: payload.description ?? null,
       emoji: payload.emoji ?? null,
       imageMode: payload.imageMode ?? "AUTO",
-      tags: payload.tags?.length ? payload.tags : undefined,
+      tags: payload.tags ?? [],
     });
     await workspace.fetchBookmarks(payload.collectionId);
     isAddOpen.value = false;
@@ -366,7 +368,7 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
       title: payload.title,
       description: payload.description,
       emoji: payload.emoji ?? null,
-      tags: payload.tags?.length ? payload.tags : undefined,
+      tags: payload.tags ?? [],
     });
 
     const cid = selectedCollectionId.value;
@@ -437,18 +439,40 @@ async function refreshBookmarks() {
   }
 }
 
+let focusTimer: number | null = null;
+
 function onFocusDone(id: ID) {
-  focusBookmarkId.value = null;
+  if (focusTimer !== null) {
+    window.clearTimeout(focusTimer);
+    focusTimer = null;
+  }
 
-  if (String(route.query.focusBookmarkId ?? "") !== String(id)) return;
+  if (String(route.query.focusBookmarkId ?? "") === String(id)) {
+    router.replace({
+      query: {
+        ...route.query,
+        focusBookmarkId: undefined,
+        collectionId: undefined,
+      },
+    });
+  }
 
-  router.replace({
-    query: {
-      ...route.query,
-      focusBookmarkId: undefined,
-      collectionId: undefined,
-    },
-  });
+  // 하이라이트 잠시 유지
+  focusTimer = window.setTimeout(() => {
+    if (selectedBookmarkId.value != null) {
+      focusBookmarkId.value = null;
+      openingFromQuery.value = false;
+      focusTimer = null;
+      return;
+    }
+
+    if (focusBookmarkId.value === id) {
+      focusBookmarkId.value = null;
+    }
+
+    openingFromQuery.value = false;
+    focusTimer = null;
+  }, 1200);
 }
 
 // ------------------------
@@ -459,8 +483,9 @@ function onFocusDone(id: ID) {
 watch(
   () => [viewMode.value, selectedCollectionId.value] as const,
   async ([mode, cid], prev) => {
-    const [prevMode, prevCid] = prev ?? [undefined, undefined];
+    if (openingFromQuery.value) return;
 
+    const [prevMode, prevCid] = prev ?? [undefined, undefined];
     if (mode === prevMode && cid === prevCid) return;
 
     if (skipNextRefresh.value) {
@@ -493,6 +518,7 @@ watch(
 watch(
   () => defaultBookmarkSort.value,
   async (sort, prevSort) => {
+    if (openingFromQuery.value) return;
     if (sort === prevSort) return;
     await refreshBookmarks();
   },
@@ -500,10 +526,29 @@ watch(
 
 // query: collectionId/focusBookmarkId → workspace 이동
 watch(
-  () => [queryCollectionId.value, queryFocusBookmarkId.value] as const,
-  async ([cid, bid]) => {
+  () =>
+    [
+      isTreeReady.value,
+      queryCollectionId.value,
+      queryFocusBookmarkId.value,
+    ] as const,
+  async ([ready, cid, bid]) => {
+    if (!ready) return;
     if (cid == null) return;
 
+    const exists = !!collectionById.value[cid];
+    if (!exists) {
+      router.replace({
+        query: {
+          ...route.query,
+          collectionId: undefined,
+          focusBookmarkId: undefined,
+        },
+      });
+      return;
+    }
+
+    openingFromQuery.value = true;
     skipNextRefresh.value = true;
 
     if (selectedCollectionId.value !== cid) {

@@ -9,7 +9,7 @@
     </div>
 
     <!-- 복원 완료 후 라우터 렌더-->
-    <RouterView v-else />
+    <RouterView v-else :key="$route.path" />
 
     <!-- 전역 Toast -->
     <Toast />
@@ -61,7 +61,7 @@ watch(
     delete (next as any).toast;
     history.replaceState(next, "");
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 
