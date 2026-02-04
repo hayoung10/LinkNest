@@ -289,7 +289,8 @@ async function onOpenAllBookmarks(collectionId: ID) {
     let target = bookmarks.value;
 
     if (selectedCollectionId.value !== collectionId) {
-      target = await BookmarkApi.listBookmarks(collectionId);
+      toast.info("컬렉션을 다시 선택해주세요.");
+      return;
     }
 
     const urls = target
@@ -520,6 +521,8 @@ watch(
   async (sort, prevSort) => {
     if (openingFromQuery.value) return;
     if (sort === prevSort) return;
+
+    workspace.resetBookmarksPage();
     await refreshBookmarks();
   },
 );

@@ -3,6 +3,7 @@ import { Bookmark, CollectionNode, ID } from "@/types/common";
 import * as CollectionApi from "@/api/collections";
 import * as BookmarkApi from "@/api/bookmarks";
 import { DropResult } from "@/types/dnd";
+import type { PageMeta } from "@/api/common";
 
 type ViewMode = "collection" | "favorites";
 type LoadKey = "collectionTree" | "bookmarks";
@@ -26,10 +27,17 @@ interface WorkspaceState {
   collectionNodes: CollectionNode[];
   bookmarks: Bookmark[];
   selectedCollectionId: ID | null;
+
+  bookmarksPage: number;
+  bookmarksSize: number;
+  bookmarksMeta: PageMeta | null;
+  bookmarksLoaded: boolean;
+
   isLoading: Record<LoadKey, boolean>;
   error: Record<LoadKey, string | null>;
   isMutating: Record<MutateKey, boolean>;
   mutateError: Record<MutateKey, string | null>;
+
   expandedIds: ID[];
   _fetchCollectionTreeSeq: number;
   _fetchBookmarksSeq: number;
@@ -64,6 +72,10 @@ export const useWorkspaceStore = defineStore("workspace", {
     collectionNodes: [],
     bookmarks: [],
     selectedCollectionId: null,
+    bookmarksPage: 0,
+    bookmarksSize: 20,
+    bookmarksMeta: null,
+    bookmarksLoaded: false,
     isLoading: { collectionTree: false, bookmarks: false },
     error: { collectionTree: null, bookmarks: null },
     isMutating: {
@@ -155,6 +167,10 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.collectionNodes = [];
       this.bookmarks = [];
       this.selectedCollectionId = null;
+      this.bookmarksPage = 0;
+      this.bookmarksSize = 20;
+      this.bookmarksMeta = null;
+      this.bookmarksLoaded = false;
       this.isLoading = { collectionTree: false, bookmarks: false };
       this.error = { collectionTree: null, bookmarks: null };
       this.isMutating = {
@@ -193,6 +209,10 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.viewMode = "collection";
       this.selectedCollectionId = id;
 
+      this.bookmarksPage = 0;
+      this.bookmarksSize = 20;
+      this.bookmarksLoaded = false;
+
       if (id != null) {
         this.expandAncestors(id);
       }
@@ -215,6 +235,8 @@ export const useWorkspaceStore = defineStore("workspace", {
         n.id === collectionId ? { ...n, bookmarkCount: Math.max(0, count) } : n,
       );
     },
+
+    /* ------------------------ 트리 상태 ------------------------ */
     toggleExpanded(id: ID) {
       const set = new Set(this.expandedIds);
       set.has(id) ? set.delete(id) : set.add(id);
@@ -245,6 +267,13 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
 
       this.expandedIds = Array.from(set);
+    },
+
+    /* ------------------------ 페이징 ------------------------ */
+    resetBookmarksPage() {
+      this.bookmarksPage = 0;
+      this.bookmarksMeta = null;
+      this.bookmarksLoaded = false;
     },
 
     /* ------------------------ 컬렉션 ------------------------ */
@@ -638,13 +667,23 @@ export const useWorkspaceStore = defineStore("workspace", {
         const cid = collectionId ?? this.selectedCollectionId ?? null;
         if (cid == null) {
           this.bookmarks = [];
+          this.bookmarksMeta = null;
+          this.bookmarksLoaded = false;
           return;
         }
-        const list = await BookmarkApi.listBookmarks(cid);
+        const res = await BookmarkApi.listBookmarks({
+          collectionId: cid,
+          page: this.bookmarksPage,
+          size: this.bookmarksSize,
+        });
 
         if (seq !== this._fetchBookmarksSeq) return;
-        this.bookmarks = list;
-        this.setBookmarkCount(cid, list.length);
+
+        this.bookmarks = res.items;
+        this.bookmarksMeta = res.meta;
+        this.bookmarksLoaded = true;
+
+        this.setBookmarkCount(cid, res.meta.totalElements);
       } catch (e) {
         if (seq !== this._fetchBookmarksSeq) return;
         fail(this.error, "bookmarks", e, "북마크 목록을 불러오지 못했습니다.");

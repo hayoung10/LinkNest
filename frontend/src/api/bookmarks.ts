@@ -2,6 +2,7 @@ import http, { unwrap } from "@/api/http";
 import type { Bookmark, ID, ImageMode } from "@/types/common";
 import type { BookmarkRes } from "./types";
 import { mapBookmarkRes } from "./mappers";
+import { PageResponse } from "./common";
 
 export interface BookmarkCreateReq {
   collectionId: ID;
@@ -64,13 +65,23 @@ export async function deleteBookmark(id: ID): Promise<void> {
 }
 
 /** 목록 */
-export async function listBookmarks(collectionId?: ID): Promise<Bookmark[]> {
-  const data = await unwrap<BookmarkRes[]>(
+export async function listBookmarks(params?: {
+  collectionId?: ID;
+  page?: number;
+  size?: number;
+}): Promise<PageResponse<Bookmark>> {
+  const data = await unwrap<PageResponse<BookmarkRes>>(
     http.get(`/bookmarks`, {
-      params: collectionId == null ? {} : { collectionId },
+      params: {
+        ...(params?.collectionId == null
+          ? {}
+          : { collectionId: params.collectionId }),
+        page: params?.page ?? 0,
+        size: params?.size ?? 20,
+      },
     }),
   );
-  return data.map(mapBookmarkRes);
+  return { items: data.items.map(mapBookmarkRes), meta: data.meta };
 }
 
 /** 이동 */
