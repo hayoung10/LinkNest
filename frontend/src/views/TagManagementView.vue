@@ -124,7 +124,7 @@ const preferences = usePreferencesStore();
 const tagsStore = useTagsStore();
 const taggedStore = useTaggedBookmarksStore();
 
-const { defaultLayout } = storeToRefs(preferences);
+const { defaultLayout, defaultBookmarkSort } = storeToRefs(preferences);
 const isList = computed(() => defaultLayout.value === "LIST");
 
 const selectedTagId = ref<ID | null>(null);
@@ -204,6 +204,18 @@ function onOpenWorkspace(payload: { bookmarkId: ID; collectionId: ID }) {
   });
 }
 
+async function refreshTaggedBookmarks() {
+  if (mode.value !== "bookmarks") return;
+
+  const tagId = selectedTagId.value;
+  if (tagId == null) return;
+
+  taggedStore.setContext(tagId);
+  taggedStore.setQuery({ page: 0 });
+
+  await taggedStore.safeReload();
+}
+
 onMounted(async () => {
   try {
     await refreshTagsOnEnter();
@@ -227,6 +239,14 @@ watch(
   () => mode.value,
   (m) => {
     if (m === "dashboard") selectedBookmarkId.value = null;
+  },
+);
+
+watch(
+  () => defaultBookmarkSort.value,
+  async (sort, prevSort) => {
+    if (sort === prevSort) return;
+    await refreshTaggedBookmarks();
   },
 );
 </script>
