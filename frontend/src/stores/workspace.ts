@@ -208,10 +208,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     selectCollection(id: ID | null) {
       this.viewMode = "collection";
       this.selectedCollectionId = id;
-
-      this.bookmarksPage = 0;
-      this.bookmarksSize = 20;
-      this.bookmarksLoaded = false;
+      this.resetBookmarksPage();
 
       if (id != null) {
         this.expandAncestors(id);
@@ -220,6 +217,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     selectFavorites() {
       this.viewMode = "favorites";
       this.selectedCollectionId = null;
+      this.resetBookmarksPage();
     },
     updateBookmarkCount(collectionId: ID, cnt: number) {
       if (!this.collectionNodes?.length) return;
@@ -656,10 +654,17 @@ export const useWorkspaceStore = defineStore("workspace", {
       try {
         // 즐겨찾기 뷰
         if (this.viewMode === "favorites") {
-          const list = await BookmarkApi.listFavorites();
+          const res = await BookmarkApi.listFavorites({
+            page: this.bookmarksPage,
+            size: this.bookmarksSize,
+          });
 
           if (seq !== this._fetchBookmarksSeq) return;
-          this.bookmarks = list;
+
+          this.bookmarks = res.items;
+          this.bookmarksMeta = res.meta;
+          this.bookmarksLoaded = true;
+
           return;
         }
 

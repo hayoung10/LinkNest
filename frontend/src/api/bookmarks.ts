@@ -133,7 +133,17 @@ export async function updateFavorite(
 }
 
 /** 즐겨찾기 목록 조회 */
-export async function listFavorites(): Promise<Bookmark[]> {
-  const data = await unwrap<BookmarkRes[]>(http.get(`/bookmarks/favorites`));
-  return data.map(mapBookmarkRes);
+export async function listFavorites(params?: {
+  page?: number;
+  size?: number;
+}): Promise<PageResponse<Bookmark>> {
+  const data = await unwrap<PageResponse<BookmarkRes>>(
+    http.get(`/bookmarks/favorites`, {
+      params: {
+        page: params?.page ?? 0,
+        size: params?.size ?? 20,
+      },
+    }),
+  );
+  return { items: data.items.map(mapBookmarkRes), meta: data.meta };
 }
