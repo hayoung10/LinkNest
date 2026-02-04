@@ -7,6 +7,7 @@ import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
 import com.linknest.backend.bookmark.preview.BookmarkPreviewService;
 import com.linknest.backend.collection.Collection;
 import com.linknest.backend.collection.CollectionRepository;
+import com.linknest.backend.common.dto.PageResponse;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.storage.Storage;
@@ -17,6 +18,9 @@ import com.linknest.backend.userpreferences.UserPreferencesService;
 import com.linknest.backend.userpreferences.domain.DefaultBookmarkSort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -107,21 +111,25 @@ public class BookmarkService {
     }
 
     // ---------- 북마크 목록 조회 ----------
-    public List<BookmarkRes> listByCollection(Long userId, Long collectionId) {
+    public PageResponse<BookmarkRes> listByCollection(Long userId, Long collectionId, int page, int size) {
         requireOwnedCollection(userId, collectionId);
+
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(Math.max(1, size), 100);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
 
         DefaultBookmarkSort sort = userPreferencesService.getDefaultBookmarkSort(userId);
 
-        List<Bookmark> list = switch(sort) {
+        Page<Bookmark> result = switch(sort) {
             case NEWEST -> bookmarkRepository
-                    .findAllByUserIdAndCollectionIdOrderByCreatedAtDesc(userId, collectionId);
+                    .findAllByUserIdAndCollectionIdOrderByCreatedAtDesc(userId, collectionId, pageable);
             case OLDEST -> bookmarkRepository
-                    .findAllByUserIdAndCollectionIdOrderByCreatedAtAsc(userId, collectionId);
+                    .findAllByUserIdAndCollectionIdOrderByCreatedAtAsc(userId, collectionId, pageable);
             case TITLE -> bookmarkRepository
-                    .findAllSortedByTitle(userId, collectionId);
+                    .findAllSortedByTitle(userId, collectionId, pageable);
         };
 
-        return list.stream().map(mapper::toRes).toList();
+        return PageResponse.of(result.map(mapper::toRes));
     }
 
     // ---------- 이동 (컬렉션 변경) ----------
@@ -205,16 +213,20 @@ public class BookmarkService {
     }
 
     // ---------- 즐겨찾기 목록 조회 ----------
-    public List<BookmarkRes> listByFavorites(Long userId) {
+    public PageResponse<BookmarkRes> listByFavorites(Long userId, int page, int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(Math.max(1, size), 100);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
         DefaultBookmarkSort sort = userPreferencesService.getDefaultBookmarkSort(userId);
 
-        List<Bookmark> list = switch(sort) {
-            case NEWEST -> bookmarkRepository.findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtDesc(userId);
-            case OLDEST -> bookmarkRepository.findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtAsc(userId);
-            case TITLE -> bookmarkRepository.findAllFavoritesSortedByTitle(userId);
+        Page<Bookmark> result = switch(sort) {
+            case NEWEST -> bookmarkRepository.findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtDesc(userId, pageable);
+            case OLDEST -> bookmarkRepository.findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtAsc(userId, pageable);
+            case TITLE -> bookmarkRepository.findAllFavoritesSortedByTitle(userId, pageable);
         };
 
-        return list.stream().map(mapper::toRes).toList();
+        return PageResponse.of(result.map(mapper::toRes));
     }
 
     // ==========================================================

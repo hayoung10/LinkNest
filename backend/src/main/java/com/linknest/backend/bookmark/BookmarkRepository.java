@@ -1,6 +1,8 @@
 package com.linknest.backend.bookmark;
 
 import com.linknest.backend.common.dto.IdCount;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -9,14 +11,16 @@ import java.util.List;
 
 public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     // -------------------- Bookmarks (Collection) --------------------
-    List<Bookmark> findAllByUserIdAndCollectionIdOrderByCreatedAtDesc(Long userId, Long collectionId);
-    List<Bookmark> findAllByUserIdAndCollectionIdOrderByCreatedAtAsc(Long userId, Long collectionId);
+    Page<Bookmark> findAllByUserIdAndCollectionIdOrderByCreatedAtDesc(Long userId, Long collectionId, Pageable pageable);
+    Page<Bookmark> findAllByUserIdAndCollectionIdOrderByCreatedAtAsc(Long userId, Long collectionId, Pageable pageable);
 
-    @Query("select b from Bookmark b " +
+    @Query(value = "select b from Bookmark b " +
             "where b.user.id = :userId and b.collection.id = :collectionId " +
             "order by " +
-            "   case when b.title is null or b.title = '' then 1 else 0 end, b.title asc, b.createdAt desc")
-    List<Bookmark> findAllSortedByTitle(@Param("userId") Long userId, @Param("collectionId") Long collectionId);
+            "   case when b.title is null or b.title = '' then 1 else 0 end, b.title asc, b.createdAt desc",
+            countQuery = "select count(b) from Bookmark b " +
+                    "where b.user.id = :userId and b.collection.id = :collectionId")
+    Page<Bookmark> findAllSortedByTitle(@Param("userId") Long userId, @Param("collectionId") Long collectionId, Pageable pageable);
 
     long countByCollectionId(Long collectionId);
 
@@ -27,15 +31,17 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     List<IdCount> countByCollectionIds(@Param("collectionIds") List<Long> collectionIds);
 
     // -------------------- Favorite Bookmarks --------------------
-    List<Bookmark> findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtDesc(Long userId);
+    Page<Bookmark> findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
-    List<Bookmark> findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtAsc(Long userId);
+    Page<Bookmark> findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtAsc(Long userId, Pageable pageable);
 
-    @Query("select b from Bookmark b " +
+    @Query(value = "select b from Bookmark b " +
             "where b.user.id = :userId and b.isFavorite = true " +
-            "order by " + "" +
-            "   case when b.title is null or b.title = '' then 1 else 0 end, b.title asc, b.createdAt desc")
-    List<Bookmark> findAllFavoritesSortedByTitle(@Param("userId") Long userId);
+            "order by " +
+            "   case when b.title is null or b.title = '' then 1 else 0 end, b.title asc, b.createdAt desc",
+            countQuery = "select count(b) from Bookmark b " +
+                    "where b.user.id = :userId and b.isFavorite = true")
+    Page<Bookmark> findAllFavoritesSortedByTitle(@Param("userId") Long userId, Pageable pageable);
 
     // -------------------- Bookmark Ownership Validation --------------------
     long countByUserId(Long userId);
