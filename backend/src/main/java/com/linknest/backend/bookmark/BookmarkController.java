@@ -1,6 +1,7 @@
 package com.linknest.backend.bookmark;
 
 import com.linknest.backend.bookmark.dto.*;
+import com.linknest.backend.common.dto.PageResponse;
 import com.linknest.backend.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -13,7 +14,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 
 import static com.linknest.backend.common.constants.AppConstants.API_PREFIX;
 
@@ -60,9 +60,11 @@ public class BookmarkController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BookmarkRes>>> listBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
-                                                           @RequestParam @Min(1) Long collectionId) {
-        List<BookmarkRes> data = service.listByCollection(userId, collectionId);
+    public ResponseEntity<ApiResponse<PageResponse<BookmarkRes>>> listBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                                                @RequestParam @Min(1) Long collectionId,
+                                                                                @RequestParam(defaultValue = "0") int page,
+                                                                                @RequestParam(defaultValue = "20") int size) {
+        PageResponse<BookmarkRes> data = service.listByCollection(userId, collectionId, page, size);
         return ResponseEntity.ok(ApiResponse.ok("북마크 목록 조회", data));
     }
 
@@ -106,8 +108,10 @@ public class BookmarkController {
     }
 
     @GetMapping("/favorites")
-    public ResponseEntity<ApiResponse<List<BookmarkRes>>> listFavorites(@AuthenticationPrincipal(expression = "id") Long userId) {
-        List<BookmarkRes> data = service.listByFavorites(userId);
+    public ResponseEntity<ApiResponse<PageResponse<BookmarkRes>>> listFavorites(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                                                @RequestParam(defaultValue = "0") int page,
+                                                                                @RequestParam(defaultValue = "20") int size) {
+        PageResponse<BookmarkRes> data = service.listByFavorites(userId, page, size);
         return ResponseEntity.ok(ApiResponse.ok("즐겨찾기 목록 조회", data));
     }
 }
