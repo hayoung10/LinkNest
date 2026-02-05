@@ -29,7 +29,7 @@
           />
 
           <BaseLoading
-            v-else-if="isLoadingBookmarks"
+            v-else-if="isLoadingBookmarks && items.length === 0"
             label="북마크를 불러오는 중…"
           />
 
@@ -250,6 +250,39 @@
                   </div>
                 </article>
               </div>
+
+              <!-- 더 보기 -->
+              <div class="py-2 flex justify-center">
+                <button
+                  v-if="canLoadMore"
+                  type="button"
+                  class="px-3 py-1.5 text-xs rounded-md border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                  :disabled="isLoadingBookmarks"
+                  @click="loadMore"
+                >
+                  더 보기
+                </button>
+
+                <span
+                  v-else-if="isLoadingMore"
+                  class="text-xs text-muted-foreground"
+                  >불러오는 중…</span
+                >
+
+                <span
+                  v-else-if="isEndReached"
+                  class="text-xs text-muted-foreground"
+                  >마지막입니다</span
+                >
+              </div>
+
+              <!-- 무한 스크롤 -->
+              <div
+                v-if="canLoadMore"
+                ref="sentinelRef"
+                class="h-8"
+                aria-hidden="true"
+              />
             </div>
 
             <footer
@@ -283,6 +316,7 @@ import { useTagsStore } from "@/stores/tags";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { getErrorMessage } from "@/utils/errorMessage";
 import { toBookmarkFromTagged } from "@/api/mappers";
+import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
 
 const props = defineProps<{
   tagId: ID | null;
@@ -538,6 +572,42 @@ async function scrollToFocus() {
 }
 
 // ------------------------
+// 더 보기
+// ------------------------
+const sentinelRef = ref<HTMLElement | null>(null);
+
+const canLoadMore = computed(
+  () => hasSelection.value && taggedStore.hasNext && !isLoadingBookmarks.value,
+);
+const isLoadingMore = computed(
+  () =>
+    hasSelection.value && isLoadingBookmarks.value && items.value.length > 0,
+);
+const isEndReached = computed(
+  () => hasSelection.value && loaded.value && !taggedStore.hasNext,
+);
+
+async function loadMore() {
+  if (!canLoadMore.value) return;
+
+  const prevPage = taggedStore.page;
+
+  taggedStore.nextPage();
+  try {
+    await taggedStore.load(true);
+  } catch {
+    taggedStore.setQuery({ page: prevPage });
+  }
+}
+
+const { setup, cleanup } = useInfiniteScroll(
+  listWrapRef,
+  sentinelRef,
+  loadMore,
+  { rootMargin: "300px", threshold: 0 },
+);
+
+// ------------------------
 // Watchers
 // ------------------------
 watch(
@@ -569,14 +639,20 @@ watch(
 watch(
   () => props.tagId,
   async (next) => {
+    if (next == null) {
+      cleanup();
+      taggedStore.clearContext();
+      return;
+    }
+
     taggedStore.setContext(next);
-    if (next != null) {
-      try {
-        await taggedStore.load(true);
-        await scrollToFocus();
-      } catch {
-        // BaseError가 처리
-      }
+    try {
+      await taggedStore.load(true);
+      await scrollToFocus();
+      await nextTick();
+      setup();
+    } catch {
+      // BaseError가 처리
     }
   },
   { immediate: true },
