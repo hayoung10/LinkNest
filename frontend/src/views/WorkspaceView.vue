@@ -424,7 +424,7 @@ async function onLogout() {
 async function refreshBookmarks() {
   try {
     if (viewMode.value === "favorites") {
-      await workspace.fetchBookmarks();
+      await workspace.reloadBookmarks();
       return;
     }
 
@@ -434,7 +434,7 @@ async function refreshBookmarks() {
       return;
     }
 
-    await workspace.fetchBookmarks(cid);
+    await workspace.reloadBookmarks(cid);
   } catch (e) {
     toast.error("북마크 목록을 불러오지 못했습니다.");
   }
@@ -474,6 +474,32 @@ function onFocusDone(id: ID) {
     openingFromQuery.value = false;
     focusTimer = null;
   }, 1200);
+}
+
+async function ensureBookmarkVisible(collectionId: ID, bookmarkId: ID) {
+  const MAX_PAGES = 5;
+  let tries = 0;
+
+  while (!workspace.bookmarks.some((b) => b.id === bookmarkId)) {
+    if (!workspace.bookmarksHasNext) break;
+    if (tries >= MAX_PAGES) break;
+
+    const prevPage = workspace.bookmarksPage;
+    const moved = workspace.nextBookmarksPage();
+    if (!moved) break;
+
+    try {
+      await workspace.fetchBookmarks(collectionId, { append: true });
+    } catch {
+      workspace.setBookmarksQuery({
+        bookmarksPage: prevPage,
+        bookmarksLoaded: true,
+      });
+      break;
+    }
+
+    tries++;
+  }
 }
 
 // ------------------------
@@ -554,19 +580,21 @@ watch(
     openingFromQuery.value = true;
     skipNextRefresh.value = true;
 
-    if (selectedCollectionId.value !== cid) {
+    try {
+      selectedBookmarkId.value = null;
+      isAddOpen.value = false;
+      isSettingsOpen.value = false;
+
       workspace.selectCollection(cid);
+      await workspace.reloadBookmarks(cid);
+
+      if (bid != null) await ensureBookmarkVisible(cid, bid);
+
+      focusBookmarkId.value = bid ?? null;
+      await nextTick();
+    } finally {
+      openingFromQuery.value = false;
     }
-
-    selectedBookmarkId.value = null;
-    isAddOpen.value = false;
-    isSettingsOpen.value = false;
-
-    await workspace.fetchBookmarks(cid);
-
-    focusBookmarkId.value = bid ?? null;
-
-    await nextTick();
   },
   { immediate: true },
 );
