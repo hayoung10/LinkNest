@@ -3,6 +3,7 @@ import { Bookmark, CollectionNode, ID } from "@/types/common";
 import * as CollectionApi from "@/api/collections";
 import * as BookmarkApi from "@/api/bookmarks";
 import { DropResult } from "@/types/dnd";
+import type { PageMeta } from "@/api/common";
 
 type ViewMode = "collection" | "favorites";
 type LoadKey = "collectionTree" | "bookmarks";
@@ -26,10 +27,17 @@ interface WorkspaceState {
   collectionNodes: CollectionNode[];
   bookmarks: Bookmark[];
   selectedCollectionId: ID | null;
+
+  bookmarksPage: number;
+  bookmarksSize: number;
+  bookmarksMeta: PageMeta | null;
+  bookmarksLoaded: boolean;
+
   isLoading: Record<LoadKey, boolean>;
   error: Record<LoadKey, string | null>;
   isMutating: Record<MutateKey, boolean>;
   mutateError: Record<MutateKey, string | null>;
+
   expandedIds: ID[];
   _fetchCollectionTreeSeq: number;
   _fetchBookmarksSeq: number;
@@ -64,6 +72,10 @@ export const useWorkspaceStore = defineStore("workspace", {
     collectionNodes: [],
     bookmarks: [],
     selectedCollectionId: null,
+    bookmarksPage: 0,
+    bookmarksSize: 20,
+    bookmarksMeta: null,
+    bookmarksLoaded: false,
     isLoading: { collectionTree: false, bookmarks: false },
     error: { collectionTree: null, bookmarks: null },
     isMutating: {
@@ -146,6 +158,14 @@ export const useWorkspaceStore = defineStore("workspace", {
     expandedSet(state): Set<ID> {
       return new Set(state.expandedIds);
     },
+    bookmarksTotalCount(state): number {
+      return state.bookmarksMeta?.totalElements ?? state.bookmarks.length;
+    },
+    bookmarksHasNext(state): boolean {
+      const meta = state.bookmarksMeta;
+      if (!meta) return false;
+      return state.bookmarksPage + 1 < meta.totalPages;
+    },
   },
 
   actions: {
@@ -155,6 +175,10 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.collectionNodes = [];
       this.bookmarks = [];
       this.selectedCollectionId = null;
+      this.bookmarksPage = 0;
+      this.bookmarksSize = 20;
+      this.bookmarksMeta = null;
+      this.bookmarksLoaded = false;
       this.isLoading = { collectionTree: false, bookmarks: false };
       this.error = { collectionTree: null, bookmarks: null };
       this.isMutating = {
@@ -192,6 +216,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     selectCollection(id: ID | null) {
       this.viewMode = "collection";
       this.selectedCollectionId = id;
+      this.resetBookmarksPage();
 
       if (id != null) {
         this.expandAncestors(id);
@@ -200,6 +225,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     selectFavorites() {
       this.viewMode = "favorites";
       this.selectedCollectionId = null;
+      this.resetBookmarksPage();
     },
     updateBookmarkCount(collectionId: ID, cnt: number) {
       if (!this.collectionNodes?.length) return;
@@ -215,6 +241,8 @@ export const useWorkspaceStore = defineStore("workspace", {
         n.id === collectionId ? { ...n, bookmarkCount: Math.max(0, count) } : n,
       );
     },
+
+    /* ------------------------ 트리 상태 ------------------------ */
     toggleExpanded(id: ID) {
       const set = new Set(this.expandedIds);
       set.has(id) ? set.delete(id) : set.add(id);
@@ -245,6 +273,39 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
 
       this.expandedIds = Array.from(set);
+    },
+
+    /* ------------------------ 페이징 ------------------------ */
+    resetBookmarksPage() {
+      this.bookmarksPage = 0;
+      this.bookmarksMeta = null;
+      this.bookmarksLoaded = false;
+    },
+    nextBookmarksPage(): boolean {
+      if (!this.bookmarksMeta) return false;
+      if (!this.bookmarksHasNext) return false;
+      this.bookmarksPage += 1;
+      this.bookmarksLoaded = false;
+      return true;
+    },
+    async reloadBookmarks(collectionId?: ID) {
+      this.resetBookmarksPage();
+      await this.fetchBookmarks(collectionId);
+    },
+    setBookmarksQuery(
+      params: Partial<
+        Pick<
+          WorkspaceState,
+          "bookmarksPage" | "bookmarksSize" | "bookmarksLoaded"
+        >
+      >,
+    ) {
+      if (params.bookmarksPage !== undefined)
+        this.bookmarksPage = params.bookmarksPage;
+      if (params.bookmarksSize !== undefined)
+        this.bookmarksSize = params.bookmarksSize;
+      if (params.bookmarksLoaded !== undefined)
+        this.bookmarksLoaded = params.bookmarksLoaded;
     },
 
     /* ------------------------ 컬렉션 ------------------------ */
@@ -619,18 +680,33 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    async fetchBookmarks(collectionId?: ID) {
+    async fetchBookmarks(collectionId?: ID, opts?: { append?: boolean }) {
       const seq = ++this._fetchBookmarksSeq;
+      const append = !!opts?.append && this.bookmarksPage > 0;
 
       this.error.bookmarks = null;
       setLoading(this.isLoading, "bookmarks", true);
       try {
         // 즐겨찾기 뷰
         if (this.viewMode === "favorites") {
-          const list = await BookmarkApi.listFavorites();
+          const res = await BookmarkApi.listFavorites({
+            page: this.bookmarksPage,
+            size: this.bookmarksSize,
+          });
 
           if (seq !== this._fetchBookmarksSeq) return;
-          this.bookmarks = list;
+
+          if (!append) {
+            this.bookmarks = res.items;
+          } else {
+            const existing = new Set(this.bookmarks.map((b) => b.id));
+            const appended = res.items.filter((b) => !existing.has(b.id));
+            this.bookmarks = [...this.bookmarks, ...appended];
+          }
+
+          this.bookmarksMeta = res.meta;
+          this.bookmarksLoaded = true;
+
           return;
         }
 
@@ -638,13 +714,30 @@ export const useWorkspaceStore = defineStore("workspace", {
         const cid = collectionId ?? this.selectedCollectionId ?? null;
         if (cid == null) {
           this.bookmarks = [];
+          this.bookmarksMeta = null;
+          this.bookmarksLoaded = false;
           return;
         }
-        const list = await BookmarkApi.listBookmarks(cid);
+        const res = await BookmarkApi.listBookmarks({
+          collectionId: cid,
+          page: this.bookmarksPage,
+          size: this.bookmarksSize,
+        });
 
         if (seq !== this._fetchBookmarksSeq) return;
-        this.bookmarks = list;
-        this.setBookmarkCount(cid, list.length);
+
+        if (!append) {
+          this.bookmarks = res.items;
+        } else {
+          const existing = new Set(this.bookmarks.map((b) => b.id));
+          const appended = res.items.filter((b) => !existing.has(b.id));
+          this.bookmarks = [...this.bookmarks, ...appended];
+        }
+
+        this.bookmarksMeta = res.meta;
+        this.bookmarksLoaded = true;
+
+        this.setBookmarkCount(cid, res.meta.totalElements);
       } catch (e) {
         if (seq !== this._fetchBookmarksSeq) return;
         fail(this.error, "bookmarks", e, "북마크 목록을 불러오지 못했습니다.");

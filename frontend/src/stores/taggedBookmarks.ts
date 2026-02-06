@@ -71,6 +71,15 @@ export const useTaggedBookmarksStore = defineStore("taggedBookmarks", {
       this.error = null;
     },
 
+    clearContext() {
+      this.tagId = null;
+      this.page = 0;
+      this.loaded = false;
+      this.items = [];
+      this.meta = null;
+      this.error = null;
+    },
+
     setQuery(params: Partial<Pick<TaggedBookmarksState, "page" | "size">>) {
       let changed = false;
 

@@ -137,16 +137,12 @@ const changeDefaultSort = async (value: BookmarkSortOption) => {
   if (!loaded.value || isSaving.value) return;
   if (defaultBookmarkSort.value === value) return;
 
-  const prev = defaultBookmarkSort.value;
   isSaving.value = true;
-
   try {
     await preferences.update({ defaultBookmarkSort: value });
-    defaultBookmarkSort.value = value;
   } catch (e) {
     console.error("기본 정렬 업데이트 실패:", e);
     toast.error("기본 북마크 정렬 설정에 실패했습니다.");
-    defaultBookmarkSort.value = prev;
   } finally {
     isSaving.value = false;
   }
@@ -156,16 +152,12 @@ const changeDefaultLayout = async (value: LayoutOption) => {
   if (!loaded.value || isSaving.value) return;
   if (defaultLayout.value === value) return;
 
-  const prev = defaultLayout.value;
   isSaving.value = true;
-
   try {
     await preferences.update({ defaultLayout: value });
-    defaultLayout.value = value;
   } catch (e) {
     console.error("기본 레이아웃 업데이트 실패:", e);
     toast.error("기본 레이아웃 설정에 실패했습니다.");
-    defaultLayout.value = prev;
   } finally {
     isSaving.value = false;
   }
@@ -173,10 +165,8 @@ const changeDefaultLayout = async (value: LayoutOption) => {
 
 const updateOpenInNewTab = async () => {
   if (!loaded.value || isSaving.value) return;
-  const prev = openInNewTab.value;
-  const next = !openInNewTab.value;
 
-  openInNewTab.value = next;
+  const next = !openInNewTab.value;
 
   isSaving.value = true;
   try {
@@ -184,7 +174,6 @@ const updateOpenInNewTab = async () => {
   } catch (e) {
     console.error("새 탭 열기 설정 업데이트 실패:", e);
     toast.error("새 탭 열기 설정에 실패했습니다.");
-    openInNewTab.value = prev;
   } finally {
     isSaving.value = false;
   }

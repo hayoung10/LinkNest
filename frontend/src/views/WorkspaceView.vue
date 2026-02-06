@@ -289,7 +289,8 @@ async function onOpenAllBookmarks(collectionId: ID) {
     let target = bookmarks.value;
 
     if (selectedCollectionId.value !== collectionId) {
-      target = await BookmarkApi.listBookmarks(collectionId);
+      toast.info("컬렉션을 다시 선택해주세요.");
+      return;
     }
 
     const urls = target
@@ -423,7 +424,7 @@ async function onLogout() {
 async function refreshBookmarks() {
   try {
     if (viewMode.value === "favorites") {
-      await workspace.fetchBookmarks();
+      await workspace.reloadBookmarks();
       return;
     }
 
@@ -433,7 +434,7 @@ async function refreshBookmarks() {
       return;
     }
 
-    await workspace.fetchBookmarks(cid);
+    await workspace.reloadBookmarks(cid);
   } catch (e) {
     toast.error("북마크 목록을 불러오지 못했습니다.");
   }
@@ -475,22 +476,61 @@ function onFocusDone(id: ID) {
   }, 1200);
 }
 
+async function ensureBookmarkVisible(collectionId: ID, bookmarkId: ID) {
+  const MAX_PAGES = 5;
+  let tries = 0;
+
+  while (!workspace.bookmarks.some((b) => b.id === bookmarkId)) {
+    if (!workspace.bookmarksHasNext) break;
+    if (tries >= MAX_PAGES) break;
+
+    const prevPage = workspace.bookmarksPage;
+    const moved = workspace.nextBookmarksPage();
+    if (!moved) break;
+
+    try {
+      await workspace.fetchBookmarks(collectionId, { append: true });
+    } catch {
+      workspace.setBookmarksQuery({
+        bookmarksPage: prevPage,
+        bookmarksLoaded: true,
+      });
+      break;
+    }
+
+    tries++;
+  }
+}
+
 // ------------------------
 // Watchers
 // ------------------------
 
-// 화면 컨텍스트 변화(모드/선택) → 목록 리프레시
+// 화면 컨텍스트 변화(모드/선택/정렬) → 목록 리프레시
 watch(
-  () => [viewMode.value, selectedCollectionId.value] as const,
-  async ([mode, cid], prev) => {
+  () =>
+    [
+      viewMode.value,
+      selectedCollectionId.value,
+      defaultBookmarkSort.value,
+    ] as const,
+  async ([mode, cid, sort], prev) => {
     if (openingFromQuery.value) return;
 
-    const [prevMode, prevCid] = prev ?? [undefined, undefined];
-    if (mode === prevMode && cid === prevCid) return;
+    const [prevMode, prevCid, prevSort] = prev ?? [
+      undefined,
+      undefined,
+      undefined,
+    ];
+    if (mode === prevMode && cid === prevCid && sort === prevSort) return;
 
     if (skipNextRefresh.value) {
       skipNextRefresh.value = false;
       return;
+    }
+
+    if (sort !== prevSort) {
+      workspace.resetBookmarksPage(); // 정렬 변경은 페이지 리셋
     }
 
     selectedBookmarkId.value = null;
@@ -502,6 +542,15 @@ watch(
   { immediate: true },
 );
 
+// 레이아웃 변화 → UI만 반영
+watch(
+  () => defaultLayout.value,
+  async (layout, prev) => {
+    if (layout === prev) return;
+    await nextTick();
+  },
+);
+
 // favorites 모드에서, 선택된 북마크가 목록에서 빠지면 패널 닫기
 watch(
   () => [viewMode.value, bookmarks.value, selectedBookmarkId.value] as const,
@@ -511,16 +560,6 @@ watch(
 
     const exists = list.some((b) => b.id === sid);
     if (!exists) selectedBookmarkId.value = null;
-  },
-);
-
-// 정렬 변경 → 목록 리프레시
-watch(
-  () => defaultBookmarkSort.value,
-  async (sort, prevSort) => {
-    if (openingFromQuery.value) return;
-    if (sort === prevSort) return;
-    await refreshBookmarks();
   },
 );
 
@@ -551,18 +590,16 @@ watch(
     openingFromQuery.value = true;
     skipNextRefresh.value = true;
 
-    if (selectedCollectionId.value !== cid) {
-      workspace.selectCollection(cid);
-    }
-
     selectedBookmarkId.value = null;
     isAddOpen.value = false;
     isSettingsOpen.value = false;
 
-    await workspace.fetchBookmarks(cid);
+    workspace.selectCollection(cid);
+    await workspace.reloadBookmarks(cid);
+
+    if (bid != null) await ensureBookmarkVisible(cid, bid);
 
     focusBookmarkId.value = bid ?? null;
-
     await nextTick();
   },
   { immediate: true },

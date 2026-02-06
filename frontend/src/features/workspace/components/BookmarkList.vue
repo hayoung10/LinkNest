@@ -102,7 +102,7 @@
       />
 
       <BaseLoading
-        v-else-if="isLoadingBookmarks"
+        v-else-if="isLoadingBookmarks && bookmarks.length === 0"
         label="북마크를 불러오는 중…"
       />
 
@@ -114,7 +114,7 @@
 
       <!-- 북마크 리스트 -->
       <template v-else>
-        <div class="flex-1 min-h-0 overflow-y-auto pr-1">
+        <div ref="listWrapRef" class="flex-1 min-h-0 overflow-y-auto pr-1">
           <ul class="mt-0" role="list" aria-label="북마크 목록">
             <li
               v-for="b in bookmarks"
@@ -277,6 +277,37 @@
               <div class="divider mx-6" />
             </li>
           </ul>
+
+          <!-- 더 보기 -->
+          <div class="py-2 flex justify-center">
+            <button
+              v-if="canLoadMore"
+              type="button"
+              class="px-3 py-1.5 text-xs rounded-md border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              :disabled="isLoadingBookmarks"
+              @click="loadMore"
+            >
+              더 보기
+            </button>
+
+            <span
+              v-else-if="isLoadingMore"
+              class="text-xs text-muted-foreground"
+              >불러오는 중…</span
+            >
+
+            <span v-else-if="isEndReached" class="text-xs text-muted-foreground"
+              >마지막입니다</span
+            >
+          </div>
+
+          <!-- 무한 스크롤 -->
+          <div
+            v-if="canLoadMore"
+            ref="sentinelRef"
+            class="h-8"
+            aria-hidden="true"
+          />
         </div>
 
         <footer
@@ -290,7 +321,14 @@
 </template>
 
 <script setup lang="ts">
-import { ComponentPublicInstance, computed, nextTick, ref, watch } from "vue";
+import {
+  ComponentPublicInstance,
+  computed,
+  nextTick,
+  onUnmounted,
+  ref,
+  watch,
+} from "vue";
 import type { Bookmark, CollectionNode, ID } from "@/types/common";
 import FolderIcon from "@/components/icons/FolderIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
@@ -303,6 +341,7 @@ import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import * as CollectionApi from "@/api/collections";
 import { CollectionPathRes } from "@/api/types";
 import { useToastStore } from "@/stores/toast";
+import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
 
 const props = defineProps<{
   collection: CollectionNode | null;
@@ -354,7 +393,7 @@ const cPath = computed(() => path.value.slice(0, -1));
 
 function onRetry() {
   const cid = selectedCollectionId.value;
-  if (cid != null) workspace.fetchBookmarks(cid);
+  if (cid != null) workspace.reloadBookmarks(cid);
 }
 
 function isFavoriteMutating(id: ID) {
@@ -469,6 +508,63 @@ function isFocused(b: Bookmark): boolean {
   return props.focusBookmarkId === b.id;
 }
 
+// ------------------------
+// 더 보기
+// ------------------------
+const listWrapRef = ref<HTMLElement | null>(null);
+const sentinelRef = ref<HTMLElement | null>(null);
+
+const canLoadMore = computed(
+  () =>
+    hasSelection.value &&
+    workspace.bookmarksHasNext &&
+    !isLoadingBookmarks.value,
+);
+const isLoadingMore = computed(
+  () =>
+    hasSelection.value &&
+    isLoadingBookmarks.value &&
+    bookmarks.value.length > 0,
+);
+const isEndReached = computed(
+  () =>
+    hasSelection.value &&
+    workspace.bookmarksLoaded &&
+    !workspace.bookmarksHasNext,
+);
+
+async function loadMore() {
+  if (!canLoadMore.value) return;
+
+  const prevPage = workspace.bookmarksPage;
+
+  const moved = workspace.nextBookmarksPage();
+  if (!moved) return;
+
+  try {
+    await workspace.fetchBookmarks(selectedCollectionId.value ?? undefined, {
+      append: true,
+    });
+  } catch {
+    workspace.setBookmarksQuery({
+      bookmarksPage: prevPage,
+      bookmarksLoaded: true,
+    });
+  }
+}
+
+const { setup, cleanup } = useInfiniteScroll(
+  listWrapRef,
+  sentinelRef,
+  loadMore,
+  { rootMargin: "200px", threshold: 0 },
+);
+
+onUnmounted(() => cleanup());
+
+// ------------------------
+// watchers
+// ------------------------
 watch(
   () => [props.focusBookmarkId, isLoadingBookmarks.value] as const,
   async ([id, loading]) => {
@@ -491,6 +587,17 @@ watch(
     await new Promise((resolve) => window.setTimeout(resolve, 250));
 
     emit("focus-done", id);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => selectedCollectionId.value,
+  async (cid) => {
+    cleanup();
+    if (cid == null) return;
+    await nextTick();
+    setup();
   },
   { immediate: true },
 );

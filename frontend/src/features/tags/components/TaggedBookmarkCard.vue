@@ -29,7 +29,7 @@
           />
 
           <BaseLoading
-            v-else-if="isLoadingBookmarks"
+            v-else-if="isLoadingBookmarks && items.length === 0"
             label="북마크를 불러오는 중…"
           />
 
@@ -63,14 +63,16 @@
                 <article
                   v-for="b in items"
                   :key="b.id"
-                  :data-bid="String(b.id)"
-                  class="group relative flex flex-col rounded-xl border border-zinc-200 bg-white/90 hover:bg-zinc-50 shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer"
+                  :ref="(el) => setItemRef(b.id, el)"
+                  class="group relative flex flex-col rounded-xl border bg-white/90 transition overflow-hidden cursor-pointer"
                   :class="[
                     isChecked(b.id)
                       ? 'ring-2 ring-blue-400 border-blue-50'
-                      : isFocused(b)
-                        ? 'ring-2 ring-amber-400 bg-amber-50'
-                        : 'hover:shadow-md',
+                      : isActive(b)
+                        ? 'ring-2 ring-blue-500 border-blue-500'
+                        : isFocused(b)
+                          ? 'ring-2 ring-amber-400 bg-amber-50 border-amber-300'
+                          : 'border-zinc-200 hover:bg-zinc-50 hover:shadow-md',
                   ]"
                   @click="onSelect(b)"
                 >
@@ -78,7 +80,13 @@
                   <div
                     class="relative h-20 w-full overflow-hidden border-b"
                     :class="
-                      isActive(b) ? 'border-blue-300/80' : 'border-border/60'
+                      isChecked(b.id)
+                        ? 'border-blue-200'
+                        : isActive(b)
+                          ? 'border-blue-300/80'
+                          : isFocused(b)
+                            ? 'border-amber-300'
+                            : 'border-border/60'
                     "
                   >
                     <!-- 체크박스 -->
@@ -250,6 +258,39 @@
                   </div>
                 </article>
               </div>
+
+              <!-- 더 보기 -->
+              <div class="py-2 flex justify-center">
+                <button
+                  v-if="canLoadMore"
+                  type="button"
+                  class="px-3 py-1.5 text-xs rounded-md border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                  :disabled="isLoadingBookmarks"
+                  @click="loadMore"
+                >
+                  더 보기
+                </button>
+
+                <span
+                  v-else-if="isLoadingMore"
+                  class="text-xs text-muted-foreground"
+                  >불러오는 중…</span
+                >
+
+                <span
+                  v-else-if="isEndReached"
+                  class="text-xs text-muted-foreground"
+                  >마지막입니다</span
+                >
+              </div>
+
+              <!-- 무한 스크롤 -->
+              <div
+                v-if="canLoadMore"
+                ref="sentinelRef"
+                class="h-8"
+                aria-hidden="true"
+              />
             </div>
 
             <footer
@@ -265,7 +306,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { ComponentPublicInstance, computed, nextTick, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import type { ID, TaggedBookmark } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
@@ -283,6 +324,7 @@ import { useTagsStore } from "@/stores/tags";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { getErrorMessage } from "@/utils/errorMessage";
 import { toBookmarkFromTagged } from "@/api/mappers";
+import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
 
 const props = defineProps<{
   tagId: ID | null;
@@ -296,6 +338,7 @@ const emit = defineEmits<{
   (e: "open-settings"): void;
   (e: "tags-changed"): void;
   (e: "open-workspace", payload: { bookmarkId: ID; collectionId: ID }): void;
+  (e: "focus-done", id: ID): void;
 }>();
 
 const toast = useToastStore();
@@ -426,6 +469,7 @@ function isAutoPending(b: TaggedBookmark): boolean {
 }
 
 function onSelect(b: TaggedBookmark) {
+  if (selectedCount.value > 0) return;
   emit("select-bookmark", b.id);
 }
 
@@ -519,33 +563,77 @@ async function handleBulkReplace() {
 // ------------------------
 const listWrapRef = ref<HTMLElement | null>(null);
 
+const itemRefs = new Map<ID, HTMLElement>();
+const lastFocusedId = ref<ID | null>(null);
+
+function setItemRef(id: ID, el: Element | ComponentPublicInstance | null) {
+  const dom = el as unknown as HTMLElement | null;
+  if (!dom) {
+    itemRefs.delete(id);
+    return;
+  }
+  itemRefs.set(id, dom);
+}
+
 function isFocused(b: TaggedBookmark): boolean {
   if (selectedCount.value > 0) return false;
   return props.focusBookmarkId === b.id;
 }
 
-async function scrollToFocus() {
-  const id = props.focusBookmarkId;
-  if (!id) return;
+// ------------------------
+// 더 보기
+// ------------------------
+const sentinelRef = ref<HTMLElement | null>(null);
 
-  await nextTick();
-  const el = listWrapRef.value?.querySelector<HTMLElement>(
-    `[data-bid="${id}"]`,
-  );
-  if (!el) return;
+const canLoadMore = computed(
+  () => hasSelection.value && taggedStore.hasNext && !isLoadingBookmarks.value,
+);
+const isLoadingMore = computed(
+  () =>
+    hasSelection.value && isLoadingBookmarks.value && items.value.length > 0,
+);
+const isEndReached = computed(
+  () => hasSelection.value && loaded.value && !taggedStore.hasNext,
+);
 
-  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+async function loadMore() {
+  if (!canLoadMore.value) return;
+
+  const prevPage = taggedStore.page;
+
+  taggedStore.nextPage();
+  try {
+    await taggedStore.load(true);
+  } catch {
+    taggedStore.setQuery({ page: prevPage });
+  }
 }
+
+const { setup, cleanup } = useInfiniteScroll(
+  listWrapRef,
+  sentinelRef,
+  loadMore,
+  { rootMargin: "300px", threshold: 0 },
+);
 
 // ------------------------
 // Watchers
 // ------------------------
 watch(
   () => props.tagId,
-  () => {
+  async (next) => {
+    cleanup();
     clearSelection();
     bulkTargetTagId.value = "";
+    lastFocusedId.value = null;
+    itemRefs.clear();
+
+    if (next == null) return;
+
+    await nextTick();
+    setup();
   },
+  { immediate: true },
 );
 
 watch(
@@ -561,23 +649,22 @@ watch(
 );
 
 watch(
-  () => props.focusBookmarkId,
-  () => scrollToFocus(),
-  { immediate: true },
-);
+  () => [props.focusBookmarkId, loaded.value, items.value.length] as const,
+  async ([id, isLoaded]) => {
+    if (!id) return;
+    if (!isLoaded) return;
+    if (lastFocusedId.value === id) return;
 
-watch(
-  () => props.tagId,
-  async (next) => {
-    taggedStore.setContext(next);
-    if (next != null) {
-      try {
-        await taggedStore.load(true);
-        await scrollToFocus();
-      } catch {
-        // BaseError가 처리
-      }
-    }
+    await nextTick();
+
+    const el = itemRefs.get(id);
+    if (!el) return;
+
+    lastFocusedId.value = id;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+
+    await new Promise((resolve) => window.setTimeout(resolve, 80));
+    emit("focus-done", id);
   },
   { immediate: true },
 );
