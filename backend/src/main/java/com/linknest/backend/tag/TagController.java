@@ -1,6 +1,6 @@
 package com.linknest.backend.tag;
 
-import com.linknest.backend.common.dto.PageResponse;
+import com.linknest.backend.common.dto.SliceResponse;
 import com.linknest.backend.common.response.ApiResponse;
 import com.linknest.backend.tag.domain.TagSort;
 import com.linknest.backend.tag.dto.*;
@@ -73,11 +73,11 @@ public class TagController {
     // Tagged Bookmarks
     // =============================
     @GetMapping("/{id}/bookmarks")
-    public ResponseEntity<ApiResponse<PageResponse>> getTaggedBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
-                                                                        @PathVariable @Min(1) Long id,
-                                                                        @RequestParam(defaultValue = "0") int page,
-                                                                        @RequestParam(defaultValue = "20") int size) {
-        PageResponse<TaggedBookmarkRes> data = service.getTaggedBookmarks(userId, id, page, size);
+    public ResponseEntity<ApiResponse<SliceResponse<TaggedBookmarkRes>>> getTaggedBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                                         @PathVariable @Min(1) Long id,
+                                                                         @RequestParam(defaultValue = "0") int page,
+                                                                         @RequestParam(defaultValue = "20") int size) {
+        SliceResponse<TaggedBookmarkRes> data = service.getTaggedBookmarks(userId, id, page, size);
         return ResponseEntity.ok(ApiResponse.ok("태그 북마크 목록 조회", data));
     }
 
