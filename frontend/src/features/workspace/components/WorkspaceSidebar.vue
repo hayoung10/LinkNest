@@ -274,7 +274,6 @@ function handleSelectCollection(node: CollectionNodeModel) {
 function handleSelectFavorites() {
   if (isLoading.value.bookmarks) return;
   workspace.selectFavorites();
-  workspace.fetchBookmarks();
 }
 
 function onClickAddRoot() {

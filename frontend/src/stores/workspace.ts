@@ -158,6 +158,14 @@ export const useWorkspaceStore = defineStore("workspace", {
     expandedSet(state): Set<ID> {
       return new Set(state.expandedIds);
     },
+    bookmarksTotalCount(state): number {
+      return state.bookmarksMeta?.totalElements ?? state.bookmarks.length;
+    },
+    bookmarksHasNext(state): boolean {
+      const meta = state.bookmarksMeta;
+      if (!meta) return false;
+      return state.bookmarksPage + 1 < meta.totalPages;
+    },
   },
 
   actions: {
@@ -272,6 +280,32 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.bookmarksPage = 0;
       this.bookmarksMeta = null;
       this.bookmarksLoaded = false;
+    },
+    nextBookmarksPage(): boolean {
+      if (!this.bookmarksMeta) return false;
+      if (!this.bookmarksHasNext) return false;
+      this.bookmarksPage += 1;
+      this.bookmarksLoaded = false;
+      return true;
+    },
+    async reloadBookmarks(collectionId?: ID) {
+      this.resetBookmarksPage();
+      await this.fetchBookmarks(collectionId);
+    },
+    setBookmarksQuery(
+      params: Partial<
+        Pick<
+          WorkspaceState,
+          "bookmarksPage" | "bookmarksSize" | "bookmarksLoaded"
+        >
+      >,
+    ) {
+      if (params.bookmarksPage !== undefined)
+        this.bookmarksPage = params.bookmarksPage;
+      if (params.bookmarksSize !== undefined)
+        this.bookmarksSize = params.bookmarksSize;
+      if (params.bookmarksLoaded !== undefined)
+        this.bookmarksLoaded = params.bookmarksLoaded;
     },
 
     /* ------------------------ 컬렉션 ------------------------ */
@@ -646,8 +680,9 @@ export const useWorkspaceStore = defineStore("workspace", {
       }
     },
 
-    async fetchBookmarks(collectionId?: ID) {
+    async fetchBookmarks(collectionId?: ID, opts?: { append?: boolean }) {
       const seq = ++this._fetchBookmarksSeq;
+      const append = !!opts?.append && this.bookmarksPage > 0;
 
       this.error.bookmarks = null;
       setLoading(this.isLoading, "bookmarks", true);
@@ -661,7 +696,14 @@ export const useWorkspaceStore = defineStore("workspace", {
 
           if (seq !== this._fetchBookmarksSeq) return;
 
-          this.bookmarks = res.items;
+          if (!append) {
+            this.bookmarks = res.items;
+          } else {
+            const existing = new Set(this.bookmarks.map((b) => b.id));
+            const appended = res.items.filter((b) => !existing.has(b.id));
+            this.bookmarks = [...this.bookmarks, ...appended];
+          }
+
           this.bookmarksMeta = res.meta;
           this.bookmarksLoaded = true;
 
@@ -684,7 +726,14 @@ export const useWorkspaceStore = defineStore("workspace", {
 
         if (seq !== this._fetchBookmarksSeq) return;
 
-        this.bookmarks = res.items;
+        if (!append) {
+          this.bookmarks = res.items;
+        } else {
+          const existing = new Set(this.bookmarks.map((b) => b.id));
+          const appended = res.items.filter((b) => !existing.has(b.id));
+          this.bookmarks = [...this.bookmarks, ...appended];
+        }
+
         this.bookmarksMeta = res.meta;
         this.bookmarksLoaded = true;
 
