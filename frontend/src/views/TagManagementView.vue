@@ -187,7 +187,7 @@ async function onTagsChanged() {
   tagsStore.setQuery({ page: 0 });
   await tagsStore.safeReload();
 
-  taggedStore.safeReload();
+  await taggedStore.safeReload();
 }
 
 async function refreshTagsOnEnter() {
@@ -235,17 +235,34 @@ async function onLogout() {
   }
 }
 
+// ------------------------
+// Watchers
+// ------------------------
 watch(
-  () => mode.value,
-  (m) => {
-    if (m === "dashboard") selectedBookmarkId.value = null;
+  () => [mode.value, selectedTagId.value] as const,
+  async ([m, tagId], prev) => {
+    const [pm, pTagId] = prev ?? [null, null];
+
+    if (m !== "bookmarks") return;
+    if (tagId == null) return;
+
+    if (m === pm && tagId === pTagId) return;
+
+    selectedBookmarkId.value = null;
+    isSettingsOpen.value = false;
+
+    await refreshTaggedBookmarks();
   },
+  { immediate: true },
 );
 
 watch(
   () => defaultBookmarkSort.value,
   async (sort, prevSort) => {
     if (sort === prevSort) return;
+
+    isSettingsOpen.value = false;
+
     await refreshTaggedBookmarks();
   },
 );

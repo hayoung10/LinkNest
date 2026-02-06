@@ -506,18 +506,31 @@ async function ensureBookmarkVisible(collectionId: ID, bookmarkId: ID) {
 // Watchers
 // ------------------------
 
-// 화면 컨텍스트 변화(모드/선택) → 목록 리프레시
+// 화면 컨텍스트 변화(모드/선택/정렬) → 목록 리프레시
 watch(
-  () => [viewMode.value, selectedCollectionId.value] as const,
-  async ([mode, cid], prev) => {
+  () =>
+    [
+      viewMode.value,
+      selectedCollectionId.value,
+      defaultBookmarkSort.value,
+    ] as const,
+  async ([mode, cid, sort], prev) => {
     if (openingFromQuery.value) return;
 
-    const [prevMode, prevCid] = prev ?? [undefined, undefined];
-    if (mode === prevMode && cid === prevCid) return;
+    const [prevMode, prevCid, prevSort] = prev ?? [
+      undefined,
+      undefined,
+      undefined,
+    ];
+    if (mode === prevMode && cid === prevCid && sort === prevSort) return;
 
     if (skipNextRefresh.value) {
       skipNextRefresh.value = false;
       return;
+    }
+
+    if (sort !== prevSort) {
+      workspace.resetBookmarksPage(); // 정렬 변경은 페이지 리셋
     }
 
     selectedBookmarkId.value = null;
@@ -529,6 +542,15 @@ watch(
   { immediate: true },
 );
 
+// 레이아웃 변화 → UI만 반영
+watch(
+  () => defaultLayout.value,
+  async (layout, prev) => {
+    if (layout === prev) return;
+    await nextTick();
+  },
+);
+
 // favorites 모드에서, 선택된 북마크가 목록에서 빠지면 패널 닫기
 watch(
   () => [viewMode.value, bookmarks.value, selectedBookmarkId.value] as const,
@@ -538,18 +560,6 @@ watch(
 
     const exists = list.some((b) => b.id === sid);
     if (!exists) selectedBookmarkId.value = null;
-  },
-);
-
-// 정렬 변경 → 목록 리프레시
-watch(
-  () => defaultBookmarkSort.value,
-  async (sort, prevSort) => {
-    if (openingFromQuery.value) return;
-    if (sort === prevSort) return;
-
-    workspace.resetBookmarksPage();
-    await refreshBookmarks();
   },
 );
 
@@ -580,21 +590,17 @@ watch(
     openingFromQuery.value = true;
     skipNextRefresh.value = true;
 
-    try {
-      selectedBookmarkId.value = null;
-      isAddOpen.value = false;
-      isSettingsOpen.value = false;
+    selectedBookmarkId.value = null;
+    isAddOpen.value = false;
+    isSettingsOpen.value = false;
 
-      workspace.selectCollection(cid);
-      await workspace.reloadBookmarks(cid);
+    workspace.selectCollection(cid);
+    await workspace.reloadBookmarks(cid);
 
-      if (bid != null) await ensureBookmarkVisible(cid, bid);
+    if (bid != null) await ensureBookmarkVisible(cid, bid);
 
-      focusBookmarkId.value = bid ?? null;
-      await nextTick();
-    } finally {
-      openingFromQuery.value = false;
-    }
+    focusBookmarkId.value = bid ?? null;
+    await nextTick();
   },
   { immediate: true },
 );
