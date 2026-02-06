@@ -59,7 +59,7 @@
               <ul class="mt-0" role="list" aria-label="태그 북마크 리스트 목록">
                 <template v-for="b in items" :key="b.id">
                   <li
-                    :data-bid="String(b.id)"
+                    :ref="(el) => setItemRef(b.id, el)"
                     class="group px-2 py-3 rounded-md cursor-pointer select-none transition-colors"
                     :class="[
                       isChecked(b.id)
@@ -68,6 +68,7 @@
                           ? 'bg-amber-50 ring-1 ring-amber-300'
                           : 'hover:bg-zinc-100 dark:hover:bg-zinc-800',
                     ]"
+                    @click="onSelect(b)"
                   >
                     <div
                       type="button"
@@ -332,7 +333,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import {
+  ComponentPublicInstance,
+  computed,
+  nextTick,
+  onUnmounted,
+  ref,
+  watch,
+} from "vue";
 import { storeToRefs } from "pinia";
 import type { ID, TaggedBookmark } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
@@ -364,6 +372,7 @@ const emit = defineEmits<{
   (e: "open-settings"): void;
   (e: "tags-changed"): void;
   (e: "open-workspace", payload: { bookmarkId: ID; collectionId: ID }): void;
+  (e: "focus-done", id: ID): void;
 }>();
 
 const toast = useToastStore();
@@ -494,6 +503,7 @@ function isAutoPending(b: TaggedBookmark): boolean {
 }
 
 function onSelect(b: TaggedBookmark) {
+  if (selectedCount.value > 0) return;
   emit("select-bookmark", b.id);
 }
 
@@ -587,22 +597,21 @@ async function handleBulkReplace() {
 // ------------------------
 const listWrapRef = ref<HTMLElement | null>(null);
 
+const itemRefs = new Map<ID, HTMLElement>();
+const lastFocusedId = ref<ID | null>(null);
+
+function setItemRef(id: ID, el: Element | ComponentPublicInstance | null) {
+  const dom = el as unknown as HTMLElement | null;
+  if (!dom) {
+    itemRefs.delete(id);
+    return;
+  }
+  itemRefs.set(id, dom);
+}
+
 function isFocused(b: TaggedBookmark): boolean {
   if (selectedCount.value > 0) return false;
   return props.focusBookmarkId === b.id;
-}
-
-async function scrollToFocus() {
-  const id = props.focusBookmarkId;
-  if (!id) return;
-
-  await nextTick();
-  const el = listWrapRef.value?.querySelector<HTMLElement>(
-    `[data-bid="${id}"]`,
-  );
-  if (!el) return;
-
-  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 // ------------------------
@@ -641,15 +650,26 @@ const { setup, cleanup } = useInfiniteScroll(
   { rootMargin: "200px", threshold: 0 },
 );
 
+onUnmounted(() => cleanup());
+
 // ------------------------
 // watchers
 // ------------------------
 watch(
   () => props.tagId,
-  () => {
+  async (next) => {
+    cleanup();
     clearSelection();
     bulkTargetTagId.value = "";
+    lastFocusedId.value = null;
+    itemRefs.clear();
+
+    if (next == null) return;
+
+    await nextTick();
+    setup();
   },
+  { immediate: true },
 );
 
 watch(
@@ -665,29 +685,22 @@ watch(
 );
 
 watch(
-  () => props.focusBookmarkId,
-  () => scrollToFocus(),
-  { immediate: true },
-);
+  () => [props.focusBookmarkId, loaded.value, items.value.length] as const,
+  async ([id, isLoaded]) => {
+    if (!id) return;
+    if (!isLoaded) return;
+    if (lastFocusedId.value === id) return;
 
-watch(
-  () => props.tagId,
-  async (next) => {
-    if (next == null) {
-      cleanup();
-      taggedStore.clearContext();
-      return;
-    }
+    await nextTick();
 
-    taggedStore.setContext(next);
-    try {
-      await taggedStore.load(true);
-      await scrollToFocus();
-      await nextTick();
-      setup();
-    } catch {
-      // BaseError가 처리
-    }
+    const el = itemRefs.get(id);
+    if (!el) return;
+
+    lastFocusedId.value = id;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+
+    await new Promise((resolve) => window.setTimeout(resolve, 80));
+    emit("focus-done", id);
   },
   { immediate: true },
 );

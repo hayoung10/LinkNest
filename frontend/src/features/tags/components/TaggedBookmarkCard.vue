@@ -63,14 +63,16 @@
                 <article
                   v-for="b in items"
                   :key="b.id"
-                  :data-bid="String(b.id)"
-                  class="group relative flex flex-col rounded-xl border border-zinc-200 bg-white/90 hover:bg-zinc-50 shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer"
+                  :ref="(el) => setItemRef(b.id, el)"
+                  class="group relative flex flex-col rounded-xl border bg-white/90 transition overflow-hidden cursor-pointer"
                   :class="[
                     isChecked(b.id)
                       ? 'ring-2 ring-blue-400 border-blue-50'
-                      : isFocused(b)
-                        ? 'ring-2 ring-amber-400 bg-amber-50'
-                        : 'hover:shadow-md',
+                      : isActive(b)
+                        ? 'ring-2 ring-blue-500 border-blue-500'
+                        : isFocused(b)
+                          ? 'ring-2 ring-amber-400 bg-amber-50 border-amber-300'
+                          : 'border-zinc-200 hover:bg-zinc-50 hover:shadow-md',
                   ]"
                   @click="onSelect(b)"
                 >
@@ -78,7 +80,13 @@
                   <div
                     class="relative h-20 w-full overflow-hidden border-b"
                     :class="
-                      isActive(b) ? 'border-blue-300/80' : 'border-border/60'
+                      isChecked(b.id)
+                        ? 'border-blue-200'
+                        : isActive(b)
+                          ? 'border-blue-300/80'
+                          : isFocused(b)
+                            ? 'border-amber-300'
+                            : 'border-border/60'
                     "
                   >
                     <!-- 체크박스 -->
@@ -298,7 +306,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { ComponentPublicInstance, computed, nextTick, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import type { ID, TaggedBookmark } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
@@ -330,6 +338,7 @@ const emit = defineEmits<{
   (e: "open-settings"): void;
   (e: "tags-changed"): void;
   (e: "open-workspace", payload: { bookmarkId: ID; collectionId: ID }): void;
+  (e: "focus-done", id: ID): void;
 }>();
 
 const toast = useToastStore();
@@ -460,6 +469,7 @@ function isAutoPending(b: TaggedBookmark): boolean {
 }
 
 function onSelect(b: TaggedBookmark) {
+  if (selectedCount.value > 0) return;
   emit("select-bookmark", b.id);
 }
 
@@ -553,22 +563,21 @@ async function handleBulkReplace() {
 // ------------------------
 const listWrapRef = ref<HTMLElement | null>(null);
 
+const itemRefs = new Map<ID, HTMLElement>();
+const lastFocusedId = ref<ID | null>(null);
+
+function setItemRef(id: ID, el: Element | ComponentPublicInstance | null) {
+  const dom = el as unknown as HTMLElement | null;
+  if (!dom) {
+    itemRefs.delete(id);
+    return;
+  }
+  itemRefs.set(id, dom);
+}
+
 function isFocused(b: TaggedBookmark): boolean {
   if (selectedCount.value > 0) return false;
   return props.focusBookmarkId === b.id;
-}
-
-async function scrollToFocus() {
-  const id = props.focusBookmarkId;
-  if (!id) return;
-
-  await nextTick();
-  const el = listWrapRef.value?.querySelector<HTMLElement>(
-    `[data-bid="${id}"]`,
-  );
-  if (!el) return;
-
-  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 // ------------------------
@@ -612,10 +621,19 @@ const { setup, cleanup } = useInfiniteScroll(
 // ------------------------
 watch(
   () => props.tagId,
-  () => {
+  async (next) => {
+    cleanup();
     clearSelection();
     bulkTargetTagId.value = "";
+    lastFocusedId.value = null;
+    itemRefs.clear();
+
+    if (next == null) return;
+
+    await nextTick();
+    setup();
   },
+  { immediate: true },
 );
 
 watch(
@@ -631,29 +649,22 @@ watch(
 );
 
 watch(
-  () => props.focusBookmarkId,
-  () => scrollToFocus(),
-  { immediate: true },
-);
+  () => [props.focusBookmarkId, loaded.value, items.value.length] as const,
+  async ([id, isLoaded]) => {
+    if (!id) return;
+    if (!isLoaded) return;
+    if (lastFocusedId.value === id) return;
 
-watch(
-  () => props.tagId,
-  async (next) => {
-    if (next == null) {
-      cleanup();
-      taggedStore.clearContext();
-      return;
-    }
+    await nextTick();
 
-    taggedStore.setContext(next);
-    try {
-      await taggedStore.load(true);
-      await scrollToFocus();
-      await nextTick();
-      setup();
-    } catch {
-      // BaseError가 처리
-    }
+    const el = itemRefs.get(id);
+    if (!el) return;
+
+    lastFocusedId.value = id;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+
+    await new Promise((resolve) => window.setTimeout(resolve, 80));
+    emit("focus-done", id);
   },
   { immediate: true },
 );
