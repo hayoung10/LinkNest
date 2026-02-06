@@ -48,7 +48,7 @@
       />
 
       <BaseLoading
-        v-else-if="isLoadingBookmarks"
+        v-else-if="isLoadingBookmarks && favoriteBookmarks.length === 0"
         label="북마크를 불러오는 중…"
       />
 
@@ -60,7 +60,7 @@
 
       <!-- 즐겨찾기 리스트 -->
       <template v-else>
-        <div class="flex-1 min-h-0 overflow-y-auto pr-1">
+        <div ref="listWrapRef" class="flex-1 min-h-0 overflow-y-auto pr-1">
           <ul class="mt-0" role="list" aria-label="즐겨찾기 리스트 목록">
             <template v-for="b in favoriteBookmarks" :key="b.id">
               <li
@@ -207,11 +207,14 @@
                         <!-- 컬렉션 (이모지 + 이름) -->
                         <span
                           class="shrink-0 inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                          :title="collectionLabel(b)"
                         >
                           <span aria-hidden="true">{{
                             collectionEmoji(b)
                           }}</span>
-                          <span class="truncate">{{ collectionName(b) }}</span>
+                          <span class="truncate" :title="collectionLabel(b)">{{
+                            collectionName(b)
+                          }}</span>
                         </span>
                         <span aria-hidden="true" class="shrink-0">·</span>
 
@@ -236,6 +239,37 @@
               </li>
             </template>
           </ul>
+
+          <!-- 더 보기 -->
+          <div class="py-2 flex justify-center">
+            <button
+              v-if="canLoadMore"
+              type="button"
+              class="px-3 py-1.5 text-xs rounded-md border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              :disabled="isLoadingBookmarks"
+              @click="loadMore"
+            >
+              더 보기
+            </button>
+
+            <span
+              v-else-if="isLoadingMore"
+              class="text-xs text-muted-foreground"
+              >불러오는 중…</span
+            >
+
+            <span v-else-if="isEndReached" class="text-xs text-muted-foreground"
+              >마지막입니다</span
+            >
+          </div>
+
+          <!-- 무한 스크롤 -->
+          <div
+            v-if="canLoadMore"
+            ref="sentinelRef"
+            class="h-8"
+            aria-hidden="true"
+          />
         </div>
 
         <footer
@@ -249,7 +283,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import type { Bookmark, ID } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
@@ -258,6 +292,7 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useToastStore } from "@/stores/toast";
+import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
 
 const props = defineProps<{
   selectedBookmarkId?: ID | null;
@@ -285,8 +320,12 @@ const isEmpty = computed(
     favoriteBookmarks.value.length === 0,
 );
 
+const isListReady = computed(
+  () => !hasError.value && !isLoadingBookmarks.value && !isEmpty.value,
+);
+
 function onRetry() {
-  workspace.fetchBookmarks();
+  workspace.reloadBookmarks();
 }
 
 function isFavoriteMutating(id: ID) {
@@ -337,7 +376,7 @@ function collectionEmoji(b: Bookmark): string {
 }
 
 function collectionName(b: Bookmark): string {
-  return workspace.collectionInfoById[b.collectionId]?.name.trim() ?? "로딩…";
+  return (workspace.collectionInfoById[b.collectionId]?.name ?? "로딩…").trim();
 }
 
 function domain(url: string) {
@@ -379,6 +418,60 @@ onMounted(() => {
   if (!workspace.collectionNodes.length)
     workspace.fetchCollectionTree().catch(() => {});
 });
+
+// ------------------------
+// 더 보기
+// ------------------------
+const listWrapRef = ref<HTMLElement | null>(null);
+const sentinelRef = ref<HTMLElement | null>(null);
+
+const canLoadMore = computed(
+  () => workspace.bookmarksHasNext && !isLoadingBookmarks.value,
+);
+const isLoadingMore = computed(
+  () => isLoadingBookmarks.value && bookmarks.value.length > 0,
+);
+const isEndReached = computed(
+  () => workspace.bookmarksLoaded && !workspace.bookmarksHasNext,
+);
+
+async function loadMore() {
+  if (!canLoadMore.value) return;
+
+  const prevPage = workspace.bookmarksPage;
+
+  const moved = workspace.nextBookmarksPage();
+  if (!moved) return;
+
+  try {
+    await workspace.fetchBookmarks(undefined, { append: true });
+  } catch {
+    workspace.setBookmarksQuery({
+      bookmarksPage: prevPage,
+      bookmarksLoaded: true,
+    });
+  }
+}
+
+const { setup, cleanup } = useInfiniteScroll(
+  listWrapRef,
+  sentinelRef,
+  loadMore,
+  { rootMargin: "200px", threshold: 0 },
+);
+
+onUnmounted(() => cleanup());
+
+watch(
+  () => isListReady.value,
+  async (ready) => {
+    cleanup();
+    if (!ready) return;
+    await nextTick();
+    setup();
+  },
+  { immediate: true },
+);
 </script>
 
 <style scoped>
