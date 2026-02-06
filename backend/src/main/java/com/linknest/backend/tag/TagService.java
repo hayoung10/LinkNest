@@ -2,7 +2,7 @@ package com.linknest.backend.tag;
 
 import com.linknest.backend.bookmark.BookmarkRepository;
 import com.linknest.backend.bookmark.BookmarkTagRepository;
-import com.linknest.backend.common.dto.PageResponse;
+import com.linknest.backend.common.dto.SliceResponse;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.tag.domain.TagSort;
@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -146,7 +147,7 @@ public class TagService {
     // Tagged Bookmarks
     // ==========================================================
 
-    public PageResponse<TaggedBookmarkRes> getTaggedBookmarks(Long userId, Long id, int page, int size) {
+    public SliceResponse<TaggedBookmarkRes> getTaggedBookmarks(Long userId, Long id, int page, int size) {
         requireOwnedTag(userId, id);
 
         int safePage = Math.max(0, page);
@@ -155,7 +156,7 @@ public class TagService {
 
         DefaultBookmarkSort sort = userPreferencesService.getDefaultBookmarkSort(userId);
 
-        Page<TaggedBookmarkRow> rows = switch (sort) {
+        Slice<TaggedBookmarkRow> rows = switch (sort) {
             case NEWEST -> bookmarkTagRepository.findTaggedBookmarksNewest(userId, id, pageable);
             case OLDEST -> bookmarkTagRepository.findTaggedBookmarksOldest(userId, id, pageable);
             case TITLE -> bookmarkTagRepository.findTaggedBookmarksSortedByTitle(userId, id, pageable);
@@ -167,7 +168,7 @@ public class TagService {
                 .toList();
 
         if(bookmarkIds.isEmpty()) {
-            return PageResponse.of(rows.map(taggedBookmarkMapper::toRes));
+            return SliceResponse.of(rows.map(taggedBookmarkMapper::toRes));
         }
 
         // tags 조회
@@ -180,11 +181,11 @@ public class TagService {
                 ));
 
         // rows에 tags 주입
-        Page<TaggedBookmarkRow> enriched = rows.map(row ->
+        Slice<TaggedBookmarkRow> enriched = rows.map(row ->
                 row.withTags(tagsByBookmarkId.getOrDefault(row.id(), List.of()))
         );
 
-        return PageResponse.of(enriched.map(taggedBookmarkMapper::toRes));
+        return SliceResponse.of(enriched.map(taggedBookmarkMapper::toRes));
     }
 
     @Transactional

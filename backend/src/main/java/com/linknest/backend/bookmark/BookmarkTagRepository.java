@@ -3,8 +3,8 @@ package com.linknest.backend.bookmark;
 import com.linknest.backend.tag.Tag;
 import com.linknest.backend.tag.dto.BookmarkTagNameRow;
 import com.linknest.backend.tag.dto.TaggedBookmarkRow;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -71,11 +71,8 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             "   join bt.bookmark b " +
             "   join b.collection c " +
             "where b.user.id = :userId and bt.tag.id = :tagId " +
-            "order by b.createdAt desc",
-            countQuery = "select count(distinct b.id) from BookmarkTag bt " +
-                    "   join bt.bookmark b " +
-                    "where b.user.id = :userId and bt.tag.id = :tagId")
-    Page<TaggedBookmarkRow> findTaggedBookmarksNewest(@Param("userId") Long userId, @Param("tagId") Long tagId, Pageable pageable);
+            "order by b.createdAt desc, b.id desc")
+    Slice<TaggedBookmarkRow> findTaggedBookmarksNewest(@Param("userId") Long userId, @Param("tagId") Long tagId, Pageable pageable);
 
     @Query(value = "select new com.linknest.backend.tag.dto.TaggedBookmarkRow(" +
             "   b.id, c.id, c.name, c.emoji, b.url, b.title, b.description, b.emoji, " +
@@ -85,11 +82,8 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             "   join bt.bookmark b " +
             "   join b.collection c " +
             "where b.user.id = :userId and bt.tag.id = :tagId " +
-            "order by b.createdAt asc",
-            countQuery = "select count(distinct b.id) from BookmarkTag bt " +
-                    "   join bt.bookmark b " +
-                    "where b.user.id = :userId and bt.tag.id = :tagId")
-    Page<TaggedBookmarkRow> findTaggedBookmarksOldest(@Param("userId") Long userId, @Param("tagId") Long tagId, Pageable pageable);
+            "order by b.createdAt asc, b.id asc")
+    Slice<TaggedBookmarkRow> findTaggedBookmarksOldest(@Param("userId") Long userId, @Param("tagId") Long tagId, Pageable pageable);
 
     @Query(value = "select new com.linknest.backend.tag.dto.TaggedBookmarkRow(" +
             "   b.id, c.id, c.name, c.emoji, b.url, b.title, b.description, b.emoji, " +
@@ -100,11 +94,8 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             "   join b.collection c " +
             "where b.user.id = :userId and bt.tag.id = :tagId " +
             "order by " +
-            "   case when b.title is null or b.title = '' then 1 else 0 end, b.title asc, b.createdAt desc",
-            countQuery = "select count(distinct b.id) from BookmarkTag bt " +
-                    "   join bt.bookmark b " +
-                    "where b.user.id = :userId and bt.tag.id = :tagId")
-    Page<TaggedBookmarkRow> findTaggedBookmarksSortedByTitle(@Param("userId") Long userId, @Param("tagId") Long tagId, Pageable pageable);
+            "   case when b.title is null or b.title = '' then 1 else 0 end, b.title asc, b.createdAt desc, b.id desc")
+    Slice<TaggedBookmarkRow> findTaggedBookmarksSortedByTitle(@Param("userId") Long userId, @Param("tagId") Long tagId, Pageable pageable);
 
     // -------------------- Tag Names (Enrichment) --------------------
     @Query("select new com.linknest.backend.tag.dto.BookmarkTagNameRow(bt.bookmark.id, t.name) " +
