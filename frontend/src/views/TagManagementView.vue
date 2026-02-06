@@ -64,6 +64,7 @@
             @open-settings="onOpenSettings"
             @tags-changed="onTagsChanged"
             @open-workspace="onOpenWorkspace"
+            @focus-done="onFocusDone"
           />
 
           <TaggedBookmarkCard
@@ -77,6 +78,7 @@
             @open-settings="onOpenSettings"
             @tags-changed="onTagsChanged"
             @open-workspace="onOpenWorkspace"
+            @focus-done="onFocusDone"
           />
         </template>
       </section>
@@ -159,13 +161,25 @@ function backToDashboard() {
   selectedBookmarkId.value = null;
 }
 
-function onOpenBookmarks(payload?: { tagId: ID; focusBookmarkId?: ID }) {
+async function onOpenBookmarks(payload?: { tagId: ID; focusBookmarkId?: ID }) {
   if (payload?.tagId != null) selectedTagId.value = payload.tagId;
-  focusBookmarkId.value = payload?.focusBookmarkId ?? null;
 
   mode.value = "bookmarks";
   isSettingsOpen.value = false;
   selectedBookmarkId.value = null;
+
+  const tagId = selectedTagId.value;
+  if (tagId == null) return;
+
+  taggedStore.setContext(tagId);
+  taggedStore.setQuery({ page: 0 });
+  await taggedStore.load(false);
+
+  const bookmarkId = payload?.focusBookmarkId ?? null;
+  focusBookmarkId.value = bookmarkId;
+  if (bookmarkId != null) {
+    await ensureTaggedBookmarkVisible(tagId, bookmarkId);
+  }
 }
 
 function onSelectBookmark(id: ID) {
@@ -202,6 +216,54 @@ function onOpenWorkspace(payload: { bookmarkId: ID; collectionId: ID }) {
       collectionId: String(payload.collectionId),
     },
   });
+}
+
+let focusTimer: number | null = null;
+
+function onFocusDone(id: ID) {
+  if (focusTimer !== null) {
+    window.clearTimeout(focusTimer);
+    focusTimer = null;
+  }
+
+  // 하이라이트 유지
+  focusTimer = window.setTimeout(() => {
+    if (selectedBookmarkId.value != null) {
+      focusBookmarkId.value = null;
+      focusTimer = null;
+      return;
+    }
+
+    if (focusBookmarkId.value === id) {
+      focusBookmarkId.value = null;
+    }
+
+    focusTimer = null;
+  }, 1200);
+}
+
+async function ensureTaggedBookmarkVisible(tagId: ID, bookmarkId: ID) {
+  const MAX_PAGES = 5;
+  let tries = 0;
+
+  const hasBookmark = () => taggedStore.items.some((b) => b.id === bookmarkId);
+
+  while (!hasBookmark()) {
+    if (!taggedStore.hasNext) break;
+    if (tries >= MAX_PAGES) break;
+
+    const prevPage = taggedStore.page;
+    taggedStore.nextPage();
+
+    try {
+      await taggedStore.load(true);
+    } catch {
+      taggedStore.setQuery({ page: prevPage });
+      break;
+    }
+
+    tries++;
+  }
 }
 
 async function refreshTaggedBookmarks() {
