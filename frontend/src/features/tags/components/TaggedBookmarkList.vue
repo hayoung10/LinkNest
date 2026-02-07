@@ -635,7 +635,9 @@ async function loadMore() {
 
   const prevPage = taggedStore.page;
 
-  taggedStore.nextPage();
+  const moved = taggedStore.nextPage();
+  if (!moved) return;
+
   try {
     await taggedStore.load(true);
   } catch {

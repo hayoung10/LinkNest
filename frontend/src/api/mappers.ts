@@ -11,6 +11,7 @@ import {
   BookmarkRes,
   CollectionNodeRes,
   CollectionRes,
+  TaggedBookmarkRes,
   TagRes,
   UserPreferencesRes,
   UserRes,
@@ -109,6 +110,31 @@ export function mapTagRes(dto: TagRes): Tag {
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
     bookmarkCount: dto.bookmarkCount,
+  };
+}
+
+export function mapTaggedBookmarkRes(dto: TaggedBookmarkRes): TaggedBookmark {
+  return {
+    id: dto.id,
+
+    collectionId: dto.collectionId,
+    collectionName: dto.collectionName,
+    collectionEmoji: dto.collectionEmoji,
+
+    url: dto.url,
+    title: dto.title ?? null,
+    description: dto.description ?? null,
+
+    emoji: dto.emoji,
+    autoImageUrl: dto.autoImageUrl ?? null,
+    customImageUrl: dto.customImageUrl ?? null,
+    imageMode: dto.imageMode ?? "AUTO",
+
+    isFavorite: dto.isFavorite ?? false,
+    tags: dto.tags ?? [],
+
+    createdAt: dto.createdAt,
+    updatedAt: dto.updatedAt,
   };
 }
 

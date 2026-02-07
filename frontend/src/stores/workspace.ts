@@ -3,7 +3,7 @@ import { Bookmark, CollectionNode, ID } from "@/types/common";
 import * as CollectionApi from "@/api/collections";
 import * as BookmarkApi from "@/api/bookmarks";
 import { DropResult } from "@/types/dnd";
-import type { PageMeta } from "@/api/common";
+import type { SliceMeta } from "@/api/common";
 
 type ViewMode = "collection" | "favorites";
 type LoadKey = "collectionTree" | "bookmarks";
@@ -30,7 +30,7 @@ interface WorkspaceState {
 
   bookmarksPage: number;
   bookmarksSize: number;
-  bookmarksMeta: PageMeta | null;
+  bookmarksMeta: SliceMeta | null;
   bookmarksLoaded: boolean;
 
   isLoading: Record<LoadKey, boolean>;
@@ -159,12 +159,10 @@ export const useWorkspaceStore = defineStore("workspace", {
       return new Set(state.expandedIds);
     },
     bookmarksTotalCount(state): number {
-      return state.bookmarksMeta?.totalElements ?? state.bookmarks.length;
+      return state.bookmarks.length;
     },
     bookmarksHasNext(state): boolean {
-      const meta = state.bookmarksMeta;
-      if (!meta) return false;
-      return state.bookmarksPage + 1 < meta.totalPages;
+      return state.bookmarksMeta?.hasNext ?? false;
     },
   },
 
@@ -736,8 +734,6 @@ export const useWorkspaceStore = defineStore("workspace", {
 
         this.bookmarksMeta = res.meta;
         this.bookmarksLoaded = true;
-
-        this.setBookmarkCount(cid, res.meta.totalElements);
       } catch (e) {
         if (seq !== this._fetchBookmarksSeq) return;
         fail(this.error, "bookmarks", e, "북마크 목록을 불러오지 못했습니다.");

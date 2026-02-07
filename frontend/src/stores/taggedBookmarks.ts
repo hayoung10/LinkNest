@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import type { ID, TaggedBookmark } from "@/types/common";
-import type { PageMeta } from "@/api/common";
+import type { SliceMeta } from "@/api/common";
 import * as TagApi from "@/api/tags";
 
 type MutateKey = "toggleFavorite" | "detach" | "replace";
@@ -14,7 +14,7 @@ interface TaggedBookmarksState {
   size: number;
 
   items: TaggedBookmark[];
-  meta: PageMeta | null;
+  meta: SliceMeta | null;
 
   isLoading: boolean;
   isMutating: Record<MutateKey, boolean>;
@@ -36,8 +36,8 @@ export const useTaggedBookmarksStore = defineStore("taggedBookmarks", {
 
   getters: {
     hasSelection: (s) => s.tagId != null,
-    totalCount: (s) => s.meta?.totalElements ?? s.items.length,
-    hasNext: (s) => (s.meta ? s.page + 1 < s.meta.totalPages : false),
+    totalCount: (s) => s.items.length,
+    hasNext: (s) => s.meta?.hasNext ?? false,
     isEmpty: (s) => s.loaded && s.items.length === 0,
   },
 
@@ -95,13 +95,15 @@ export const useTaggedBookmarksStore = defineStore("taggedBookmarks", {
       if (changed) this.loaded = false;
     },
 
-    nextPage() {
-      if (!this.hasNext) return;
+    nextPage(): boolean {
+      if (!this.meta) return false;
+      if (!this.hasNext) return false;
       this.page += 1;
       this.loaded = false;
+      return true;
     },
 
-    inavlidate(tagId?: ID) {
+    invalidate(tagId?: ID) {
       if (!tagId || this.tagId === tagId) {
         this.loaded = false;
       }

@@ -2,7 +2,7 @@ import http, { unwrap } from "@/api/http";
 import type { Bookmark, ID, ImageMode } from "@/types/common";
 import type { BookmarkRes } from "./types";
 import { mapBookmarkRes } from "./mappers";
-import { PageResponse } from "./common";
+import { SliceResponse } from "./common";
 
 export interface BookmarkCreateReq {
   collectionId: ID;
@@ -69,8 +69,8 @@ export async function listBookmarks(params?: {
   collectionId?: ID;
   page?: number;
   size?: number;
-}): Promise<PageResponse<Bookmark>> {
-  const data = await unwrap<PageResponse<BookmarkRes>>(
+}): Promise<SliceResponse<Bookmark>> {
+  const data = await unwrap<SliceResponse<BookmarkRes>>(
     http.get(`/bookmarks`, {
       params: {
         ...(params?.collectionId == null
@@ -136,8 +136,8 @@ export async function updateFavorite(
 export async function listFavorites(params?: {
   page?: number;
   size?: number;
-}): Promise<PageResponse<Bookmark>> {
-  const data = await unwrap<PageResponse<BookmarkRes>>(
+}): Promise<SliceResponse<Bookmark>> {
+  const data = await unwrap<SliceResponse<BookmarkRes>>(
     http.get(`/bookmarks/favorites`, {
       params: {
         page: params?.page ?? 0,
