@@ -1,8 +1,8 @@
 import http, { unwrap } from "@/api/http";
 import type { ID, Tag, TaggedBookmark } from "@/types/common";
 import type { TagRes, TagsRes } from "./types";
-import type { PageMeta, PageResponse } from "./common";
-import { mapTagRes } from "./mappers";
+import type { PageMeta, SliceResponse } from "./common";
+import { mapTaggedBookmarkRes, mapTagRes } from "./mappers";
 
 export type TagSort =
   | "NEWEST"
@@ -84,10 +84,11 @@ export async function deleteTag(id: ID): Promise<void> {
 export async function getTaggedBookmarks(
   id: ID,
   params: GetTaggedBookmarksParams = {},
-): Promise<PageResponse<TaggedBookmark>> {
-  return unwrap<PageResponse<TaggedBookmark>>(
+): Promise<SliceResponse<TaggedBookmark>> {
+  const data = await unwrap<SliceResponse<TaggedBookmark>>(
     http.get(`/tags/${id}/bookmarks`, { params }),
   );
+  return { items: data.items.map(mapTaggedBookmarkRes), meta: data.meta };
 }
 
 /** 선택한 북마크들에서 태그 제거 */

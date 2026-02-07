@@ -30,7 +30,7 @@ export interface BookmarkRes {
   emoji: string | null;
   autoImageUrl: string | null;
   customImageUrl: string | null;
-  imageMode: ImageMode | null;
+  imageMode: ImageMode;
 
   isFavorite: boolean;
   tags: string[];
@@ -95,4 +95,27 @@ export interface TagsRes {
   items: TagRes[];
   meta: PageMeta;
   totalBookmarks: number;
+}
+
+export interface TaggedBookmarkRes {
+  id: ID;
+
+  collectionId: ID;
+  collectionName: string;
+  collectionEmoji: string | null;
+
+  url: string;
+  title: string | null;
+  description: string | null;
+
+  emoji: string | null;
+  autoImageUrl: string | null;
+  customImageUrl: string | null;
+  imageMode: ImageMode;
+
+  isFavorite: boolean;
+  tags: string[];
+
+  createdAt: string;
+  updatedAt: string;
 }
