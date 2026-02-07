@@ -494,19 +494,12 @@ const usageBarWidth = computed(
 // ------------------------
 // 북마크 미리보기
 // ------------------------
-type BookmarkPreview = {
-  id: ID;
-  title?: string | null;
-  url: string;
-};
-
 const PREVIEW_LIMIT = 5;
 
 const previewItems = ref<TaggedBookmark[]>([]);
 const previewLoading = ref(false);
 const previewError = ref<unknown | null>(null);
 
-const hasPreview = computed(() => previewItems.value.length > 0);
 const hasMore = computed(() => {
   const cnt = tag.value?.bookmarkCount ?? 0;
   return cnt > PREVIEW_LIMIT;
@@ -520,7 +513,7 @@ async function loadPreview(tagId: ID) {
       page: 0,
       size: PREVIEW_LIMIT,
     });
-    previewItems.value = res.items ?? [];
+    previewItems.value = res.items;
   } catch (e) {
     previewError.value = e;
     previewItems.value = [];
