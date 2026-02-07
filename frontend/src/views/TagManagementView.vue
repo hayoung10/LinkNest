@@ -178,7 +178,7 @@ async function onOpenBookmarks(payload?: { tagId: ID; focusBookmarkId?: ID }) {
   const bookmarkId = payload?.focusBookmarkId ?? null;
   focusBookmarkId.value = bookmarkId;
   if (bookmarkId != null) {
-    await ensureTaggedBookmarkVisible(tagId, bookmarkId);
+    await ensureTaggedBookmarkVisible(bookmarkId);
   }
 }
 
@@ -242,7 +242,8 @@ function onFocusDone(id: ID) {
   }, 1200);
 }
 
-async function ensureTaggedBookmarkVisible(tagId: ID, bookmarkId: ID) {
+// 지정한 북마크가 목록에 보이도록 필요한 만큼 추가 페이지를 로드
+async function ensureTaggedBookmarkVisible(bookmarkId: ID) {
   const MAX_PAGES = 5;
   let tries = 0;
 
@@ -253,7 +254,9 @@ async function ensureTaggedBookmarkVisible(tagId: ID, bookmarkId: ID) {
     if (tries >= MAX_PAGES) break;
 
     const prevPage = taggedStore.page;
-    taggedStore.nextPage();
+
+    const moved = taggedStore.nextPage();
+    if (!moved) break;
 
     try {
       await taggedStore.load(true);
