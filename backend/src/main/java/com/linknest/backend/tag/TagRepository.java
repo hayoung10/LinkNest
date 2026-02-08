@@ -3,6 +3,7 @@ package com.linknest.backend.tag;
 import com.linknest.backend.tag.dto.TagRes;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -33,7 +34,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.createdAt desc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByCreatedAtDesc(Long userId, String pattern, Pageable pageable);
+    Slice<TagRes> findAllByUserIdAndNameLikeOrderByCreatedAtDesc(@Param("userId") Long userId, @Param("pattern") String pattern,
+                                                                 Pageable pageable);
 
     @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
             "from Tag t " +
@@ -43,7 +45,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.createdAt asc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByCreatedAtAsc(Long userId, String pattern, Pageable pageable);
+    Slice<TagRes> findAllByUserIdAndNameLikeOrderByCreatedAtAsc(@Param("userId") Long userId, @Param("pattern") String pattern,
+                                                                Pageable pageable);
 
     @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
             "from Tag t " +
@@ -53,7 +56,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.name asc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByNameAsc(Long userId, String pattern, Pageable pageable);
+    Slice<TagRes> findAllByUserIdAndNameLikeOrderByNameAsc(@Param("userId") Long userId, @Param("pattern") String pattern,
+                                                           Pageable pageable);
 
     @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
             "from Tag t " +
@@ -62,26 +66,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "where t.user.id = :userId " +
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
-            "order by t.name desc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByNameDesc(Long userId, String pattern, Pageable pageable);
-
-    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
-            "from Tag t " +
-            "   left join t.bookmarkTags bt " +
-            "   left join bt.bookmark b " +
-            "where t.user.id = :userId " +
-            "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
-            "group by t.id, t.name, t.createdAt, t.updatedAt " +
-            "order by count(distinct b.id) desc, t.name asc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(Long userId, String pattern, Pageable pageable);
-
-    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
-            "from Tag t " +
-            "   left join t.bookmarkTags bt " +
-            "   left join bt.bookmark b " +
-            "where t.user.id = :userId " +
-            "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
-            "group by t.id, t.name, t.createdAt, t.updatedAt " +
-            "order by count(distinct b.id) asc, t.name asc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountAsc(Long userId, String pattern, Pageable pageable);
+            "order by count(distinct b.id) desc, t.name asc, t.id asc")
+    Slice<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(@Param("userId") Long userId, @Param("pattern") String pattern,
+                                                                     Pageable pageable);
 }

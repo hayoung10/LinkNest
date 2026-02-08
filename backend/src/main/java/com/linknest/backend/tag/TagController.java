@@ -37,12 +37,12 @@ public class TagController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<TagsRes>> getTags(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<SliceResponse<TagRes>>> getTags(@AuthenticationPrincipal(expression = "id") Long userId,
                                                         @RequestParam(required = false) String q,
                                                         @RequestParam(defaultValue = "NAME_ASC") TagSort sort,
                                                         @RequestParam(defaultValue = "0") int page,
                                                         @RequestParam(defaultValue = "20") int size) {
-        TagsRes data = service.getTags(userId, q, sort, page, size);
+        SliceResponse<TagRes> data = service.getTags(userId, q, sort, page, size);
         return ResponseEntity.ok(ApiResponse.ok("태그 목록 조회", data));
     }
 
