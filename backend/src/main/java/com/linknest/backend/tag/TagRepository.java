@@ -1,7 +1,6 @@
 package com.linknest.backend.tag;
 
 import com.linknest.backend.tag.dto.TagRes;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,12 +19,14 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
 
     Optional<Tag> findByUserIdAndNameKey(Long userId, String nameKey);
 
+    // -------------------- Tag Cleanup --------------------
     @Query(value = "select t.id from tags t " +
             "where t.created_at < :cutoff " +
             "and not exists (select 1 from bookmark_tags bt where bt.tag_id = t.id) " +
             "limit :batchSize", nativeQuery = true)
     List<Long> findOrphanTagIds(@Param("cutoff") Instant cutoff, @Param("batchSize") int batchSize);
 
+    // -------------------- Tagged Bookmarks --------------------
     @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
             "from Tag t " +
             "   left join t.bookmarkTags bt " +
@@ -69,4 +70,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "order by count(distinct b.id) desc, t.name asc, t.id asc")
     Slice<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(@Param("userId") Long userId, @Param("pattern") String pattern,
                                                                      Pageable pageable);
+
+    // -------------------- Summary --------------------
+    long countByUserId(Long userId);
 }

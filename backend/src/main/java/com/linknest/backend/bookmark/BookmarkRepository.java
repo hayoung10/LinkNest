@@ -40,7 +40,5 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     Slice<Bookmark> findAllFavoritesSortedByTitle(@Param("userId") Long userId, Pageable pageable);
 
     // -------------------- Bookmark Ownership Validation --------------------
-    long countByUserId(Long userId);
-
     long countByUserIdAndIdIn(Long userId, List<Long> ids);
 }

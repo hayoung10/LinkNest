@@ -13,7 +13,6 @@ import com.linknest.backend.user.UserRepository;
 import com.linknest.backend.userpreferences.UserPreferencesService;
 import com.linknest.backend.userpreferences.domain.DefaultBookmarkSort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -217,6 +216,17 @@ public class TagService {
                 bookmarkTagRepository.replaceTagOnBookmark(bookmarkId, id, targetTagId);
             }
         }
+    }
+
+    // ==========================================================
+    // Summary
+    // ==========================================================
+
+    public TagSummaryRes getSummary(Long userId) {
+        long totalTags = tagRepository.countByUserId(userId);
+        long totalTaggedBookmarks = bookmarkTagRepository.countDistinctTaggedBookmarks(userId);
+
+        return new TagSummaryRes(totalTags, totalTaggedBookmarks);
     }
 
     // ==========================================================
