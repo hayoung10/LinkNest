@@ -61,23 +61,21 @@ public class TagService {
         return tagMapper.toResWithCount(saved, 0L);
     }
 
-    public TagsRes getTags(Long userId, String q, TagSort sort, int page, int size) {
+    public SliceResponse<TagRes> getTags(Long userId, String q, TagSort sort, int page, int size) {
         int safePage = Math.max(0, page);
         int safeSize = Math.min(Math.max(1, size), 100);
         Pageable pageable = PageRequest.of(safePage, safeSize);
 
         String pattern = toLikePattern(q);
 
-        Page<TagRes> result = switch(sort) {
+        Slice<TagRes> result = switch(sort) {
             case NEWEST -> tagRepository.findAllByUserIdAndNameLikeOrderByCreatedAtDesc(userId, pattern, pageable);
             case OLDEST -> tagRepository.findAllByUserIdAndNameLikeOrderByCreatedAtAsc(userId, pattern, pageable);
             case NAME_ASC -> tagRepository.findAllByUserIdAndNameLikeOrderByNameAsc(userId, pattern, pageable);
             case COUNT_DESC -> tagRepository.findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(userId, pattern, pageable);
         };
 
-        long totalBookmarks = bookmarkRepository.countByUserId(userId);
-
-        return TagsRes.of(result, totalBookmarks);
+        return SliceResponse.of(result);
     }
 
     @Transactional
