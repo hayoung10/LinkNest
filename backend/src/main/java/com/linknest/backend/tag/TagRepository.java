@@ -62,26 +62,6 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "where t.user.id = :userId " +
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
-            "order by t.name desc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByNameDesc(Long userId, String pattern, Pageable pageable);
-
-    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
-            "from Tag t " +
-            "   left join t.bookmarkTags bt " +
-            "   left join bt.bookmark b " +
-            "where t.user.id = :userId " +
-            "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
-            "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by count(distinct b.id) desc, t.name asc")
     Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(Long userId, String pattern, Pageable pageable);
-
-    @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +
-            "from Tag t " +
-            "   left join t.bookmarkTags bt " +
-            "   left join bt.bookmark b " +
-            "where t.user.id = :userId " +
-            "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
-            "group by t.id, t.name, t.createdAt, t.updatedAt " +
-            "order by count(distinct b.id) asc, t.name asc")
-    Page<TagRes> findAllByUserIdAndNameLikeOrderByBookmarkCountAsc(Long userId, String pattern, Pageable pageable);
 }

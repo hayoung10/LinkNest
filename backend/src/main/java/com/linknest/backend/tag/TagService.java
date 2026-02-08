@@ -72,9 +72,7 @@ public class TagService {
             case NEWEST -> tagRepository.findAllByUserIdAndNameLikeOrderByCreatedAtDesc(userId, pattern, pageable);
             case OLDEST -> tagRepository.findAllByUserIdAndNameLikeOrderByCreatedAtAsc(userId, pattern, pageable);
             case NAME_ASC -> tagRepository.findAllByUserIdAndNameLikeOrderByNameAsc(userId, pattern, pageable);
-            case NAME_DESC -> tagRepository.findAllByUserIdAndNameLikeOrderByNameDesc(userId, pattern, pageable);
             case COUNT_DESC -> tagRepository.findAllByUserIdAndNameLikeOrderByBookmarkCountDesc(userId, pattern, pageable);
-            case COUNT_ASC -> tagRepository.findAllByUserIdAndNameLikeOrderByBookmarkCountAsc(userId, pattern, pageable);
         };
 
         long totalBookmarks = bookmarkRepository.countByUserId(userId);
