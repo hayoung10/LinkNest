@@ -103,4 +103,10 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             "   join bt.tag t " +
             "where bt.bookmark.id in :bookmarkIds")
     List<BookmarkTagNameRow> findTagNamesByBookmarkIds(@Param("bookmarkIds") List<Long> bookmarkIds);
+
+    // -------------------- Tag Summary --------------------
+    @Query("select count(distinct bt.bookmark.id) " +
+            "from BookmarkTag bt " +
+            "where bt.bookmark.user.id = :userId")
+    long countDistinctTaggedBookmarks(@Param("userId") Long userId);
 }

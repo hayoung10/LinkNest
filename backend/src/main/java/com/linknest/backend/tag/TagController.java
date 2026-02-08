@@ -96,4 +96,13 @@ public class TagController {
         service.replaceTagOnBookmarks(userId, id, req);
         return ResponseEntity.ok(ApiResponse.ok("태그 교체 완료", null));
     }
+
+    // =============================
+    // Summary
+    // =============================
+    @GetMapping("/summary")
+    public ResponseEntity<ApiResponse<TagSummaryRes>> getTagSummary(@AuthenticationPrincipal(expression = "id") Long userId) {
+        TagSummaryRes data = service.getSummary(userId);
+        return ResponseEntity.ok(ApiResponse.ok("태그 집계 조회", data));
+    }
 }
