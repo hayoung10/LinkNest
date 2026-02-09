@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import type { ID, Tag } from "@/types/common";
 import type { GetTagsParams, TagSort } from "@/api/tags";
-import type { PageMeta } from "@/api/common";
+import type { SliceMeta } from "@/api/common";
 import * as TagApi from "@/api/tags";
 
 type MutateKey = "create" | "rename" | "merge" | "delete";
@@ -15,8 +15,7 @@ interface TagsState {
   size: number;
 
   items: Tag[];
-  meta: PageMeta | null;
-  totalBookmarks: number | null;
+  meta: SliceMeta | null;
 
   isLoading: boolean;
   isMutating: Record<MutateKey, boolean>;
@@ -32,7 +31,6 @@ export const useTagsStore = defineStore("tags", {
     size: 20,
     items: [],
     meta: null,
-    totalBookmarks: null,
     isLoading: false,
     isMutating: {
       create: false,
@@ -44,7 +42,8 @@ export const useTagsStore = defineStore("tags", {
   }),
 
   getters: {
-    totalTagsCount: (s) => s.meta?.totalElements ?? s.items.length,
+    totalTagsCount: (s) => s.items.length,
+    hasNext: (s) => s.meta?.hasNext ?? false,
   },
 
   actions: {
@@ -56,7 +55,6 @@ export const useTagsStore = defineStore("tags", {
       this.size = 20;
       this.items = [];
       this.meta = null;
-      this.totalBookmarks = null;
       this.isLoading = false;
       this.isMutating = {
         create: false,
@@ -84,6 +82,15 @@ export const useTagsStore = defineStore("tags", {
       this.loaded = false;
     },
 
+    nextPage(): boolean {
+      if (!this.meta) return false;
+      if (!this.meta.hasNext) return false;
+
+      this.page += 1;
+      this.loaded = false;
+      return true;
+    },
+
     async load(force = false, opts?: { silent?: boolean }) {
       if (this.loaded && !force) return;
 
@@ -104,8 +111,6 @@ export const useTagsStore = defineStore("tags", {
         };
 
         const res = await TagApi.getTags(params);
-
-        this.totalBookmarks = res.totalBookmarks;
 
         if (this.page === 0) {
           this.items = res.items;

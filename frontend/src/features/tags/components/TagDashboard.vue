@@ -456,7 +456,7 @@ const emit = defineEmits<{
 const toast = useToastStore();
 const tagsStore = useTagsStore();
 
-const { items, totalBookmarks, isMutating } = storeToRefs(tagsStore);
+const { items, isMutating } = storeToRefs(tagsStore);
 
 const tag = computed(() => {
   if (props.tagId === null) return null;
@@ -481,7 +481,7 @@ const updatedAtText = computed(() => {
 // 사용률
 // ------------------------
 const usagePercent = computed(() => {
-  const total = totalBookmarks.value ?? 0;
+  const total = 1000; // TODO: 임시값
   const used = tag.value?.bookmarkCount ?? 0;
   if (total <= 0) return 0;
   return (used / total) * 100;

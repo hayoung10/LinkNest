@@ -132,10 +132,10 @@
     >
       <div class="flex items-center justify-between px-1">
         <span class="text-xs text-muted-foreground">
-          {{ loadedCount }} / {{ totalCount }}
+          {{ loadedCount }}개 로드됨
         </span>
         <span class="text-xs text-muted-foreground" v-if="meta">
-          {{ meta.page + 1 }} / {{ meta.totalPages }}
+          {{ meta.page + 1 }}페이지
         </span>
       </div>
 
@@ -242,12 +242,10 @@ const { items, q, sort, page, meta, isLoading, error, loaded } =
   storeToRefs(tagsStore);
 
 const sortOptions: Array<{ value: TagSort; label: string }> = [
-  { value: "NAME_ASC", label: "이름 A→Z" },
-  { value: "NAME_DESC", label: "이름 Z→A" },
+  { value: "NAME_ASC", label: "이름순" },
   { value: "NEWEST", label: "최신순" },
   { value: "OLDEST", label: "오래된순" },
-  { value: "COUNT_DESC", label: "사용 많은순" },
-  { value: "COUNT_ASC", label: "사용 적은순" },
+  { value: "COUNT_DESC", label: "북마크순" },
 ];
 
 const filtered = computed(() => {
@@ -268,14 +266,7 @@ const errorMessage = computed(() => {
   return "네트워크 상태를 확인한 뒤 다시 시도해주세요.";
 });
 
-const hasNext = computed(() => {
-  if (!meta.value) return false;
-  return page.value + 1 < meta.value.totalPages;
-});
-
-const totalCount = computed(
-  () => meta.value?.totalElements ?? filtered.value.length,
-);
+const hasNext = computed(() => meta.value?.hasNext ?? false);
 const loadedCount = computed(() => filtered.value.length);
 
 // ------------------------
