@@ -1,6 +1,6 @@
 import http, { unwrap } from "@/api/http";
 import type { ID, Tag, TaggedBookmark } from "@/types/common";
-import type { TagRes } from "./types";
+import type { TagRes, TagSummaryRes } from "./types";
 import type { SliceResponse } from "./common";
 import { mapTaggedBookmarkRes, mapTagRes } from "./mappers";
 
@@ -96,4 +96,10 @@ export async function replaceTagOnBookmarks(
   payload: TagReplaceReq,
 ): Promise<void> {
   await unwrap<void>(http.post(`/tags/${id}/replace`, payload));
+}
+
+/** 태그 집계 정보 조회 */
+export async function getTagSummary(): Promise<TagSummaryRes> {
+  const data = await unwrap<TagSummaryRes>(http.get(`/tags/summary`));
+  return data;
 }

@@ -3,6 +3,7 @@ import type { ID, Tag } from "@/types/common";
 import type { GetTagsParams, TagSort } from "@/api/tags";
 import type { SliceMeta } from "@/api/common";
 import * as TagApi from "@/api/tags";
+import type { TagSummaryRes } from "@/api/types";
 
 type MutateKey = "create" | "rename" | "merge" | "delete";
 
@@ -16,6 +17,8 @@ interface TagsState {
 
   items: Tag[];
   meta: SliceMeta | null;
+
+  summary: TagSummaryRes | null;
 
   isLoading: boolean;
   isMutating: Record<MutateKey, boolean>;
@@ -31,6 +34,7 @@ export const useTagsStore = defineStore("tags", {
     size: 20,
     items: [],
     meta: null,
+    summary: null,
     isLoading: false,
     isMutating: {
       create: false,
@@ -155,6 +159,7 @@ export const useTagsStore = defineStore("tags", {
       try {
         await TagApi.createTag(payload);
         await this.safeReload();
+        await this.loadSummary();
       } catch (e) {
         throw e;
       } finally {
@@ -189,6 +194,7 @@ export const useTagsStore = defineStore("tags", {
       try {
         await TagApi.mergeTag(id, payload);
         await this.safeReload();
+        await this.loadSummary();
       } catch (e) {
         throw e;
       } finally {
@@ -204,10 +210,19 @@ export const useTagsStore = defineStore("tags", {
         this.items = this.items.filter((t) => t.id !== id);
 
         await this.safeReload();
+        await this.loadSummary();
       } catch (e) {
         throw e;
       } finally {
         this.isMutating.delete = false;
+      }
+    },
+
+    async loadSummary() {
+      try {
+        this.summary = await TagApi.getTagSummary();
+      } catch (e) {
+        // 조용히 무시
       }
     },
   },

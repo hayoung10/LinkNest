@@ -113,3 +113,8 @@ export interface TaggedBookmarkRes {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface TagSummaryRes {
+  totalTags: number;
+  totalTaggedBookmarks: number;
+}
