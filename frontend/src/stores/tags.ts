@@ -74,10 +74,23 @@ export const useTagsStore = defineStore("tags", {
     },
 
     setQuery(params: Partial<Pick<TagsState, "q" | "sort" | "page" | "size">>) {
+      const prevQ = this.q;
+      const prevSort = this.sort;
+      const prevSize = this.size;
+
       if (params.q !== undefined) this.q = params.q;
       if (params.sort !== undefined) this.sort = params.sort;
       if (params.page !== undefined) this.page = params.page;
       if (params.size !== undefined) this.size = params.size;
+
+      const queryChanged =
+        this.q !== prevQ || this.sort !== prevSort || this.size !== prevSize;
+
+      if (queryChanged) {
+        this.page = 0;
+        this.items = [];
+        this.meta = null;
+      }
 
       this.loaded = false;
     },
@@ -95,11 +108,6 @@ export const useTagsStore = defineStore("tags", {
       if (this.loaded && !force) return;
 
       if (!opts?.silent) this.error = null;
-
-      if (this.page === 0) {
-        this.items = [];
-        this.meta = null;
-      }
 
       this.isLoading = true;
       try {
