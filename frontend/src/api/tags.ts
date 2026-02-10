@@ -1,16 +1,10 @@
 import http, { unwrap } from "@/api/http";
 import type { ID, Tag, TaggedBookmark } from "@/types/common";
-import type { TagRes, TagsRes } from "./types";
-import type { PageMeta, SliceResponse } from "./common";
+import type { TagRes, TagSummaryRes } from "./types";
+import type { SliceResponse } from "./common";
 import { mapTaggedBookmarkRes, mapTagRes } from "./mappers";
 
-export type TagSort =
-  | "NEWEST"
-  | "OLDEST"
-  | "NAME_ASC"
-  | "NAME_DESC"
-  | "COUNT_DESC"
-  | "COUNT_ASC";
+export type TagSort = "NEWEST" | "OLDEST" | "NAME_ASC" | "COUNT_DESC";
 
 export interface TagCreateReq {
   name: string;
@@ -54,14 +48,11 @@ export async function createTag(payload: TagCreateReq): Promise<Tag> {
 /** 태그 목록 조회 */
 export async function getTags(
   params: GetTagsParams = {},
-): Promise<{ items: Tag[]; meta: PageMeta; totalBookmarks: number }> {
-  const data = await unwrap<TagsRes>(http.get(`/tags`, { params }));
-
-  return {
-    items: data.items.map(mapTagRes),
-    meta: data.meta,
-    totalBookmarks: data.totalBookmarks,
-  };
+): Promise<SliceResponse<Tag>> {
+  const data = await unwrap<SliceResponse<TagRes>>(
+    http.get(`/tags`, { params }),
+  );
+  return { items: data.items.map(mapTagRes), meta: data.meta };
 }
 
 /** 이름 변경 */
@@ -105,4 +96,10 @@ export async function replaceTagOnBookmarks(
   payload: TagReplaceReq,
 ): Promise<void> {
   await unwrap<void>(http.post(`/tags/${id}/replace`, payload));
+}
+
+/** 태그 집계 정보 조회 */
+export async function getTagSummary(): Promise<TagSummaryRes> {
+  const data = await unwrap<TagSummaryRes>(http.get(`/tags/summary`));
+  return data;
 }

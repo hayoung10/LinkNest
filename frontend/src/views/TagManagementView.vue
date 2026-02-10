@@ -205,7 +205,7 @@ async function onTagsChanged() {
 }
 
 async function refreshTagsOnEnter() {
-  await tagsStore.safeReload();
+  await Promise.allSettled([tagsStore.safeReload(), tagsStore.loadSummary()]);
 }
 
 function onOpenWorkspace(payload: { bookmarkId: ID; collectionId: ID }) {

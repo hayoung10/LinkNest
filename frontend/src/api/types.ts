@@ -91,12 +91,6 @@ export interface TagRes {
   bookmarkCount: number;
 }
 
-export interface TagsRes {
-  items: TagRes[];
-  meta: PageMeta;
-  totalBookmarks: number;
-}
-
 export interface TaggedBookmarkRes {
   id: ID;
 
@@ -118,4 +112,9 @@ export interface TaggedBookmarkRes {
 
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TagSummaryRes {
+  totalTags: number;
+  totalTaggedBookmarks: number;
 }

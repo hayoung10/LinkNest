@@ -28,6 +28,13 @@
         </template>
       </TagHeader>
 
+      <!-- 안내 문구 (bookmarkCount === 0 인 경우) -->
+      <div v-if="(tag?.bookmarkCount ?? 0) === 0" class="px-6 pt-3">
+        <div class="text-xs text-red-600/80 dark:text-red-400/80">
+          일정 기간 사용되지 않는 태그는 자동으로 정리될 수 있습니다.
+        </div>
+      </div>
+
       <div class="px-6 py-6 space-y-8">
         <!-- 기본 정보 -->
         <section>
@@ -288,7 +295,7 @@
           <div class="space-y-2">
             <label class="block text-sm">태그 이름 *</label>
             <input
-              ref="nameInputRef"
+              ref="renameInputRef"
               v-model="renameName"
               type="text"
               class="w-full rounded-md px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/60"
@@ -456,7 +463,7 @@ const emit = defineEmits<{
 const toast = useToastStore();
 const tagsStore = useTagsStore();
 
-const { items, totalBookmarks, isMutating } = storeToRefs(tagsStore);
+const { items, isMutating, summary } = storeToRefs(tagsStore);
 
 const tag = computed(() => {
   if (props.tagId === null) return null;
@@ -480,8 +487,12 @@ const updatedAtText = computed(() => {
 // ------------------------
 // 사용률
 // ------------------------
+const totalTaggedBookmarks = computed(
+  () => summary.value?.totalTaggedBookmarks ?? 0,
+);
+
 const usagePercent = computed(() => {
-  const total = totalBookmarks.value ?? 0;
+  const total = totalTaggedBookmarks.value;
   const used = tag.value?.bookmarkCount ?? 0;
   if (total <= 0) return 0;
   return (used / total) * 100;
@@ -539,7 +550,7 @@ watch(
       previewLoading.value = false;
       return;
     }
-    safeReloadPreview(Number(id));
+    safeReloadPreview(id);
   },
   { immediate: true },
 );

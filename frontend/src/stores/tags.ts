@@ -1,8 +1,9 @@
 import { defineStore } from "pinia";
 import type { ID, Tag } from "@/types/common";
 import type { GetTagsParams, TagSort } from "@/api/tags";
-import type { PageMeta } from "@/api/common";
+import type { SliceMeta } from "@/api/common";
 import * as TagApi from "@/api/tags";
+import type { TagSummaryRes } from "@/api/types";
 
 type MutateKey = "create" | "rename" | "merge" | "delete";
 
@@ -15,8 +16,9 @@ interface TagsState {
   size: number;
 
   items: Tag[];
-  meta: PageMeta | null;
-  totalBookmarks: number | null;
+  meta: SliceMeta | null;
+
+  summary: TagSummaryRes | null;
 
   isLoading: boolean;
   isMutating: Record<MutateKey, boolean>;
@@ -32,7 +34,7 @@ export const useTagsStore = defineStore("tags", {
     size: 20,
     items: [],
     meta: null,
-    totalBookmarks: null,
+    summary: null,
     isLoading: false,
     isMutating: {
       create: false,
@@ -44,7 +46,8 @@ export const useTagsStore = defineStore("tags", {
   }),
 
   getters: {
-    totalTagsCount: (s) => s.meta?.totalElements ?? s.items.length,
+    totalTagsCount: (s) => s.items.length,
+    hasNext: (s) => s.meta?.hasNext ?? false,
   },
 
   actions: {
@@ -56,7 +59,6 @@ export const useTagsStore = defineStore("tags", {
       this.size = 20;
       this.items = [];
       this.meta = null;
-      this.totalBookmarks = null;
       this.isLoading = false;
       this.isMutating = {
         create: false,
@@ -76,23 +78,40 @@ export const useTagsStore = defineStore("tags", {
     },
 
     setQuery(params: Partial<Pick<TagsState, "q" | "sort" | "page" | "size">>) {
+      const prevQ = this.q;
+      const prevSort = this.sort;
+      const prevSize = this.size;
+
       if (params.q !== undefined) this.q = params.q;
       if (params.sort !== undefined) this.sort = params.sort;
       if (params.page !== undefined) this.page = params.page;
       if (params.size !== undefined) this.size = params.size;
 
+      const queryChanged =
+        this.q !== prevQ || this.sort !== prevSort || this.size !== prevSize;
+
+      if (queryChanged) {
+        this.page = 0;
+        this.items = [];
+        this.meta = null;
+      }
+
       this.loaded = false;
+    },
+
+    nextPage(): boolean {
+      if (!this.meta) return false;
+      if (!this.meta.hasNext) return false;
+
+      this.page += 1;
+      this.loaded = false;
+      return true;
     },
 
     async load(force = false, opts?: { silent?: boolean }) {
       if (this.loaded && !force) return;
 
       if (!opts?.silent) this.error = null;
-
-      if (this.page === 0) {
-        this.items = [];
-        this.meta = null;
-      }
 
       this.isLoading = true;
       try {
@@ -104,8 +123,6 @@ export const useTagsStore = defineStore("tags", {
         };
 
         const res = await TagApi.getTags(params);
-
-        this.totalBookmarks = res.totalBookmarks;
 
         if (this.page === 0) {
           this.items = res.items;
@@ -142,6 +159,7 @@ export const useTagsStore = defineStore("tags", {
       try {
         await TagApi.createTag(payload);
         await this.safeReload();
+        await this.loadSummary();
       } catch (e) {
         throw e;
       } finally {
@@ -176,6 +194,7 @@ export const useTagsStore = defineStore("tags", {
       try {
         await TagApi.mergeTag(id, payload);
         await this.safeReload();
+        await this.loadSummary();
       } catch (e) {
         throw e;
       } finally {
@@ -191,10 +210,19 @@ export const useTagsStore = defineStore("tags", {
         this.items = this.items.filter((t) => t.id !== id);
 
         await this.safeReload();
+        await this.loadSummary();
       } catch (e) {
         throw e;
       } finally {
         this.isMutating.delete = false;
+      }
+    },
+
+    async loadSummary() {
+      try {
+        this.summary = await TagApi.getTagSummary();
+      } catch (e) {
+        // 조용히 무시
       }
     },
   },
