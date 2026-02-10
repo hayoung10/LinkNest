@@ -20,7 +20,12 @@
 
       <button
         type="button"
-        class="text-sm px-3 py-2 rounded-md border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+        class="text-sm px-3 py-2 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+        :class="
+          selectedCount > 0 && !isTagMutating
+            ? 'border-red-300 bg-red-50 text-red-600 hover:bg-red-100'
+            : 'border-border hover:bg-accent'
+        "
         :disabled="selectedCount === 0 || isTagMutating"
         @click="$emit('detach')"
       >
@@ -47,7 +52,12 @@
 
         <button
           type="button"
-          class="text-sm px-3 py-2 rounded-md border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          class="text-sm px-3 py-2 rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+          :class="
+            canReplace && !isTagMutating
+              ? 'border-blue-300 bg-blue-50 text-blue-600 hover:bg-blue-100'
+              : 'border-border hover:bg-accent'
+          "
           :disabled="isTagMutating || !canReplace"
           @click="$emit('replace')"
         >
