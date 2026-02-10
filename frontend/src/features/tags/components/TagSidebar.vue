@@ -293,6 +293,7 @@ async function runSearch(raw: string) {
 
   await tagsStore.safeReload();
   await nextTick();
+  scrollToTop();
   setup();
 }
 
@@ -318,6 +319,12 @@ function onCompositionStart() {
 function onCompositionEnd(e: CompositionEvent) {
   isComposing.value = false;
   scheduleSearch(qInput.value);
+}
+
+function scrollToTop() {
+  const el = listWrapRef.value;
+  if (!el) return;
+  el.scrollTo({ top: 0, behavior: "auto" });
 }
 
 onBeforeUnmount(() => {
@@ -409,6 +416,8 @@ watch(
     try {
       await tagsStore.safeReload();
       await nextTick();
+
+      scrollToTop();
       setup();
     } catch {
       toast.error("정렬을 적용하지 못했습니다.");
