@@ -28,6 +28,13 @@
         </template>
       </TagHeader>
 
+      <!-- 안내 문구 (bookmarkCount === 0 인 경우) -->
+      <div v-if="(tag?.bookmarkCount ?? 0) === 0" class="px-6 pt-3">
+        <div class="text-xs text-red-600/80 dark:text-red-400/80">
+          일정 기간 사용되지 않는 태그는 자동으로 정리될 수 있습니다.
+        </div>
+      </div>
+
       <div class="px-6 py-6 space-y-8">
         <!-- 기본 정보 -->
         <section>
