@@ -62,9 +62,10 @@ public class BookmarkController {
     @GetMapping
     public ResponseEntity<ApiResponse<SliceResponse<BookmarkRes>>> listBookmarks(@AuthenticationPrincipal(expression = "id") Long userId,
                                                                                  @RequestParam @Min(1) Long collectionId,
+                                                                                 @RequestParam(required = false) String q,
                                                                                  @RequestParam(defaultValue = "0") int page,
                                                                                  @RequestParam(defaultValue = "20") int size) {
-        SliceResponse<BookmarkRes> data = service.listByCollection(userId, collectionId, page, size);
+        SliceResponse<BookmarkRes> data = service.listByCollection(userId, collectionId, q, page, size);
         return ResponseEntity.ok(ApiResponse.ok("북마크 목록 조회", data));
     }
 
