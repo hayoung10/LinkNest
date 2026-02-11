@@ -111,22 +111,24 @@ public class BookmarkService {
     }
 
     // ---------- 북마크 목록 조회 ----------
-    public SliceResponse<BookmarkRes> listByCollection(Long userId, Long collectionId, int page, int size) {
+    public SliceResponse<BookmarkRes> listByCollection(Long userId, Long collectionId, String q, int page, int size) {
         requireOwnedCollection(userId, collectionId);
 
         int safePage = Math.max(0, page);
         int safeSize = Math.min(Math.max(1, size), 100);
         Pageable pageable = PageRequest.of(safePage, safeSize);
 
+        String pattern = toLikePattern(q);
+
         DefaultBookmarkSort sort = userPreferencesService.getDefaultBookmarkSort(userId);
 
         Slice<Bookmark> result = switch(sort) {
             case NEWEST -> bookmarkRepository
-                    .findAllByUserIdAndCollectionIdOrderByCreatedAtDescIdDesc(userId, collectionId, pageable);
+                    .findAllByCollectionWithSearchOrderByCreatedAtDescIdDesc(userId, collectionId, pattern, pageable);
             case OLDEST -> bookmarkRepository
-                    .findAllByUserIdAndCollectionIdOrderByCreatedAtAscIdAsc(userId, collectionId, pageable);
+                    .findAllByCollectionWithSearchOrderByCreatedAtAscIdAsc(userId, collectionId, pattern, pageable);
             case TITLE -> bookmarkRepository
-                    .findAllSortedByTitle(userId, collectionId, pageable);
+                    .findAllByCollectionWithSearchSortedByTitle(userId, collectionId, pattern, pageable);
         };
 
         return SliceResponse.of(result.map(mapper::toRes));
@@ -249,6 +251,20 @@ public class BookmarkService {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
         return collection;
+    }
+
+    private String toLikePattern(String q) {
+        if(q == null) return null;
+
+        String s = q.trim();
+        if(s.isBlank()) return null;
+
+        s = s.toLowerCase(Locale.ROOT)
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+
+        return "%" + s + "%";
     }
 
     private void applyImageMode(Bookmark bookmark, ImageMode mode, boolean urlChanged) {
