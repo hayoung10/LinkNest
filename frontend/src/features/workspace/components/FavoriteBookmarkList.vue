@@ -4,38 +4,26 @@
       class="flex-1 flex flex-col w-full max-w-4xl mx-auto p-8 animate-fadeIn min-h-0"
     >
       <!-- 헤더 -->
-      <header class="flex items-center justify-between mb-2">
-        <div class="min-w-0 pl-3">
-          <!-- 여백 -->
-          <div
-            class="mb-1 ml-0.5 min-h-[16px] text-xs text-zinc-500 flex items-center gap-1 min-w-0"
-            aria-hidden="true"
-          ></div>
-
-          <!-- 타이틀 -->
-          <div class="min-w-0 flex items-center gap-2">
-            <span class="shrink-0 text-amber-500">
-              <StarIcon :size="20" filled />
-            </span>
-            <h2
-              class="text-xl font-semibold text-foreground truncate leading-none"
-            >
-              즐겨찾기
-            </h2>
-          </div>
-        </div>
-
-        <!-- 우측 액션: (현재 없음) -->
-        <div class="flex text-center gap-2 pr-3" aria-hidden="true">
-          <!-- 헤더 높이 맞춤 -->
-          <span
-            class="inline-flex items-center px-3.5 py-1.5 opacity-0 select-none"
-          >
-            <span class="inline-block size-9" />
-            <span>추가</span>
+      <BookmarkHeader
+        :collection="null"
+        :c-path="[]"
+        :is-loading-path="false"
+        :is-add-disabled="true"
+        :show-path="false"
+        :show-add="false"
+        @searched="onSearched"
+      >
+        <template #title>
+          <span class="shrink-0 text-amber-500">
+            <StarIcon :size="20" filled />
           </span>
-        </div>
-      </header>
+          <h2
+            class="text-xl font-semibold text-foreground truncate leading-none"
+          >
+            즐겨찾기
+          </h2>
+        </template>
+      </BookmarkHeader>
 
       <div class="divider" />
 
@@ -47,15 +35,18 @@
         :onRetry="onRetry"
       />
 
-      <BaseLoading
-        v-else-if="isLoadingBookmarks && favoriteBookmarks.length === 0"
-        label="북마크를 불러오는 중…"
+      <BaseLoading v-else-if="isInitialLoading" label="북마크를 불러오는 중…" />
+
+      <BaseEmpty
+        v-else-if="isEmpty && !isSearching"
+        title="즐겨찾기한 북마크가 없습니다."
+        description="별 아이콘을 눌러 즐겨찾기를 추가하세요."
       />
 
       <BaseEmpty
-        v-else-if="isEmpty"
-        title="즐겨찾기한 북마크가 없습니다."
-        description="별 아이콘을 눌러 즐겨찾기를 추가하세요."
+        v-else-if="isEmpty && isSearching"
+        title="검색 결과가 없습니다."
+        :description="emptySearchDescription"
       />
 
       <!-- 즐겨찾기 리스트 -->
@@ -165,7 +156,16 @@
                               ? 'text-foreground'
                               : 'text-neutral-400 dark:text-neutral-500'
                           "
-                          >{{ displayTitle(b) }}</span
+                          ><template v-for="(c, i) in titleChunks(b)" :key="i">
+                            <span
+                              :class="
+                                c.isHit
+                                  ? 'font-extrabold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
+                                  : ''
+                              "
+                              >{{ c.text }}</span
+                            >
+                          </template></span
                         >
 
                         <!-- 링크 아이콘 -->
@@ -190,7 +190,16 @@
                           v-for="t in visibleTags(b)"
                           :key="t"
                           class="inline-flex items-center rounded-full bg-muted/40 border border-border/60 px-2 py-0.5 text-[11px] text-blue-600/80 hover:text-blue-600 dark:text-blue-400/80 dark:hover:text-blue-400"
-                          >{{ t }}</span
+                          ><template v-for="(c, i) in tagChunks(t)" :key="i">
+                            <span
+                              :class="
+                                c.isHit
+                                  ? 'font-bold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
+                                  : ''
+                              "
+                              >{{ c.text }}</span
+                            >
+                          </template></span
                         >
 
                         <!-- 3개 초과 시 +n 표시 -->
@@ -219,9 +228,18 @@
                         <span aria-hidden="true" class="shrink-0">·</span>
 
                         <!-- 도메인 -->
-                        <span class="min-w-0 truncate">{{
-                          domain(b.url)
-                        }}</span>
+                        <span class="min-w-0 truncate"
+                          ><template v-for="(c, i) in domainChunks(b)" :key="i">
+                            <span
+                              :class="
+                                c.isHit
+                                  ? 'font-semibold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
+                                  : ''
+                              "
+                              >{{ c.text }}</span
+                            >
+                          </template></span
+                        >
                         <span aria-hidden="true" class="shrink-0">·</span>
 
                         <!-- 수정일 -->
@@ -293,6 +311,7 @@ import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useToastStore } from "@/stores/toast";
 import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
+import BookmarkHeader from "./BookmarkHeader.vue";
 
 const props = defineProps<{
   selectedBookmarkId?: ID | null;
@@ -312,6 +331,13 @@ const bookmarksError = computed(() => error.value.bookmarks);
 const hasError = computed(() => !!bookmarksError.value);
 
 const favoriteBookmarks = computed(() => bookmarks.value);
+
+const isInitialLoading = computed(
+  () =>
+    isLoadingBookmarks.value &&
+    bookmarks.value.length === 0 &&
+    workspace.bookmarksQ.trim().length === 0,
+);
 
 const isEmpty = computed(
   () =>
@@ -462,6 +488,64 @@ const { setup, cleanup } = useInfiniteScroll(
 
 onUnmounted(() => cleanup());
 
+// ------------------------
+// Search(검색)
+// ------------------------
+const isSearching = computed(() => workspace.bookmarksQ.trim().length > 0);
+const searchQ = computed(() => workspace.bookmarksQ.trim().normalize("NFC"));
+
+const emptySearchDescription = computed(
+  () => `'${workspace.bookmarksQ}'에 대한 결과를 찾을 수 없습니다.`,
+);
+
+function scrollToTop() {
+  const el = listWrapRef.value;
+  if (!el) return;
+  el.scrollTo({ top: 0, behavior: "auto" });
+}
+
+async function onSearched() {
+  await nextTick();
+  scrollToTop();
+}
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function splitHighlight(text: string, q: string) {
+  const raw = (text ?? "").toString().normalize("NFC");
+  const keyword = (q ?? "").trim().normalize("NFC");
+
+  if (!keyword) {
+    return [{ text: raw, isHit: false }];
+  }
+
+  const regex = new RegExp(`(${escapeRegExp(keyword)})`, "gi");
+
+  const parts = raw.split(regex);
+
+  return parts.map((part) => ({
+    text: part,
+    isHit: part.toLowerCase() === keyword.toLowerCase(),
+  }));
+}
+
+function titleChunks(b: Bookmark) {
+  return splitHighlight(displayTitle(b), searchQ.value);
+}
+
+function domainChunks(b: Bookmark) {
+  return splitHighlight(domain(b.url), searchQ.value);
+}
+
+function tagChunks(tag: string) {
+  return splitHighlight(tag, searchQ.value);
+}
+
+// ------------------------
+// watchers
+// ------------------------
 watch(
   () => isListReady.value,
   async (ready) => {
