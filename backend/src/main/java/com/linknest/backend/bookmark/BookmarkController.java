@@ -110,9 +110,10 @@ public class BookmarkController {
 
     @GetMapping("/favorites")
     public ResponseEntity<ApiResponse<SliceResponse<BookmarkRes>>> listFavorites(@AuthenticationPrincipal(expression = "id") Long userId,
-                                                                                @RequestParam(defaultValue = "0") int page,
-                                                                                @RequestParam(defaultValue = "20") int size) {
-        SliceResponse<BookmarkRes> data = service.listByFavorites(userId, page, size);
+                                                                                 @RequestParam(required = false) String q,
+                                                                                 @RequestParam(defaultValue = "0") int page,
+                                                                                 @RequestParam(defaultValue = "20") int size) {
+        SliceResponse<BookmarkRes> data = service.listByFavorites(userId, q, page, size);
         return ResponseEntity.ok(ApiResponse.ok("즐겨찾기 목록 조회", data));
     }
 }

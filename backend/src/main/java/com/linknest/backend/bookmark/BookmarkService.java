@@ -215,17 +215,19 @@ public class BookmarkService {
     }
 
     // ---------- 즐겨찾기 목록 조회 ----------
-    public SliceResponse<BookmarkRes> listByFavorites(Long userId, int page, int size) {
+    public SliceResponse<BookmarkRes> listByFavorites(Long userId, String q, int page, int size) {
         int safePage = Math.max(0, page);
         int safeSize = Math.min(Math.max(1, size), 100);
         Pageable pageable = PageRequest.of(safePage, safeSize);
 
+        String pattern = toLikePattern(q);
+
         DefaultBookmarkSort sort = userPreferencesService.getDefaultBookmarkSort(userId);
 
         Slice<Bookmark> result = switch(sort) {
-            case NEWEST -> bookmarkRepository.findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtDescIdDesc(userId, pageable);
-            case OLDEST -> bookmarkRepository.findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtAscIdAsc(userId, pageable);
-            case TITLE -> bookmarkRepository.findAllFavoritesSortedByTitle(userId, pageable);
+            case NEWEST -> bookmarkRepository.findAllFavoritesWithSearchOrderByCreatedAtDescIdDesc(userId, pattern, pageable);
+            case OLDEST -> bookmarkRepository.findAllFavoritesWithSearchOrderByCreatedAtAscIdAsc(userId, pattern, pageable);
+            case TITLE -> bookmarkRepository.findAllFavoritesWithSearchSortedByTitle(userId, pattern, pageable);
         };
 
         return SliceResponse.of(result.map(mapper::toRes));
