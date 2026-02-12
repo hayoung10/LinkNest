@@ -41,6 +41,12 @@ export interface GetBookmarksParams {
   size?: number;
 }
 
+export interface GetFavoritesParams {
+  q?: string;
+  page?: number;
+  size?: number;
+}
+
 /** 생성 */
 export async function createBookmark(
   payload: BookmarkCreateReq,
@@ -130,17 +136,11 @@ export async function updateFavorite(
 }
 
 /** 즐겨찾기 목록 조회 */
-export async function listFavorites(params?: {
-  page?: number;
-  size?: number;
-}): Promise<SliceResponse<Bookmark>> {
+export async function listFavorites(
+  params: GetFavoritesParams,
+): Promise<SliceResponse<Bookmark>> {
   const data = await unwrap<SliceResponse<BookmarkRes>>(
-    http.get(`/bookmarks/favorites`, {
-      params: {
-        page: params?.page ?? 0,
-        size: params?.size ?? 20,
-      },
-    }),
+    http.get(`/bookmarks/favorites`, { params }),
   );
   return { items: data.items.map(mapBookmarkRes), meta: data.meta };
 }
