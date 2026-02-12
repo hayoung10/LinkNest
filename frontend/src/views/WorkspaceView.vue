@@ -40,6 +40,7 @@
           @open-add="openAddPanel"
           @select-bookmark="onSelectBookmark"
           @focus-done="onFocusDone"
+          @clear-focus="focusBookmarkId = null"
         />
 
         <BookmarkCard
@@ -51,6 +52,7 @@
           @open-add="openAddPanel"
           @select-bookmark="onSelectBookmark"
           @focus-done="onFocusDone"
+          @clear-focus="focusBookmarkId = null"
         />
       </template>
 

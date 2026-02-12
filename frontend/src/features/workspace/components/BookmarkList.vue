@@ -35,61 +35,15 @@
       class="flex-1 flex flex-col w-full max-w-4xl mx-auto p-8 animate-fadeIn min-h-0"
     >
       <!-- 헤더 -->
-      <header class="flex items-center justify-between mb-2">
-        <div class="min-w-0 pl-3">
-          <!-- path -->
-          <div
-            class="mb-1 ml-0.5 min-h-[16px] text-xs text-zinc-500 flex items-center gap-1 min-w-0"
-          >
-            <template v-if="isLoadingPath">
-              <span
-                class="inline-block h-3 w-28 rounded bg-zinc-200/70 animate-pulse"
-              />
-            </template>
-
-            <template v-else-if="cPath.length">
-              <template v-for="(p, idx) in cPath" :key="p.id">
-                <span class="truncate">
-                  <span v-if="p.emoji" class="mr-1">{{ p.emoji }}</span>
-                  {{ p.name }}
-                </span>
-                <span v-if="idx < cPath.length - 1" class="opacity-60">/</span>
-              </template>
-            </template>
-          </div>
-
-          <div class="min-w-0 flex items-center gap-2">
-            <span class="shrink-0 text-muted-foreground opacity-80">
-              <template v-if="collection?.emoji">
-                <span class="text-[20px] leading-none">{{
-                  collection.emoji
-                }}</span>
-              </template>
-              <template v-else>
-                <FolderIcon size="22" />
-              </template>
-            </span>
-
-            <!-- 컬렉션 이름 -->
-            <h2 class="text-xl font-semibold text-foreground truncate">
-              {{ collection?.name ?? "컬렉션" }}
-            </h2>
-          </div>
-        </div>
-
-        <div class="flex text-center gap-2 pr-3">
-          <button
-            type="button"
-            :disabled="isAddDisabled"
-            class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-900"
-            aria-label="새 북마크 추가"
-            @click="$emit('open-add')"
-          >
-            <PlusIcon :size="16" klass="shrink-0" />
-            <span>추가</span>
-          </button>
-        </div>
-      </header>
+      <BookmarkHeader
+        :collection="collection"
+        :c-path="cPath"
+        :is-loading-path="isLoadingPath"
+        :is-add-disabled="isAddDisabled"
+        @open-add="$emit('open-add')"
+        @searched="onSearched"
+        @clear-focus="$emit('clear-focus')"
+      />
 
       <div class="divider" />
 
@@ -101,15 +55,18 @@
         :onRetry="onRetry"
       />
 
-      <BaseLoading
-        v-else-if="isLoadingBookmarks && bookmarks.length === 0"
-        label="북마크를 불러오는 중…"
+      <BaseLoading v-else-if="isInitialLoading" label="북마크를 불러오는 중…" />
+
+      <BaseEmpty
+        v-else-if="isEmpty && !isSearching"
+        title="북마크를 추가하세요."
+        description="오른쪽 위 '추가' 버튼으로 링크를 추가하세요."
       />
 
       <BaseEmpty
-        v-else-if="isEmpty"
-        title="북마크를 추가하세요."
-        description="오른쪽 위 '추가' 버튼으로 링크를 추가하세요."
+        v-else-if="isEmpty && isSearching"
+        title="검색 결과가 없습니다."
+        :description="emptySearchDescription"
       />
 
       <!-- 북마크 리스트 -->
@@ -223,8 +180,17 @@
                             ? 'text-foreground'
                             : 'text-neutral-400 dark:text-neutral-500'
                         "
-                        >{{ displayTitle(b) }}</span
-                      >
+                        ><template v-for="(c, i) in titleChunks(b)" :key="i">
+                          <span
+                            :class="
+                              c.isHit
+                                ? 'font-extrabold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
+                                : ''
+                            "
+                            >{{ c.text }}</span
+                          >
+                        </template>
+                      </span>
 
                       <!-- 링크 아이콘 -->
                       <a
@@ -248,7 +214,16 @@
                         v-for="t in visibleTags(b)"
                         :key="t"
                         class="inline-flex items-center rounded-full bg-muted/40 border border-border/60 px-2 py-0.5 text-[11px] text-blue-600/80 hover:text-blue-600 dark:text-blue-400/80 dark:hover:text-blue-400"
-                        >{{ t }}</span
+                        ><template v-for="(c, i) in tagChunks(t)" :key="i">
+                          <span
+                            :class="
+                              c.isHit
+                                ? 'font-bold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
+                                : ''
+                            "
+                            >{{ c.text }}</span
+                          >
+                        </template></span
                       >
 
                       <!-- 3개 초과 시 +n 표시 -->
@@ -262,7 +237,18 @@
                     <div
                       class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2"
                     >
-                      <span class="truncate">{{ domain(b.url) }}</span>
+                      <span class="truncate"
+                        ><template v-for="(c, i) in domainChunks(b)" :key="i">
+                          <span
+                            :class="
+                              c.isHit
+                                ? 'font-semibold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
+                                : ''
+                            "
+                            >{{ c.text }}</span
+                          >
+                        </template></span
+                      >
                       <span aria-hidden="true">·</span>
                       <time :datetime="b.updatedAt || ''">
                         {{ formatDate(b.updatedAt) }}
@@ -330,8 +316,6 @@ import {
   watch,
 } from "vue";
 import type { Bookmark, CollectionNode, ID } from "@/types/common";
-import FolderIcon from "@/components/icons/FolderIcon.vue";
-import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
 import StarIcon from "@/components/icons/StarIcon.vue";
@@ -342,6 +326,7 @@ import * as CollectionApi from "@/api/collections";
 import { CollectionPathRes } from "@/api/types";
 import { useToastStore } from "@/stores/toast";
 import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
+import BookmarkHeader from "./BookmarkHeader.vue";
 
 const props = defineProps<{
   collection: CollectionNode | null;
@@ -353,6 +338,7 @@ const emit = defineEmits<{
   (e: "open-add"): void;
   (e: "select-bookmark", id: ID): void;
   (e: "focus-done", id: ID): void;
+  (e: "clear-focus"): void;
 }>();
 
 const toast = useToastStore();
@@ -371,6 +357,14 @@ const hasSelection = computed(() => selectedCollectionId.value != null);
 const isLoadingBookmarks = computed(() => isLoading.value.bookmarks);
 const bookmarksError = computed(() => error.value.bookmarks);
 const hasError = computed(() => !!bookmarksError.value);
+
+const isInitialLoading = computed(
+  () =>
+    isLoadingBookmarks.value &&
+    bookmarks.value.length === 0 &&
+    workspace.bookmarksQ.trim().length === 0,
+);
+
 const isEmpty = computed(
   () =>
     hasSelection.value &&
@@ -482,12 +476,6 @@ async function refreshPath(cid: ID | null) {
   }
 }
 
-watch(
-  [() => selectedCollectionId.value, () => collectionNodes.value],
-  ([cid]) => refreshPath(cid),
-  { immediate: true, deep: true },
-);
-
 // ------------------------
 // Focus scroll
 // ------------------------
@@ -563,8 +551,69 @@ const { setup, cleanup } = useInfiniteScroll(
 onUnmounted(() => cleanup());
 
 // ------------------------
+// Search(검색)
+// ------------------------
+const isSearching = computed(() => workspace.bookmarksQ.trim().length > 0);
+const searchQ = computed(() => workspace.bookmarksQ.trim().normalize("NFC"));
+
+const emptySearchDescription = computed(
+  () => `'${workspace.bookmarksQ}'에 대한 결과를 찾을 수 없습니다.`,
+);
+
+function scrollToTop() {
+  const el = listWrapRef.value;
+  if (!el) return;
+  el.scrollTo({ top: 0, behavior: "auto" });
+}
+
+async function onSearched() {
+  await nextTick();
+  scrollToTop();
+}
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function splitHighlight(text: string, q: string) {
+  const raw = (text ?? "").toString().normalize("NFC");
+  const keyword = (q ?? "").trim().normalize("NFC");
+
+  if (!keyword) {
+    return [{ text: raw, isHit: false }];
+  }
+
+  const regex = new RegExp(`(${escapeRegExp(keyword)})`, "gi");
+
+  const parts = raw.split(regex);
+
+  return parts.map((part) => ({
+    text: part,
+    isHit: part.toLowerCase() === keyword.toLowerCase(),
+  }));
+}
+
+function titleChunks(b: Bookmark) {
+  return splitHighlight(displayTitle(b), searchQ.value);
+}
+
+function domainChunks(b: Bookmark) {
+  return splitHighlight(domain(b.url), searchQ.value);
+}
+
+function tagChunks(tag: string) {
+  return splitHighlight(tag, searchQ.value);
+}
+
+// ------------------------
 // watchers
 // ------------------------
+watch(
+  [() => selectedCollectionId.value, () => collectionNodes.value],
+  ([cid]) => refreshPath(cid),
+  { immediate: true },
+);
+
 watch(
   () => [props.focusBookmarkId, isLoadingBookmarks.value] as const,
   async ([id, loading]) => {

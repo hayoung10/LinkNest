@@ -28,6 +28,7 @@ interface WorkspaceState {
   bookmarks: Bookmark[];
   selectedCollectionId: ID | null;
 
+  bookmarksQ: string;
   bookmarksPage: number;
   bookmarksSize: number;
   bookmarksMeta: SliceMeta | null;
@@ -72,6 +73,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     collectionNodes: [],
     bookmarks: [],
     selectedCollectionId: null,
+    bookmarksQ: "",
     bookmarksPage: 0,
     bookmarksSize: 20,
     bookmarksMeta: null,
@@ -173,6 +175,7 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.collectionNodes = [];
       this.bookmarks = [];
       this.selectedCollectionId = null;
+      this.bookmarksQ = "";
       this.bookmarksPage = 0;
       this.bookmarksSize = 20;
       this.bookmarksMeta = null;
@@ -290,20 +293,39 @@ export const useWorkspaceStore = defineStore("workspace", {
       this.resetBookmarksPage();
       await this.fetchBookmarks(collectionId);
     },
+    resetBookmarksQuery() {
+      this.bookmarksQ = "";
+      this.resetBookmarksPage();
+    },
     setBookmarksQuery(
       params: Partial<
         Pick<
           WorkspaceState,
-          "bookmarksPage" | "bookmarksSize" | "bookmarksLoaded"
+          "bookmarksQ" | "bookmarksPage" | "bookmarksSize" | "bookmarksLoaded"
         >
       >,
     ) {
+      const prevQ = this.bookmarksQ;
+      const prevSize = this.bookmarksSize;
+
+      if (params.bookmarksQ !== undefined) this.bookmarksQ = params.bookmarksQ;
       if (params.bookmarksPage !== undefined)
         this.bookmarksPage = params.bookmarksPage;
       if (params.bookmarksSize !== undefined)
         this.bookmarksSize = params.bookmarksSize;
       if (params.bookmarksLoaded !== undefined)
         this.bookmarksLoaded = params.bookmarksLoaded;
+
+      const queryChanged =
+        this.bookmarksQ !== prevQ || this.bookmarksSize !== prevSize;
+
+      if (queryChanged) {
+        this.bookmarksPage = 0;
+        this.bookmarks = [];
+        this.bookmarksMeta = null;
+      }
+
+      this.bookmarksLoaded = false;
     },
 
     /* ------------------------ 컬렉션 ------------------------ */
@@ -718,6 +740,7 @@ export const useWorkspaceStore = defineStore("workspace", {
         }
         const res = await BookmarkApi.listBookmarks({
           collectionId: cid,
+          q: this.bookmarksQ.trim() ? this.bookmarksQ.trim() : undefined,
           page: this.bookmarksPage,
           size: this.bookmarksSize,
         });

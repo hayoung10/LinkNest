@@ -34,6 +34,13 @@ export interface BookmarkFavoriteUpdateReq {
   isFavorite: boolean;
 }
 
+export interface GetBookmarksParams {
+  collectionId: ID;
+  q?: string;
+  page?: number;
+  size?: number;
+}
+
 /** 생성 */
 export async function createBookmark(
   payload: BookmarkCreateReq,
@@ -65,21 +72,11 @@ export async function deleteBookmark(id: ID): Promise<void> {
 }
 
 /** 목록 */
-export async function listBookmarks(params?: {
-  collectionId?: ID;
-  page?: number;
-  size?: number;
-}): Promise<SliceResponse<Bookmark>> {
+export async function listBookmarks(
+  params: GetBookmarksParams,
+): Promise<SliceResponse<Bookmark>> {
   const data = await unwrap<SliceResponse<BookmarkRes>>(
-    http.get(`/bookmarks`, {
-      params: {
-        ...(params?.collectionId == null
-          ? {}
-          : { collectionId: params.collectionId }),
-        page: params?.page ?? 0,
-        size: params?.size ?? 20,
-      },
-    }),
+    http.get(`/bookmarks`, { params }),
   );
   return { items: data.items.map(mapBookmarkRes), meta: data.meta };
 }
