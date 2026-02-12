@@ -159,7 +159,16 @@
                     >{{ b.emoji }}</span
                   >
                   <span class="min-w-0 truncate">
-                    {{ displayTitle(b) }}
+                    <template v-for="(c, i) in titleChunks(b)" :key="i">
+                      <span
+                        :class="
+                          c.isHit
+                            ? 'font-extrabold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
+                            : ''
+                        "
+                        >{{ c.text }}</span
+                      >
+                    </template>
                   </span>
                 </h3>
 
@@ -172,7 +181,16 @@
                       v-for="t in visibleTags(b)"
                       :key="t"
                       class="inline-flex items-center rounded-full bg-muted/40 border border-border/60 px-2 py-0.5 text-[11px] text-blue-600/80 hover:text-blue-600 dark:text-blue-400/80 dark:hover:text-blue-400"
-                      >{{ t }}</span
+                      ><template v-for="(c, i) in tagChunks(t)" :key="i">
+                        <span
+                          :class="
+                            c.isHit
+                              ? 'font-bold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
+                              : ''
+                          "
+                          >{{ c.text }}</span
+                        ></template
+                      ></span
                     >
 
                     <!-- 3개 초과 시 +n 표시 -->
@@ -197,7 +215,18 @@
                 class="mt-auto px-4 pb-3 pt-2 flex items-center justify-between gap-2 text-xs text-neutral-500"
               >
                 <div class="min-w-0 flex-1 flex flex-col gap-0.5">
-                  <span class="truncate">{{ domain(b.url) }}</span>
+                  <span class="truncate"
+                    ><template v-for="(c, i) in domainChunks(b)" :key="i">
+                      <span
+                        :class="
+                          c.isHit
+                            ? 'font-semibold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
+                            : ''
+                        "
+                        >{{ c.text }}</span
+                      >
+                    </template></span
+                  >
                   <time :datetime="b.updatedAt || ''">
                     {{ formatDate(b.updatedAt) }}
                   </time>
@@ -507,6 +536,7 @@ onUnmounted(() => cleanup());
 // Search(검색)
 // ------------------------
 const isSearching = computed(() => workspace.bookmarksQ.trim().length > 0);
+const searchQ = computed(() => workspace.bookmarksQ.trim().normalize("NFC"));
 
 const emptySearchDescription = computed(
   () => `'${workspace.bookmarksQ}'에 대한 결과를 찾을 수 없습니다.`,
@@ -521,6 +551,40 @@ function scrollToTop() {
 async function onSearched() {
   await nextTick();
   scrollToTop();
+}
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function splitHighlight(text: string, q: string) {
+  const raw = (text ?? "").toString().normalize("NFC");
+  const keyword = (q ?? "").trim().normalize("NFC");
+
+  if (!keyword) {
+    return [{ text: raw, isHit: false }];
+  }
+
+  const regex = new RegExp(`(${escapeRegExp(keyword)})`, "gi");
+
+  const parts = raw.split(regex);
+
+  return parts.map((part) => ({
+    text: part,
+    isHit: part.toLowerCase() === keyword.toLowerCase(),
+  }));
+}
+
+function titleChunks(b: Bookmark) {
+  return splitHighlight(displayTitle(b), searchQ.value);
+}
+
+function domainChunks(b: Bookmark) {
+  return splitHighlight(domain(b.url), searchQ.value);
+}
+
+function tagChunks(tag: string) {
+  return splitHighlight(tag, searchQ.value);
 }
 
 // ------------------------
