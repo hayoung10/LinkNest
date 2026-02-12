@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -116,19 +117,32 @@ public class BookmarkService {
 
         int safePage = Math.max(0, page);
         int safeSize = Math.min(Math.max(1, size), 100);
-        Pageable pageable = PageRequest.of(safePage, safeSize);
 
         String pattern = toLikePattern(q);
-
         DefaultBookmarkSort sort = userPreferencesService.getDefaultBookmarkSort(userId);
 
         Slice<Bookmark> result = switch(sort) {
-            case NEWEST -> bookmarkRepository
-                    .findAllByCollectionWithSearchOrderByCreatedAtDescIdDesc(userId, collectionId, pattern, pageable);
-            case OLDEST -> bookmarkRepository
-                    .findAllByCollectionWithSearchOrderByCreatedAtAscIdAsc(userId, collectionId, pattern, pageable);
-            case TITLE -> bookmarkRepository
-                    .findAllByCollectionWithSearchSortedByTitle(userId, collectionId, pattern, pageable);
+            case NEWEST -> {
+                Pageable pageable = PageRequest.of(
+                        safePage, safeSize,
+                        Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
+                );
+                yield bookmarkRepository
+                        .findAllByCollectionWithSearch(userId, collectionId, pattern, pageable);
+            }
+            case OLDEST -> {
+                Pageable pageable = PageRequest.of(
+                        safePage, safeSize,
+                        Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"))
+                );
+                yield bookmarkRepository
+                        .findAllByCollectionWithSearch(userId, collectionId, pattern, pageable);
+            }
+            case TITLE -> {
+                Pageable pageable = PageRequest.of(safePage, safeSize);
+                yield bookmarkRepository
+                        .findAllByCollectionWithSearchSortedByTitle(userId, collectionId, pattern, pageable);
+            }
         };
 
         return SliceResponse.of(result.map(mapper::toRes));
@@ -215,17 +229,33 @@ public class BookmarkService {
     }
 
     // ---------- 즐겨찾기 목록 조회 ----------
-    public SliceResponse<BookmarkRes> listByFavorites(Long userId, int page, int size) {
+    public SliceResponse<BookmarkRes> listByFavorites(Long userId, String q, int page, int size) {
         int safePage = Math.max(0, page);
         int safeSize = Math.min(Math.max(1, size), 100);
-        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        String pattern = toLikePattern(q);
 
         DefaultBookmarkSort sort = userPreferencesService.getDefaultBookmarkSort(userId);
 
         Slice<Bookmark> result = switch(sort) {
-            case NEWEST -> bookmarkRepository.findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtDescIdDesc(userId, pageable);
-            case OLDEST -> bookmarkRepository.findAllByUserIdAndIsFavoriteTrueOrderByCreatedAtAscIdAsc(userId, pageable);
-            case TITLE -> bookmarkRepository.findAllFavoritesSortedByTitle(userId, pageable);
+            case NEWEST -> {
+                Pageable pageable = PageRequest.of(
+                        safePage, safeSize,
+                        Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
+                );
+                yield bookmarkRepository.findAllFavoritesWithSearch(userId, pattern, pageable);
+            }
+            case OLDEST -> {
+                Pageable pageable = PageRequest.of(
+                        safePage, safeSize,
+                        Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"))
+                );
+                yield bookmarkRepository.findAllFavoritesWithSearch(userId, pattern, pageable);
+            }
+            case TITLE -> {
+                Pageable pageable = PageRequest.of(safePage, safeSize);
+                yield bookmarkRepository.findAllFavoritesWithSearchSortedByTitle(userId, pattern, pageable);
+            }
         };
 
         return SliceResponse.of(result.map(mapper::toRes));
