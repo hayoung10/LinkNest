@@ -133,14 +133,9 @@
                   >
                   <span class="min-w-0 truncate">
                     <template v-for="(c, i) in titleChunks(b)" :key="i">
-                      <span
-                        :class="
-                          c.isHit
-                            ? 'font-extrabold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
-                            : ''
-                        "
-                        >{{ c.text }}</span
-                      >
+                      <span :class="c.isHit ? highlightClass : ''">{{
+                        c.text
+                      }}</span>
                     </template>
                   </span>
                 </h3>
@@ -155,14 +150,9 @@
                       :key="t"
                       class="inline-flex items-center rounded-full bg-muted/40 border border-border/60 px-2 py-0.5 text-[11px] text-blue-600/80 hover:text-blue-600 dark:text-blue-400/80 dark:hover:text-blue-400"
                       ><template v-for="(c, i) in tagChunks(t)" :key="i">
-                        <span
-                          :class="
-                            c.isHit
-                              ? 'font-bold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
-                              : ''
-                          "
-                          >{{ c.text }}</span
-                        >
+                        <span :class="c.isHit ? highlightClass : ''">{{
+                          c.text
+                        }}</span>
                       </template></span
                     >
 
@@ -202,14 +192,9 @@
                   <!-- 도메인 / 날짜 -->
                   <span class="truncate"
                     ><template v-for="(c, i) in domainChunks(b)" :key="i">
-                      <span
-                        :class="
-                          c.isHit
-                            ? 'font-semibold bg-yellow-200/40 dark:bg-yellow-400/20 rounded'
-                            : ''
-                        "
-                        >{{ c.text }}</span
-                      >
+                      <span :class="c.isHit ? highlightClass : ''">{{
+                        c.text
+                      }}</span>
                     </template></span
                   >
                   <time :datetime="b.updatedAt || ''">
@@ -470,6 +455,9 @@ const searchQ = computed(() => workspace.bookmarksQ.trim().normalize("NFC"));
 const emptySearchDescription = computed(
   () => `'${workspace.bookmarksQ}'에 대한 결과를 찾을 수 없습니다.`,
 );
+
+const highlightClass =
+  "font-extrabold bg-yellow-200/40 dark:bg-yellow-400/20 rounded";
 
 function scrollToTop() {
   const el = listWrapRef.value;
