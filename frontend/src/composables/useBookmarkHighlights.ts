@@ -14,7 +14,7 @@ type Options = {
 export function useBookmarkHighlights(options: Options) {
   const highlightClass =
     options.highlightClass ??
-    "font-extrabold bg-yellow-200/40 dark:bg-yellow-400/20 rounded";
+    "font-extrabold bg-yellow-300/60 dark:bg-yellow-500/30 rounded";
 
   function titleChunks(b: Bookmark): Chunk[] {
     const text = options.getTitle ? options.getTitle(b) : (b.title ?? "");
