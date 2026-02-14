@@ -204,15 +204,18 @@
               <div
                 class="mt-auto px-4 pb-3 pt-2 flex items-center justify-between gap-2 text-xs text-neutral-500"
               >
-                <div class="min-w-0 flex-1 flex flex-col gap-0.5">
-                  <span class="truncate"
+                <div class="min-w-0 flex-1 flex items-center gap-2">
+                  <span class="min-w-0 truncate"
                     ><template v-for="(c, i) in domainChunks(b)" :key="i">
                       <span :class="c.isHit ? highlightClass : ''">{{
                         c.text
                       }}</span>
                     </template></span
                   >
-                  <time :datetime="b.updatedAt || ''">
+
+                  <span aria-hidden="true" class="shrink-0 opacity-60">·</span>
+
+                  <time class="truncate" :datetime="b.updatedAt || ''">
                     {{ formatDate(b.updatedAt) }}
                   </time>
                 </div>

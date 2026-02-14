@@ -177,29 +177,40 @@
               <div
                 class="mt-auto px-4 pb-3 pt-2 flex items-center justify-between gap-2 text-xs text-neutral-500"
               >
-                <div class="min-w-0 flex-1 flex flex-col gap-0.5">
+                <div class="min-w-0 flex-1 flex flex-col gap-1">
+                  <!-- 도메인 / 날짜 -->
+                  <div class="min-w-0 flex items-center gap-2">
+                    <span class="min-w-0 truncate"
+                      ><template v-for="(c, i) in domainChunks(b)" :key="i">
+                        <span :class="c.isHit ? highlightClass : ''">{{
+                          c.text
+                        }}</span>
+                      </template></span
+                    >
+
+                    <span aria-hidden="true" class="shrink-0 opacity-60"
+                      >·</span
+                    >
+
+                    <time class="truncate" :datetime="b.updatedAt || ''">
+                      {{ formatDate(b.updatedAt) }}
+                    </time>
+                  </div>
+
                   <!-- 컬렉션 (이모지 + 이름) -->
                   <span
-                    class="flex items-center gap-1 text-[11px] text-muted-foreground"
+                    class="min-w-0 flex items-center gap-1 text-[11px] text-muted-foreground"
                     :title="collectionLabel(b)"
                   >
-                    <span aria-hidden="true">{{ collectionEmoji(b) }}</span>
-                    <span class="truncate" :title="collectionLabel(b)">{{
-                      collectionName(b)
+                    <span aria-hidden="true" class="shrink-0">{{
+                      collectionEmoji(b)
                     }}</span>
+                    <span
+                      class="min-w-0 truncate"
+                      :title="collectionLabel(b)"
+                      >{{ collectionName(b) }}</span
+                    >
                   </span>
-
-                  <!-- 도메인 / 날짜 -->
-                  <span class="truncate"
-                    ><template v-for="(c, i) in domainChunks(b)" :key="i">
-                      <span :class="c.isHit ? highlightClass : ''">{{
-                        c.text
-                      }}</span>
-                    </template></span
-                  >
-                  <time :datetime="b.updatedAt || ''">
-                    {{ formatDate(b.updatedAt) }}
-                  </time>
                 </div>
 
                 <a
