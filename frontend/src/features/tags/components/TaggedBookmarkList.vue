@@ -107,11 +107,11 @@
                           <button
                             type="button"
                             class="shrink-0 inline-flex items-center justify-center size-8 rounded-md hover:bg-zinc-100/70 dark:hover:bg-zinc-800/60 transition-colors disabled:opacity-50"
-                            :disabled="isFavoriteMutating(b.id)"
+                            :disabled="isMutatingFor(b.id)"
                             :aria-label="
                               b.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'
                             "
-                            @click.stop.prevent="onToggleFavorite(b)"
+                            @click.stop.prevent="toggleFavorite(b)"
                           >
                             <StarIcon
                               :size="18"
@@ -333,14 +333,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ComponentPublicInstance,
-  computed,
-  nextTick,
-  onUnmounted,
-  ref,
-  watch,
-} from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import type { ID, TaggedBookmark } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
@@ -355,10 +348,11 @@ import {
 import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
 import { useToastStore } from "@/stores/toast";
 import { useTagsStore } from "@/stores/tags";
-import { useWorkspaceStore } from "@/stores/workspace";
 import { getErrorMessage } from "@/utils/errorMessage";
-import { toBookmarkFromTagged } from "@/api/mappers";
 import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
+import { useBookmarkItemHelpers } from "@/composables/useBookmarkItemHelpers";
+import { useFocusScroll } from "@/composables/useFocusScroll";
+import { useBookmarkFavorite } from "@/composables/useBookmarkFavorite";
 
 const props = defineProps<{
   tagId: ID | null;
@@ -378,12 +372,10 @@ const emit = defineEmits<{
 const toast = useToastStore();
 const taggedStore = useTaggedBookmarksStore();
 const tagsStore = useTagsStore();
-const workspace = useWorkspaceStore();
 
 const { items, isLoading, error, loaded, isMutating } =
   storeToRefs(taggedStore);
 const { items: tagItems } = storeToRefs(tagsStore);
-const { isMutating: workspaceMutating } = storeToRefs(workspace);
 
 const hasSelection = computed(() => props.tagId != null);
 
@@ -410,52 +402,30 @@ function onRetry() {
   taggedStore.safeReload();
 }
 
-function isFavoriteMutating(id: ID) {
-  return (
-    isTagMutating.value || !!workspaceMutating.value.toggleBookmarkFavorite
-  );
-}
-
-async function onToggleFavorite(b: TaggedBookmark) {
-  if (isFavoriteMutating(b.id)) return;
-
-  try {
-    const updated = await workspace.toggleBookmarkFavorite(
-      toBookmarkFromTagged(b),
-    );
-
-    taggedStore.patchTaggedBookmarkFavorite(b.id, updated.isFavorite);
-  } catch (e) {
-    toast.error("즐겨찾기 변경에 실패했습니다.");
-  }
-}
+const { isMutatingFor, toggleFavorite } = useBookmarkFavorite({
+  disabled: isTagMutating,
+  onToggled: ({ id, isFavorite }) => {
+    taggedStore.patchTaggedBookmarkFavorite(id, isFavorite);
+  },
+});
 
 // ------------------------
 // Display
 // ------------------------
-function displayTitle(b: TaggedBookmark): string {
-  const t = (b.title ?? "").trim();
-  return t || "(제목 없음)";
-}
-
-function hasTitle(b: TaggedBookmark): boolean {
-  return !!b.title?.trim();
-}
+const {
+  displayTitle,
+  hasTitle,
+  domain,
+  formatDate,
+  coverUrl,
+  isAutoPending,
+  tagCount,
+  visibleTags,
+  extraTagCount,
+} = useBookmarkItemHelpers();
 
 function isActive(b: TaggedBookmark): boolean {
   return props.selectedBookmarkId === b.id;
-}
-
-function tagCount(b: TaggedBookmark) {
-  return b.tags?.length ?? 0;
-}
-
-function extraTagCount(b: TaggedBookmark, visible = 3) {
-  return Math.max(tagCount(b) - visible, 0);
-}
-
-function visibleTags(b: TaggedBookmark, visible = 3) {
-  return b.tags?.slice(0, visible) ?? [];
 }
 
 function collectionLabel(b: TaggedBookmark): string {
@@ -469,37 +439,6 @@ function collectionEmoji(b: TaggedBookmark): string {
 function collectionName(b: TaggedBookmark): string {
   const name = b.collectionName;
   return name?.trim() ? name.trim() : "로딩…";
-}
-
-function domain(url: string) {
-  try {
-    return new URL(url).host.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-}
-
-function formatDate(iso?: string): string {
-  if (!iso) return "-";
-  try {
-    return new Intl.DateTimeFormat("ko-KR", {
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-    }).format(new Date(iso));
-  } catch {
-    return "-";
-  }
-}
-
-function coverUrl(b: TaggedBookmark): string | null {
-  if (b.imageMode === "CUSTOM") return b.customImageUrl ?? null;
-  if (b.imageMode === "AUTO") return b.autoImageUrl ?? null;
-  return null;
-}
-
-function isAutoPending(b: TaggedBookmark): boolean {
-  return b.imageMode === "AUTO" && !b.autoImageUrl;
 }
 
 function onSelect(b: TaggedBookmark) {
@@ -597,22 +536,26 @@ async function handleBulkReplace() {
 // ------------------------
 const listWrapRef = ref<HTMLElement | null>(null);
 
-const itemRefs = new Map<ID, HTMLElement>();
-const lastFocusedId = ref<ID | null>(null);
-
-function setItemRef(id: ID, el: Element | ComponentPublicInstance | null) {
-  const dom = el as unknown as HTMLElement | null;
-  if (!dom) {
-    itemRefs.delete(id);
-    return;
-  }
-  itemRefs.set(id, dom);
-}
-
 function isFocused(b: TaggedBookmark): boolean {
   if (selectedCount.value > 0) return false;
   return props.focusBookmarkId === b.id;
 }
+
+const focusIdForScroll = computed<ID | null>(() => {
+  if (selectedCount.value > 0) return null;
+  return props.focusBookmarkId ?? null;
+});
+
+const isFocusBlocked = computed(
+  () => isLoadingBookmarks.value || !loaded.value,
+);
+
+const { setItemRef } = useFocusScroll(
+  focusIdForScroll,
+  isFocusBlocked,
+  (id) => emit("focus-done", id),
+  { block: "center", doneDelayMs: 80 },
+);
 
 // ------------------------
 // 더 보기
@@ -652,7 +595,11 @@ const { setup, cleanup } = useInfiniteScroll(
   { rootMargin: "200px", threshold: 0 },
 );
 
-onUnmounted(() => cleanup());
+async function reconnect() {
+  cleanup();
+  await nextTick();
+  setup();
+}
 
 // ------------------------
 // watchers
@@ -660,16 +607,15 @@ onUnmounted(() => cleanup());
 watch(
   () => props.tagId,
   async (next) => {
-    cleanup();
     clearSelection();
     bulkTargetTagId.value = "";
-    lastFocusedId.value = null;
-    itemRefs.clear();
 
-    if (next == null) return;
+    if (next == null) {
+      cleanup();
+      return;
+    }
 
-    await nextTick();
-    setup();
+    await reconnect();
   },
   { immediate: true },
 );
@@ -684,27 +630,6 @@ watch(
     });
     selectedIds.value = next;
   },
-);
-
-watch(
-  () => [props.focusBookmarkId, loaded.value, items.value.length] as const,
-  async ([id, isLoaded]) => {
-    if (!id) return;
-    if (!isLoaded) return;
-    if (lastFocusedId.value === id) return;
-
-    await nextTick();
-
-    const el = itemRefs.get(id);
-    if (!el) return;
-
-    lastFocusedId.value = id;
-    el.scrollIntoView({ block: "center", behavior: "smooth" });
-
-    await new Promise((resolve) => window.setTimeout(resolve, 80));
-    emit("focus-done", id);
-  },
-  { immediate: true },
 );
 </script>
 
