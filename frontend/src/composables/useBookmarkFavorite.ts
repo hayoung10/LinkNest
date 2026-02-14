@@ -1,14 +1,25 @@
 import { useToastStore } from "@/stores/toast";
 import { useWorkspaceStore } from "@/stores/workspace";
 import type { Bookmark, ID } from "@/types/common";
-import { computed } from "vue";
+import { computed, ComputedRef } from "vue";
 
-export function useBookmarkFavorite() {
+type Options = {
+  disabled?: ComputedRef<boolean> | boolean;
+  onToggled?: (payload: { id: ID; isFavorite: boolean }) => void; // 토글 성공 후 후처리
+};
+
+export function useBookmarkFavorite(options: Options = {}) {
   const workspace = useWorkspaceStore();
   const toast = useToastStore();
 
+  const disabled = computed(() =>
+    typeof options.disabled === "boolean"
+      ? options.disabled
+      : (options.disabled?.value ?? false),
+  );
+
   const isFavoriteMutating = computed(
-    () => workspace.isMutating.toggleBookmarkFavorite,
+    () => disabled.value || workspace.isMutating.toggleBookmarkFavorite,
   );
 
   function isMutatingFor(_id: ID) {
@@ -19,7 +30,8 @@ export function useBookmarkFavorite() {
     if (isMutatingFor(b.id)) return;
 
     try {
-      await workspace.toggleBookmarkFavorite(b);
+      const updated = await workspace.toggleBookmarkFavorite(b);
+      options.onToggled?.({ id: b.id, isFavorite: updated.isFavorite });
     } catch (e) {
       toast.error("즐겨찾기 변경에 실패했습니다.");
     }

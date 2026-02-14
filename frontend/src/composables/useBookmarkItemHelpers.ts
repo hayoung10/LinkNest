@@ -1,6 +1,7 @@
-import { computed } from "vue";
 import { useWorkspaceStore } from "@/stores/workspace";
-import type { Bookmark } from "@/types/common";
+import type { Bookmark, TaggedBookmark } from "@/types/common";
+
+type BookmarkLike = Bookmark | TaggedBookmark;
 
 type Options = {
   locale?: string;
@@ -8,15 +9,14 @@ type Options = {
 
 export function useBookmarkItemHelpers(options: Options = {}) {
   const workspace = useWorkspaceStore();
-
   const locale = options.locale ?? "ko-KR";
 
-  function displayTitle(b: Bookmark): string {
+  function displayTitle(b: BookmarkLike): string {
     const t = (b.title ?? "").trim();
     return t || "(제목 없음)";
   }
 
-  function hasTitle(b: Bookmark): boolean {
+  function hasTitle(b: BookmarkLike): boolean {
     return !!b.title?.trim();
   }
 
@@ -41,25 +41,25 @@ export function useBookmarkItemHelpers(options: Options = {}) {
     }
   }
 
-  function coverUrl(b: Bookmark): string | null {
+  function coverUrl(b: BookmarkLike): string | null {
     if (b.imageMode === "CUSTOM") return b.customImageUrl ?? null;
     if (b.imageMode === "AUTO") return b.autoImageUrl ?? null;
     return null;
   }
 
-  function isAutoPending(b: Bookmark): boolean {
+  function isAutoPending(b: BookmarkLike): boolean {
     return b.imageMode === "AUTO" && !b.autoImageUrl;
   }
 
-  function tagCount(b: Bookmark) {
+  function tagCount(b: BookmarkLike) {
     return b.tags?.length ?? 0;
   }
 
-  function visibleTags(b: Bookmark, visible = 3) {
+  function visibleTags(b: BookmarkLike, visible = 3) {
     return b.tags?.slice(0, visible) ?? [];
   }
 
-  function extraTagCount(b: Bookmark, visible = 3) {
+  function extraTagCount(b: BookmarkLike, visible = 3) {
     return Math.max(tagCount(b) - visible, 0);
   }
 
