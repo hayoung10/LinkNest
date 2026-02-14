@@ -57,7 +57,7 @@
             aria-label="즐겨찾기 카드 목록"
           >
             <article
-              v-for="b in favoriteBookmarks"
+              v-for="b in bookmarks"
               :key="b.id"
               class="group relative flex flex-col rounded-xl border border-zinc-200 bg-white/90 hover:bg-zinc-50 shadow-sm hover:shadow-md transition overflow-hidden cursor-pointer"
               :class="isActive(b) ? 'ring-2 ring-blue-500 border-blue-500' : ''"
@@ -73,9 +73,9 @@
                 <button
                   type="button"
                   class="absolute top-2 left-2 z-20 inline-flex items-center justify-center size-8 rounded-md bg-white/85 backdrop-blur border border-white/60 shadow-sm hover:bg-white dark:bg-zinc-900/70 dark:border-zinc-700/60 dark:hover:bg-zinc-800 transition-colors"
-                  :disabled="isFavoriteMutating(b.id)"
+                  :disabled="isMutatingFor(b.id)"
                   :aria-label="b.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'"
-                  @click.stop.prevent="onToggleFavorite(b)"
+                  @click.stop.prevent="toggleFavorite(b)"
                 >
                   <StarIcon
                     :size="18"
@@ -251,7 +251,7 @@
         <footer
           class="mt-2 text-xs text-neutral-500 dark:text-neutral-400 text-center select-none"
         >
-          {{ favoriteBookmarks.length }} 북마크
+          {{ bookmarks.length }} 북마크
         </footer>
       </template>
     </div>
@@ -259,7 +259,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import type { Bookmark, ID } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
@@ -267,9 +267,13 @@ import StarIcon from "@/components/icons/StarIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
-import { useToastStore } from "@/stores/toast";
-import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
 import BookmarkHeader from "./BookmarkHeader.vue";
+import { useBookmarkSearchUi } from "@/composables/useBookmarkSearchUi";
+import { useBookmarkPagingScroll } from "@/composables/useBookmarkPagingScroll";
+import { useBookmarkItemHelpers } from "@/composables/useBookmarkItemHelpers";
+import { useBookmarkFavorite } from "@/composables/useBookmarkFavorite";
+import { useBookmarkViewState } from "@/composables/useBookmarkViewState";
+import { useBookmarkHighlights } from "@/composables/useBookmarkHighlights";
 
 const props = defineProps<{
   selectedBookmarkId?: ID | null;
@@ -279,30 +283,18 @@ const emit = defineEmits<{
   (e: "select-bookmark", id: ID): void;
 }>();
 
-const toast = useToastStore();
 const workspace = useWorkspaceStore();
 
-const { bookmarks, isLoading, error, isMutating } = storeToRefs(workspace);
+const { bookmarks } = storeToRefs(workspace);
 
-const isLoadingBookmarks = computed(() => isLoading.value.bookmarks);
-const bookmarksError = computed(() => error.value.bookmarks);
-const hasError = computed(() => !!bookmarksError.value);
-
-const favoriteBookmarks = computed(() => bookmarks.value);
-
-const isInitialLoading = computed(
-  () =>
-    isLoadingBookmarks.value &&
-    bookmarks.value.length === 0 &&
-    workspace.bookmarksQ.trim().length === 0,
-);
-
-const isEmpty = computed(
-  () =>
-    !isLoadingBookmarks.value &&
-    !hasError.value &&
-    favoriteBookmarks.value.length === 0,
-);
+const {
+  isLoadingBookmarks,
+  bookmarksError,
+  hasError,
+  isSearching,
+  isInitialLoading,
+  isEmpty,
+} = useBookmarkViewState();
 
 const isReady = computed(
   () => !hasError.value && !isLoadingBookmarks.value && !isEmpty.value,
@@ -312,86 +304,26 @@ function onRetry() {
   workspace.reloadBookmarks();
 }
 
-function isFavoriteMutating(id: ID) {
-  return isMutating.value.toggleBookmarkFavorite;
-}
+const { isMutatingFor, toggleFavorite } = useBookmarkFavorite();
 
-async function onToggleFavorite(b: Bookmark) {
-  if (isFavoriteMutating(b.id)) return;
+const {
+  displayTitle,
+  hasTitle,
+  domain,
+  formatDate,
+  coverUrl,
+  isAutoPending,
+  tagCount,
+  visibleTags,
+  extraTagCount,
 
-  try {
-    await workspace.toggleBookmarkFavorite(b);
-  } catch (e) {
-    toast.error("즐겨찾기 변경에 실패했습니다.");
-  }
-}
-
-function displayTitle(b: Bookmark): string {
-  const t = (b.title ?? "").trim();
-  return t || "(제목 없음)";
-}
-
-function hasTitle(b: Bookmark): boolean {
-  return !!b.title?.trim();
-}
+  collectionEmoji,
+  collectionName,
+  collectionLabel,
+} = useBookmarkItemHelpers();
 
 function isActive(b: Bookmark): boolean {
   return props.selectedBookmarkId === b.id;
-}
-
-function tagCount(b: Bookmark) {
-  return b.tags?.length ?? 0;
-}
-
-function extraTagCount(b: Bookmark, visible = 3) {
-  return Math.max(tagCount(b) - visible, 0);
-}
-
-function visibleTags(b: Bookmark, visible = 3) {
-  return b.tags?.slice(0, visible) ?? [];
-}
-
-function collectionLabel(b: Bookmark): string {
-  return `${collectionEmoji(b)} ${collectionName(b)}`;
-}
-
-function collectionEmoji(b: Bookmark): string {
-  return workspace.collectionInfoById[b.collectionId]?.emoji ?? "📁";
-}
-
-function collectionName(b: Bookmark): string {
-  return (workspace.collectionInfoById[b.collectionId]?.name ?? "로딩…").trim();
-}
-
-function domain(url: string) {
-  try {
-    return new URL(url).host.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-}
-
-function formatDate(iso?: string): string {
-  if (!iso) return "-";
-  try {
-    return new Intl.DateTimeFormat("ko-KR", {
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-    }).format(new Date(iso));
-  } catch {
-    return "-";
-  }
-}
-
-function coverUrl(b: Bookmark): string | null {
-  if (b.imageMode === "CUSTOM") return b.customImageUrl ?? null;
-  if (b.imageMode === "AUTO") return b.autoImageUrl ?? null;
-  return null;
-}
-
-function isAutoPending(b: Bookmark): boolean {
-  return b.imageMode === "AUTO" && !b.autoImageUrl;
 }
 
 function onSelect(b: Bookmark) {
@@ -409,100 +341,39 @@ onMounted(() => {
 const listWrapRef = ref<HTMLElement | null>(null);
 const sentinelRef = ref<HTMLElement | null>(null);
 
-const canLoadMore = computed(
-  () => workspace.bookmarksHasNext && !isLoadingBookmarks.value,
-);
-const isLoadingMore = computed(
-  () => isLoadingBookmarks.value && bookmarks.value.length > 0,
-);
-const isEndReached = computed(
-  () => workspace.bookmarksLoaded && !workspace.bookmarksHasNext,
-);
-
-async function loadMore() {
-  if (!canLoadMore.value) return;
-
-  const prevPage = workspace.bookmarksPage;
-
-  const moved = workspace.nextBookmarksPage();
-  if (!moved) return;
-
-  try {
-    await workspace.fetchBookmarks(undefined, { append: true });
-  } catch {
-    workspace.setBookmarksQuery({
-      bookmarksPage: prevPage,
-      bookmarksLoaded: true,
-    });
-  }
-}
-
-const { setup, cleanup } = useInfiniteScroll(
-  listWrapRef,
-  sentinelRef,
+const {
+  canLoadMore,
+  isLoadingMore,
+  isEndReached,
   loadMore,
-  { rootMargin: "300px", threshold: 0 },
-);
-
-onUnmounted(() => cleanup());
+  cleanup,
+  reconnect,
+} = useBookmarkPagingScroll(listWrapRef, sentinelRef, {
+  enabled: true,
+  rootMargin: "300px",
+  threshold: 0,
+});
 
 // ------------------------
 // Search(검색)
 // ------------------------
-const isSearching = computed(() => workspace.bookmarksQ.trim().length > 0);
-const searchQ = computed(() => workspace.bookmarksQ.trim().normalize("NFC"));
-
-const emptySearchDescription = computed(
-  () => `'${workspace.bookmarksQ}'에 대한 결과를 찾을 수 없습니다.`,
-);
-
-const highlightClass =
-  "font-extrabold bg-yellow-200/40 dark:bg-yellow-400/20 rounded";
-
 function scrollToTop() {
   const el = listWrapRef.value;
   if (!el) return;
   el.scrollTo({ top: 0, behavior: "auto" });
 }
 
-async function onSearched() {
-  await nextTick();
-  scrollToTop();
-}
+const { searchQ, emptySearchDescription, onSearched } = useBookmarkSearchUi({
+  scrollToTop,
+  afterSearched: reconnect,
+});
 
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function splitHighlight(text: string, q: string) {
-  const raw = (text ?? "").toString().normalize("NFC");
-  const keyword = (q ?? "").trim().normalize("NFC");
-
-  if (!keyword) {
-    return [{ text: raw, isHit: false }];
-  }
-
-  const regex = new RegExp(`(${escapeRegExp(keyword)})`, "gi");
-
-  const parts = raw.split(regex);
-
-  return parts.map((part) => ({
-    text: part,
-    isHit: part.toLowerCase() === keyword.toLowerCase(),
-  }));
-}
-
-function titleChunks(b: Bookmark) {
-  return splitHighlight(displayTitle(b), searchQ.value);
-}
-
-function domainChunks(b: Bookmark) {
-  return splitHighlight(domain(b.url), searchQ.value);
-}
-
-function tagChunks(tag: string) {
-  return splitHighlight(tag, searchQ.value);
-}
+const { highlightClass, titleChunks, domainChunks, tagChunks } =
+  useBookmarkHighlights({
+    searchQ,
+    getTitle: displayTitle,
+    getDomain: (b) => domain(b.url),
+  });
 
 // ------------------------
 // watchers
@@ -510,10 +381,11 @@ function tagChunks(tag: string) {
 watch(
   () => isReady.value,
   async (ready) => {
-    cleanup();
-    if (!ready) return;
-    await nextTick();
-    setup();
+    if (!ready) {
+      cleanup();
+      return;
+    }
+    await reconnect();
   },
   { immediate: true },
 );

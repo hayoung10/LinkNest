@@ -100,9 +100,9 @@
                 <button
                   type="button"
                   class="absolute top-2 left-2 z-20 inline-flex items-center justify-center size-8 rounded-md bg-white/85 backdrop-blur border border-white/60 shadow-sm hover:bg-white dark:bg-zinc-900/70 dark:border-zinc-700/60 dark:hover:bg-zinc-800 transition-colors"
-                  :disabled="isFavoriteMutating(b.id)"
+                  :disabled="isMutatingFor(b.id)"
                   :aria-label="b.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'"
-                  @click.stop.prevent="onToggleFavorite(b)"
+                  @click.stop.prevent="toggleFavorite(b)"
                 >
                   <StarIcon
                     :size="18"
@@ -274,14 +274,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ComponentPublicInstance,
-  computed,
-  nextTick,
-  onUnmounted,
-  ref,
-  watch,
-} from "vue";
+import { computed, ref, watch } from "vue";
 import type { Bookmark, CollectionNode, ID } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
@@ -291,9 +284,14 @@ import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import * as CollectionApi from "@/api/collections";
 import { CollectionPathRes } from "@/api/types";
-import { useToastStore } from "@/stores/toast";
-import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
 import BookmarkHeader from "./BookmarkHeader.vue";
+import { useBookmarkSearchUi } from "@/composables/useBookmarkSearchUi";
+import { useBookmarkPagingScroll } from "@/composables/useBookmarkPagingScroll";
+import { useBookmarkItemHelpers } from "@/composables/useBookmarkItemHelpers";
+import { useFocusScroll } from "@/composables/useFocusScroll";
+import { useBookmarkFavorite } from "@/composables/useBookmarkFavorite";
+import { useBookmarkViewState } from "@/composables/useBookmarkViewState";
+import { useBookmarkHighlights } from "@/composables/useBookmarkHighlights";
 
 const props = defineProps<{
   collection: CollectionNode | null;
@@ -308,37 +306,20 @@ const emit = defineEmits<{
   (e: "clear-focus"): void;
 }>();
 
-const toast = useToastStore();
 const workspace = useWorkspaceStore();
-const {
-  selectedCollectionId,
-  collectionNodes,
-  bookmarks,
-  isLoading,
-  error,
-  isMutating,
-} = storeToRefs(workspace);
+const { selectedCollectionId, collectionNodes, bookmarks, isMutating } =
+  storeToRefs(workspace);
 
 const hasSelection = computed(() => selectedCollectionId.value != null);
 
-const isLoadingBookmarks = computed(() => isLoading.value.bookmarks);
-const bookmarksError = computed(() => error.value.bookmarks);
-const hasError = computed(() => !!bookmarksError.value);
-
-const isInitialLoading = computed(
-  () =>
-    isLoadingBookmarks.value &&
-    bookmarks.value.length === 0 &&
-    workspace.bookmarksQ.trim().length === 0,
-);
-
-const isEmpty = computed(
-  () =>
-    hasSelection.value &&
-    !isLoadingBookmarks.value &&
-    !hasError.value &&
-    bookmarks.value.length === 0,
-);
+const {
+  isLoadingBookmarks,
+  bookmarksError,
+  hasError,
+  isSearching,
+  isInitialLoading,
+  isEmpty,
+} = useBookmarkViewState({ enabled: hasSelection });
 
 const isAddDisabled = computed(
   () =>
@@ -357,74 +338,22 @@ function onRetry() {
   if (cid != null) workspace.reloadBookmarks(cid);
 }
 
-function isFavoriteMutating(id: ID) {
-  return isMutating.value.toggleBookmarkFavorite;
-}
+const { isMutatingFor, toggleFavorite } = useBookmarkFavorite();
 
-async function onToggleFavorite(b: Bookmark) {
-  if (isFavoriteMutating(b.id)) return;
-
-  try {
-    await workspace.toggleBookmarkFavorite(b);
-  } catch (e) {
-    toast.error("즐겨찾기 변경에 실패했습니다.");
-  }
-}
-
-function displayTitle(b: Bookmark): string {
-  const t = (b.title ?? "").trim();
-  return t || "(제목 없음)";
-}
-
-function hasTitle(b: Bookmark): boolean {
-  return !!b.title?.trim();
-}
+const {
+  displayTitle,
+  hasTitle,
+  domain,
+  formatDate,
+  coverUrl,
+  isAutoPending,
+  tagCount,
+  visibleTags,
+  extraTagCount,
+} = useBookmarkItemHelpers();
 
 function isActive(b: Bookmark): boolean {
   return props.selectedBookmarkId === b.id;
-}
-
-function tagCount(b: Bookmark) {
-  return b.tags?.length ?? 0;
-}
-
-function extraTagCount(b: Bookmark, visible = 3) {
-  return Math.max(tagCount(b) - visible, 0);
-}
-
-function visibleTags(b: Bookmark, visible = 3) {
-  return b.tags?.slice(0, visible) ?? [];
-}
-
-function domain(url: string) {
-  try {
-    return new URL(url).host.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-}
-
-function formatDate(iso?: string): string {
-  if (!iso) return "-";
-  try {
-    return new Intl.DateTimeFormat("ko-KR", {
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-    }).format(new Date(iso));
-  } catch {
-    return "-";
-  }
-}
-
-function coverUrl(b: Bookmark): string | null {
-  if (b.imageMode === "CUSTOM") return b.customImageUrl ?? null;
-  if (b.imageMode === "AUTO") return b.autoImageUrl ?? null;
-  return null;
-}
-
-function isAutoPending(b: Bookmark): boolean {
-  return b.imageMode === "AUTO" && !b.autoImageUrl;
 }
 
 function onSelect(b: Bookmark) {
@@ -446,22 +375,22 @@ async function refreshPath(cid: ID | null) {
 // ------------------------
 // Focus scroll
 // ------------------------
-const itemRefs = new Map<ID, HTMLElement>();
-const lastFocusedId = ref<ID | null>(null);
-
-function setItemRef(id: ID, el: Element | ComponentPublicInstance | null) {
-  const dom = el as unknown as HTMLElement | null;
-  if (!dom) {
-    itemRefs.delete(id);
-    return;
-  }
-  itemRefs.set(id, dom);
-}
-
 function isFocused(b: Bookmark): boolean {
   if (props.selectedBookmarkId != null) return false;
   return props.focusBookmarkId === b.id;
 }
+
+const focusIdForScroll = computed<ID | null>(() => {
+  if (props.selectedBookmarkId != null) return null;
+  return props.focusBookmarkId ?? null;
+});
+
+const { setItemRef } = useFocusScroll(
+  focusIdForScroll,
+  isLoadingBookmarks,
+  (id) => emit("focus-done", id),
+  { block: "nearest" },
+);
 
 // ------------------------
 // 더 보기
@@ -469,111 +398,40 @@ function isFocused(b: Bookmark): boolean {
 const listWrapRef = ref<HTMLElement | null>(null);
 const sentinelRef = ref<HTMLElement | null>(null);
 
-const canLoadMore = computed(
-  () =>
-    hasSelection.value &&
-    workspace.bookmarksHasNext &&
-    !isLoadingBookmarks.value,
-);
-const isLoadingMore = computed(
-  () =>
-    hasSelection.value &&
-    isLoadingBookmarks.value &&
-    bookmarks.value.length > 0,
-);
-const isEndReached = computed(
-  () =>
-    hasSelection.value &&
-    workspace.bookmarksLoaded &&
-    !workspace.bookmarksHasNext,
-);
-
-async function loadMore() {
-  if (!canLoadMore.value) return;
-
-  const prevPage = workspace.bookmarksPage;
-
-  const moved = workspace.nextBookmarksPage();
-  if (!moved) return;
-
-  try {
-    await workspace.fetchBookmarks(selectedCollectionId.value ?? undefined, {
-      append: true,
-    });
-  } catch {
-    workspace.setBookmarksQuery({
-      bookmarksPage: prevPage,
-      bookmarksLoaded: true,
-    });
-  }
-}
-
-const { setup, cleanup } = useInfiniteScroll(
-  listWrapRef,
-  sentinelRef,
+const {
+  canLoadMore,
+  isLoadingMore,
+  isEndReached,
   loadMore,
-  { rootMargin: "300px", threshold: 0 },
-);
-
-onUnmounted(() => cleanup());
+  cleanup,
+  reconnect,
+} = useBookmarkPagingScroll(listWrapRef, sentinelRef, {
+  collectionId: selectedCollectionId,
+  enabled: hasSelection,
+  rootMargin: "300px",
+  threshold: 0,
+});
 
 // ------------------------
 // Search(검색)
 // ------------------------
-const isSearching = computed(() => workspace.bookmarksQ.trim().length > 0);
-const searchQ = computed(() => workspace.bookmarksQ.trim().normalize("NFC"));
-
-const emptySearchDescription = computed(
-  () => `'${workspace.bookmarksQ}'에 대한 결과를 찾을 수 없습니다.`,
-);
-
-const highlightClass =
-  "font-extrabold bg-yellow-200/40 dark:bg-yellow-400/20 rounded";
-
 function scrollToTop() {
   const el = listWrapRef.value;
   if (!el) return;
   el.scrollTo({ top: 0, behavior: "auto" });
 }
 
-async function onSearched() {
-  await nextTick();
-  scrollToTop();
-}
+const { searchQ, emptySearchDescription, onSearched } = useBookmarkSearchUi({
+  scrollToTop,
+  afterSearched: reconnect,
+});
 
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function splitHighlight(text: string, q: string) {
-  const raw = (text ?? "").toString().normalize("NFC");
-  const keyword = (q ?? "").trim().normalize("NFC");
-
-  if (!keyword) {
-    return [{ text: raw, isHit: false }];
-  }
-
-  const regex = new RegExp(`(${escapeRegExp(keyword)})`, "gi");
-
-  const parts = raw.split(regex);
-
-  return parts.map((part) => ({
-    text: part,
-    isHit: part.toLowerCase() === keyword.toLowerCase(),
-  }));
-}
-
-function titleChunks(b: Bookmark) {
-  return splitHighlight(displayTitle(b), searchQ.value);
-}
-
-function domainChunks(b: Bookmark) {
-  return splitHighlight(domain(b.url), searchQ.value);
-}
-
-function tagChunks(tag: string) {
-  return splitHighlight(tag, searchQ.value);
-}
+const { highlightClass, titleChunks, domainChunks, tagChunks } =
+  useBookmarkHighlights({
+    searchQ,
+    getTitle: displayTitle,
+    getDomain: (b) => domain(b.url),
+  });
 
 // ------------------------
 // watchers
@@ -585,38 +443,13 @@ watch(
 );
 
 watch(
-  () => [props.focusBookmarkId, isLoadingBookmarks.value] as const,
-  async ([id, loading]) => {
-    if (id == null) return;
-    if (loading) return;
-
-    if (lastFocusedId.value === id) return;
-    lastFocusedId.value = id;
-
-    await nextTick();
-
-    const el = itemRefs.get(id);
-    if (!el) {
-      emit("focus-done", id);
-      return;
-    }
-
-    el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-
-    await new Promise((resolve) => window.setTimeout(resolve, 250));
-
-    emit("focus-done", id);
-  },
-  { immediate: true },
-);
-
-watch(
   () => selectedCollectionId.value,
   async (cid) => {
-    cleanup();
-    if (cid == null) return;
-    await nextTick();
-    setup();
+    if (cid == null) {
+      cleanup();
+      return;
+    }
+    await reconnect();
   },
   { immediate: true },
 );
