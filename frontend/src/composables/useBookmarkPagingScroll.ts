@@ -1,7 +1,7 @@
-import { computed, nextTick, onUnmounted, Ref } from "vue";
+import { computed, Ref } from "vue";
 import { useWorkspaceStore } from "@/stores/workspace";
-import { useInfiniteScroll } from "./useInfiniteScroll";
 import type { ID } from "@/types/common";
+import { usePagingScrollBase } from "./usePagingScrollBase";
 
 type Options = {
   collectionId?: Ref<ID | null>;
@@ -17,72 +17,34 @@ export function useBookmarkPagingScroll(
 ) {
   const workspace = useWorkspaceStore();
 
-  const rootMargin = options.rootMargin ?? "200px";
-  const threshold = options.threshold ?? 0;
+  const itemCount = computed(() => workspace.bookmarks.length);
+  const isLoading = computed(() => workspace.isLoading.bookmarks);
+  const hasNext = computed(() => workspace.bookmarksHasNext);
+  const loaded = computed(() => workspace.bookmarksLoaded);
 
-  const isLoadingBookmarks = computed(() => workspace.isLoading.bookmarks);
-
-  const enabled = computed(() =>
-    typeof options.enabled === "boolean"
-      ? options.enabled
-      : (options.enabled?.value ?? true),
-  );
-
-  const canLoadMore = computed(
-    () =>
-      enabled.value && workspace.bookmarksHasNext && !isLoadingBookmarks.value,
-  );
-  const isLoadingMore = computed(
-    () =>
-      enabled.value &&
-      isLoadingBookmarks.value &&
-      workspace.bookmarks.length > 0,
-  );
-  const isEndReached = computed(
-    () =>
-      enabled.value && workspace.bookmarksLoaded && !workspace.bookmarksHasNext,
-  );
-
-  async function loadMore() {
-    if (!canLoadMore.value) return;
-
-    const prevPage = workspace.bookmarksPage;
-
-    const moved = workspace.nextBookmarksPage();
-    if (!moved) return;
-
-    try {
-      const cid = options.collectionId?.value ?? null;
-
-      await workspace.fetchBookmarks(cid ?? undefined, { append: true });
-    } catch {
-      workspace.setBookmarksQuery({
-        bookmarksPage: prevPage,
-        bookmarksLoaded: true,
-      });
-    }
-  }
-
-  const { setup, cleanup } = useInfiniteScroll(
+  return usePagingScrollBase({
     listWrapRef,
     sentinelRef,
-    loadMore,
-    { rootMargin, threshold, enabled },
-  );
 
-  async function reconnect() {
-    cleanup();
-    await nextTick();
-    setup();
-  }
+    itemCount,
+    isLoading,
+    hasNext,
+    loaded,
 
-  return {
-    canLoadMore,
-    isLoadingMore,
-    isEndReached,
-    loadMore,
-    setup,
-    cleanup,
-    reconnect,
-  };
+    nextPage: () => workspace.nextBookmarksPage(),
+
+    fetchNext: async () => {
+      const cid = options.collectionId?.value ?? null;
+      await workspace.fetchBookmarks(cid ?? undefined, { append: true });
+    },
+
+    rollbackPage: () => {
+      workspace.setBookmarksQuery({
+        bookmarksPage: workspace.bookmarksPage - 1,
+        bookmarksLoaded: true,
+      });
+    },
+
+    options,
+  });
 }

@@ -349,10 +349,10 @@ import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
 import { useToastStore } from "@/stores/toast";
 import { useTagsStore } from "@/stores/tags";
 import { getErrorMessage } from "@/utils/errorMessage";
-import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
 import { useBookmarkItemHelpers } from "@/composables/useBookmarkItemHelpers";
 import { useFocusScroll } from "@/composables/useFocusScroll";
 import { useBookmarkFavorite } from "@/composables/useBookmarkFavorite";
+import { useTaggedBookmarkPagingScroll } from "@/composables/useTaggedBookmarkPagingScroll";
 
 const props = defineProps<{
   tagId: ID | null;
@@ -562,44 +562,18 @@ const { setItemRef } = useFocusScroll(
 // ------------------------
 const sentinelRef = ref<HTMLElement | null>(null);
 
-const canLoadMore = computed(
-  () => hasSelection.value && taggedStore.hasNext && !isLoadingBookmarks.value,
-);
-const isLoadingMore = computed(
-  () =>
-    hasSelection.value && isLoadingBookmarks.value && items.value.length > 0,
-);
-const isEndReached = computed(
-  () => hasSelection.value && loaded.value && !taggedStore.hasNext,
-);
-
-async function loadMore() {
-  if (!canLoadMore.value) return;
-
-  const prevPage = taggedStore.page;
-
-  const moved = taggedStore.nextPage();
-  if (!moved) return;
-
-  try {
-    await taggedStore.load(true);
-  } catch {
-    taggedStore.setQuery({ page: prevPage });
-  }
-}
-
-const { setup, cleanup } = useInfiniteScroll(
-  listWrapRef,
-  sentinelRef,
+const {
+  canLoadMore,
+  isLoadingMore,
+  isEndReached,
   loadMore,
-  { rootMargin: "200px", threshold: 0 },
-);
-
-async function reconnect() {
-  cleanup();
-  await nextTick();
-  setup();
-}
+  cleanup,
+  reconnect,
+} = useTaggedBookmarkPagingScroll(listWrapRef, sentinelRef, {
+  enabled: hasSelection,
+  rootMargin: "300px",
+  threshold: 0,
+});
 
 // ------------------------
 // watchers
