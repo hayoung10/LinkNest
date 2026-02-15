@@ -3,56 +3,82 @@
     <div class="flex items-center justify-between">
       <div class="min-w-0 pl-3">
         <!-- path -->
-        <div
-          class="mb-1 ml-0.5 min-h-[16px] text-xs text-zinc-500 flex items-center gap-1 min-w-0"
-        >
-          <template v-if="isLoadingPath">
-            <span
-              class="inline-block h-3 w-28 rounded bg-zinc-200/70 animate-pulse"
-            />
-          </template>
-
-          <template v-else-if="cPath.length">
-            <template v-for="(p, idx) in cPath" :key="p.id">
-              <span class="truncate">
-                <span v-if="p.emoji" class="mr-1">{{ p.emoji }}</span>
-                {{ p.name }}
-              </span>
-              <span v-if="idx < cPath.length - 1" class="opacity-60">/</span>
+        <template v-if="showPath">
+          <div
+            class="mb-1 ml-0.5 min-h-[16px] text-xs text-zinc-500 flex items-center gap-1 min-w-0"
+          >
+            <template v-if="isLoadingPath">
+              <span
+                class="inline-block h-3 w-28 rounded bg-zinc-200/70 animate-pulse"
+              />
             </template>
-          </template>
-        </div>
 
+            <template v-else-if="cPath.length">
+              <template v-for="(p, idx) in cPath" :key="p.id">
+                <span class="truncate">
+                  <span v-if="p.emoji" class="mr-1">{{ p.emoji }}</span>
+                  {{ p.name }}
+                </span>
+                <span v-if="idx < cPath.length - 1" class="opacity-60">/</span>
+              </template>
+            </template>
+          </div>
+        </template>
+
+        <!-- 높이 맞춤 -->
+        <template v-else>
+          <div
+            class="mb-1 ml-0.5 min-h-[16px] text-xs text-zinc-500"
+            aria-hidden="true"
+          />
+        </template>
+
+        <!-- 제목 -->
         <div class="min-w-0 flex items-center gap-2">
-          <span class="shrink-0 text-muted-foreground opacity-80">
-            <template v-if="collection?.emoji">
-              <span class="text-[20px] leading-none">{{
-                collection.emoji
-              }}</span>
-            </template>
-            <template v-else>
-              <FolderIcon size="22" />
-            </template>
-          </span>
+          <slot name="title">
+            <span class="shrink-0 text-muted-foreground opacity-80">
+              <template v-if="collection?.emoji">
+                <span class="text-[20px] leading-none">{{
+                  collection.emoji
+                }}</span>
+              </template>
+              <template v-else>
+                <FolderIcon size="22" />
+              </template>
+            </span>
 
-          <!-- 컬렉션 이름 -->
-          <h2 class="text-xl font-semibold text-foreground truncate">
-            {{ collection?.name ?? "컬렉션" }}
-          </h2>
+            <!-- 컬렉션 이름 -->
+            <h2 class="text-xl font-semibold text-foreground truncate">
+              {{ collection?.name ?? "컬렉션" }}
+            </h2>
+          </slot>
         </div>
       </div>
 
       <div class="flex text-center gap-2 pr-3">
-        <button
-          type="button"
-          :disabled="isAddDisabled"
-          class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-900"
-          aria-label="새 북마크 추가"
-          @click="$emit('open-add')"
-        >
-          <PlusIcon :size="16" klass="shrink-0" />
-          <span>추가</span>
-        </button>
+        <template v-if="showAdd">
+          <button
+            type="button"
+            :disabled="isAddDisabled"
+            class="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-900"
+            aria-label="새 북마크 추가"
+            @click="$emit('open-add')"
+          >
+            <PlusIcon :size="16" klass="shrink-0" />
+            <span>추가</span>
+          </button>
+        </template>
+
+        <!-- 높이/정렬 맞춤 -->
+        <template v-else>
+          <span
+            class="inline-flex items-center px-3.5 py-1.5 opacity-0 select-none"
+            aria-hidden="true"
+          >
+            <span class="inline-block size-9" />
+            <span>추가</span>
+          </span>
+        </template>
       </div>
     </div>
 
@@ -104,14 +130,23 @@ import SearchIcon from "@/components/icons/SearchIcon.vue";
 import Input from "@/components/ui/Input.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { CollectionNode } from "@/types/common";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
-const props = defineProps<{
-  collection: CollectionNode | null;
-  cPath: CollectionPathRes[];
-  isLoadingPath: boolean;
-  isAddDisabled: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    collection: CollectionNode | null;
+    cPath: CollectionPathRes[];
+    isLoadingPath: boolean;
+    isAddDisabled: boolean;
+
+    showPath?: boolean;
+    showAdd?: boolean;
+  }>(),
+  {
+    showPath: true,
+    showAdd: true,
+  },
+);
 
 const emit = defineEmits<{
   (e: "open-add"): void;
@@ -125,14 +160,6 @@ const q = computed(() => workspace.bookmarksQ);
 const qInput = ref(q.value ?? "");
 
 const isComposing = ref(false);
-
-let qTimer: ReturnType<typeof setTimeout> | null = null;
-
-function clearTimer() {
-  if (!qTimer) return;
-  clearTimeout(qTimer);
-  qTimer = null;
-}
 
 function normalizeQuery(raw: string) {
   return (raw ?? "").trim().normalize("NFC");
@@ -170,10 +197,6 @@ async function clearSearch() {
   emit("clear-focus");
   emit("searched");
 }
-
-onUnmounted(() => {
-  clearTimer();
-});
 
 watch(
   () => q.value,

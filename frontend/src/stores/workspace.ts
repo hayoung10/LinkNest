@@ -217,7 +217,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     selectCollection(id: ID | null) {
       this.viewMode = "collection";
       this.selectedCollectionId = id;
-      this.resetBookmarksPage();
+      this.resetBookmarksQuery();
 
       if (id != null) {
         this.expandAncestors(id);
@@ -226,7 +226,7 @@ export const useWorkspaceStore = defineStore("workspace", {
     selectFavorites() {
       this.viewMode = "favorites";
       this.selectedCollectionId = null;
-      this.resetBookmarksPage();
+      this.resetBookmarksQuery();
     },
     updateBookmarkCount(collectionId: ID, cnt: number) {
       if (!this.collectionNodes?.length) return;
@@ -710,6 +710,7 @@ export const useWorkspaceStore = defineStore("workspace", {
         // 즐겨찾기 뷰
         if (this.viewMode === "favorites") {
           const res = await BookmarkApi.listFavorites({
+            q: this.bookmarksQ.trim() ? this.bookmarksQ.trim() : undefined,
             page: this.bookmarksPage,
             size: this.bookmarksSize,
           });
