@@ -5,6 +5,8 @@ import com.linknest.backend.user.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -17,9 +19,12 @@ import java.util.List;
         indexes = {
                 @Index(name = "idx_collection_parent", columnList = "parent_id"),
                 @Index(name = "idx_collection_user_parent", columnList = "user_id, parent_id"),
-                @Index(name = "idx_collection_user_parent_order", columnList = "user_id, parent_id, sort_order")
+                @Index(name = "idx_collection_user_parent_order", columnList = "user_id, parent_id, sort_order"),
+                @Index(name = "idx_collections_user_deleted_at", columnList = "user_id, deleted_at")
         }
 )
+@SQLDelete(sql = "UPDATE collections SET deleted_at = NOW(6) WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @EntityListeners(AuditingEntityListener.class)
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Collection {
@@ -57,4 +62,19 @@ public class Collection {
     @LastModifiedDate
     @Column(nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
+    public void softDelete() {
+        this.deletedAt = Instant.now();
+    }
+
+    public void restore() {
+        this.deletedAt = null;
+    }
+
+    public boolean isDeleted() {
+        return this.deletedAt != null;
+    }
 }
