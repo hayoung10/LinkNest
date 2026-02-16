@@ -226,7 +226,7 @@ public class CollectionService {
     }
 
     private CollectionRes buildResWithCount(Long userId, Collection c) {
-        long bookmarkCount = bookmarkRepository.countByCollectionId(c.getId());
+        long bookmarkCount = bookmarkRepository.countByCollectionIdAndDeletedAtIsNull(c.getId());
         long childCount = collectionRepository.countByUserIdAndParentId(userId, c.getId());
         return mapper.toResWithCount(c, bookmarkCount, childCount);
     }

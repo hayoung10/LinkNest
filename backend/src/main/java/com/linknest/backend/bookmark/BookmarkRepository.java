@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     // -------------------- Bookmarks (Collection) --------------------
@@ -17,6 +18,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   left join bt.tag t " +
             "where b.user.id = :userId " +
             "   and b.collection.id = :collectionId " +
+            "   and b.deletedAt is null " +
             "   and (:pattern is null " +
             "       or lower(coalesce(b.title, '')) like :pattern escape '\\' " +
             "       or lower(coalesce(b.url, '')) like :pattern escape '\\' " +
@@ -29,6 +31,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   left join bt.tag t " +
             "where b.user.id = :userId " +
             "   and b.collection.id = :collectionId " +
+            "   and b.deletedAt is null " +
             "   and (:pattern is null " +
             "       or lower(coalesce(b.title, '')) like :pattern escape '\\' " +
             "       or lower(coalesce(b.url, '')) like :pattern escape '\\' " +
@@ -39,11 +42,12 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     Slice<Bookmark> findAllByCollectionWithSearchSortedByTitle(@Param("userId") Long userId, @Param("collectionId") Long collectionId,
                                                                @Param("pattern") String pattern, Pageable pageable);
 
-    long countByCollectionId(Long collectionId);
+    long countByCollectionIdAndDeletedAtIsNull(Long collectionId);
 
     @Query("select new com.linknest.backend.common.dto.IdCount(b.collection.id, count(b)) " +
             "from Bookmark b " +
             "where b.collection.id in :collectionIds " +
+            "   and b.deletedAt is null " +
             "group by b.collection.id")
     List<IdCount> countByCollectionIds(@Param("collectionIds") List<Long> collectionIds);
 
@@ -53,6 +57,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   left join bt.tag t " +
             "where b.user.id = :userId " +
             "   and b.isFavorite = true " +
+            "   and b.deletedAt is null " +
             "   and (:pattern is null " +
             "       or lower(coalesce(b.title, '')) like :pattern escape '\\' " +
             "       or lower(coalesce(b.url, '')) like :pattern escape '\\' " +
@@ -64,6 +69,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   left join bt.tag t " +
             "where b.user.id = :userId " +
             "   and b.isFavorite = true " +
+            "   and b.deletedAt is null " +
             "   and (:pattern is null " +
             "       or lower(coalesce(b.title, '')) like :pattern escape '\\' " +
             "       or lower(coalesce(b.url, '')) like :pattern escape '\\' " +
@@ -76,6 +82,8 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
     // -------------------- Bookmark Ownership Validation --------------------
     long countByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    Optional<Bookmark> findByIdAndUserId(Long id, Long userId);
 
     // -------------------- Bulk Ops --------------------
     @Modifying

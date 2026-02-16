@@ -265,13 +265,8 @@ public class BookmarkService {
     // 내부 유틸
     // ==========================================================
     private Bookmark requireOwnedBookmark(Long userId, Long id) {
-        Bookmark bookmark = bookmarkRepository.findById(id)
+        return bookmarkRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOOKMARK_NOT_FOUND));
-        if(!bookmark.getUser().getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        }
-
-        return bookmark;
     }
 
     private Collection requireOwnedCollection(Long userId, Long collectionId) {
