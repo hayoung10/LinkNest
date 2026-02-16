@@ -4,6 +4,7 @@ import com.linknest.backend.common.dto.IdCount;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -75,4 +76,11 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
     // -------------------- Bookmark Ownership Validation --------------------
     long countByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    // -------------------- Bulk Ops --------------------
+    @Modifying
+    @Query(value =
+            "update bookmarks set deleted_at = now(6) " +
+            "   where user_id = :userId and collection_id in (:collectionIds) and deleted_at is null", nativeQuery = true)
+    int softDeleteAllByCollectionIds(@Param("userId") Long userId, @Param("collectionIds") List<Long> collectionIds);
 }

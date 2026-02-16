@@ -1,5 +1,6 @@
 package com.linknest.backend.collection;
 
+import com.linknest.backend.bookmark.Bookmark;
 import com.linknest.backend.bookmark.BookmarkRepository;
 import com.linknest.backend.collection.dto.request.*;
 import com.linknest.backend.collection.dto.response.*;
@@ -71,8 +72,12 @@ public class CollectionService {
     // ---------- 삭제 ----------
     @Transactional
     public void delete(Long userId, Long id) {
-        Collection collection = requireOwnedCollection(userId, id);
-        collectionRepository.delete(collection);
+        requireOwnedCollection(userId, id);
+
+        List<Long> ids = collectionRepository.findSubtreeIds(userId, id);
+
+        bookmarkRepository.softDeleteAllByCollectionIds(userId, ids);
+        collectionRepository.softDeleteAllByIds(userId, ids);
     }
 
     // ---------- 하위 컬렉션 목록 조회 ----------

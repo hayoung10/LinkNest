@@ -2,6 +2,7 @@ package com.linknest.backend.collection;
 
 import com.linknest.backend.common.dto.IdCount;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -32,4 +33,23 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
     List<IdCount> countChildrenByParentIds(@Param("userId") Long userId, @Param("parentIds") List<Long> parentIds);
 
     List<Collection> findAllByUserIdOrderByParentIdAscSortOrderAsc(Long userId);
+
+    // -------------------- Bulk Ops --------------------
+    @Query(value =
+            "with recursive tree AS (" +
+            "   select id from collections " +
+            "   where id = :rootId and user_id = :userId and deleted_at is null " +
+            "   union all " +
+            "   select c.id from collections c " +
+            "       join tree t on c.parent_id = t.id" +
+            "   where c.user_id = :userId and c.deleted_at is null" +
+            ")" +
+            "select id from tree", nativeQuery = true)
+    List<Long> findSubtreeIds(@Param("userId") Long userId, @Param("rootId") Long rootId);
+
+    @Modifying
+    @Query(value =
+            "update collections set deleted_at = now(6) " +
+            "   where user_id = :userId and id in (:ids) and deleted_at is null", nativeQuery = true)
+    int softDeleteAllByIds(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 }
