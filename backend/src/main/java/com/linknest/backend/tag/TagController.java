@@ -23,17 +23,22 @@ public class TagController {
     private final TagService service;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<TagRes>> create(@AuthenticationPrincipal(expression = "id") Long userId,
+    public ResponseEntity<ApiResponse<TagCreateResultRes>> create(@AuthenticationPrincipal(expression = "id") Long userId,
                                                       @RequestBody @Valid TagCreateReq req) {
-        TagRes data = service.create(userId, req);
+        TagCreateResultRes data = service.create(userId, req);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(data.id())
+                .buildAndExpand(data.res().id())
                 .toUri();
 
-        return ResponseEntity.created(location).body(ApiResponse.ok("태그 생성 완료", data));
+        String message = data.restored() ? "태그 복구 완료" : "태그 생성 완료";
+
+        if(data.restored()) {
+            return ResponseEntity.ok(ApiResponse.ok(message, data));
+        }
+        return ResponseEntity.created(location).body(ApiResponse.ok(message, data));
     }
 
     @GetMapping
@@ -65,8 +70,8 @@ public class TagController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal(expression = "id") Long userId,
                                                     @PathVariable @Min(1) Long id) {
-        service.delete(userId, id);
-        return ResponseEntity.ok(ApiResponse.ok("태그 삭제 완료",null));
+        service.softDelete(userId, id);
+        return ResponseEntity.ok(ApiResponse.ok("태그 휴지통 이동",null));
     }
 
     // =============================

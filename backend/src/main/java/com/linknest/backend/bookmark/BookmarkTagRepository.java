@@ -16,18 +16,25 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
     @Query("select count(distinct b.id) " +
             "from BookmarkTag bt " +
             "   join bt.bookmark b " +
-            "where b.user.id = :userId and bt.tag.id = :tagId")
+            "where b.user.id = :userId " +
+            "   and bt.tag.id = :tagId " +
+            "   and b.deletedAt is null")
     long countDistinctBookmarksByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
 
     // -------------------- BookmarkIds Query --------------------
     @Query("select b.id " +
             "from BookmarkTag bt " +
             "   join bt.bookmark b " +
-            "where b.user.id = :userId and bt.tag.id = :tagId")
+            "where b.user.id = :userId " +
+            "   and bt.tag.id = :tagId " +
+            "   and b.deletedAt is null")
     List<Long> findAllBookmarkIdsByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
 
     @Query("select bt.bookmark.id from BookmarkTag bt " +
-            "where bt.bookmark.user.id = :userId and bt.tag.id = :toTagId and bt.bookmark.id in :bookmarkIds")
+            "where bt.bookmark.user.id = :userId " +
+            "   and bt.tag.id = :toTagId " +
+            "   and bt.bookmark.id in :bookmarkIds " +
+            "   and bt.bookmark.deletedAt is null")
     List<Long> findBookmarkIdsByUserIdAndTagIdAndBookmarkIdIn(@Param("userId") Long userId, @Param("toTagId") Long toTagId,
                                                               @Param("bookmarkIds") List<Long> bookmarkIds);
 
@@ -70,7 +77,9 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             ") from BookmarkTag bt " +
             "   join bt.bookmark b " +
             "   join b.collection c " +
-            "where b.user.id = :userId and bt.tag.id = :tagId " +
+            "where b.user.id = :userId " +
+            "   and bt.tag.id = :tagId " +
+            "   and b.deletedAt is null " +
             "order by b.createdAt desc, b.id desc")
     Slice<TaggedBookmarkRow> findTaggedBookmarksNewest(@Param("userId") Long userId, @Param("tagId") Long tagId, Pageable pageable);
 
@@ -81,7 +90,9 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             ") from BookmarkTag bt " +
             "   join bt.bookmark b " +
             "   join b.collection c " +
-            "where b.user.id = :userId and bt.tag.id = :tagId " +
+            "where b.user.id = :userId " +
+            "   and bt.tag.id = :tagId " +
+            "   and b.deletedAt is null " +
             "order by b.createdAt asc, b.id asc")
     Slice<TaggedBookmarkRow> findTaggedBookmarksOldest(@Param("userId") Long userId, @Param("tagId") Long tagId, Pageable pageable);
 
@@ -92,7 +103,9 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             ") from BookmarkTag bt " +
             "   join bt.bookmark b " +
             "   join b.collection c " +
-            "where b.user.id = :userId and bt.tag.id = :tagId " +
+            "where b.user.id = :userId " +
+            "   and bt.tag.id = :tagId " +
+            "   and b.deletedAt is null " +
             "order by " +
             "   case when b.title is null or b.title = '' then 1 else 0 end, b.title asc, b.createdAt desc, b.id desc")
     Slice<TaggedBookmarkRow> findTaggedBookmarksSortedByTitle(@Param("userId") Long userId, @Param("tagId") Long tagId, Pageable pageable);
@@ -101,12 +114,14 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
     @Query("select new com.linknest.backend.tag.dto.BookmarkTagNameRow(bt.bookmark.id, t.name) " +
             "from BookmarkTag bt " +
             "   join bt.tag t " +
-            "where bt.bookmark.id in :bookmarkIds")
+            "where bt.bookmark.id in :bookmarkIds " +
+            "   and t.deletedAt is null")
     List<BookmarkTagNameRow> findTagNamesByBookmarkIds(@Param("bookmarkIds") List<Long> bookmarkIds);
 
     // -------------------- Tag Summary --------------------
     @Query("select count(distinct bt.bookmark.id) " +
             "from BookmarkTag bt " +
-            "where bt.bookmark.user.id = :userId")
+            "where bt.bookmark.user.id = :userId " +
+            "   and bt.bookmark.deletedAt is null")
     long countDistinctTaggedBookmarks(@Param("userId") Long userId);
 }
