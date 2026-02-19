@@ -38,7 +38,7 @@ app:
     header: Authorization
     prefix: Bearer
     clock-skew-seconds: 60
-  tag-cleanup:
+  tag-unused:
     enabled: false
     cron: "0 0 3 * * *"
     zone: "Asia/Seoul"

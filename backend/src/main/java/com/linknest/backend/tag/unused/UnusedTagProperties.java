@@ -1,9 +1,9 @@
-package com.linknest.backend.tag.cleanup;
+package com.linknest.backend.tag.unused;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "app.tag-cleanup")
-public record TagCleanupProperties(
+@ConfigurationProperties(prefix = "app.tag-unused")
+public record UnusedTagProperties(
         boolean enabled,
         String cron,
         String zone,
