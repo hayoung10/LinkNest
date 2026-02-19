@@ -63,7 +63,7 @@ public class CollectionController {
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal(expression = "id") Long userId,
                                        @PathVariable @Min(1) Long id) {
         service.delete(userId, id);
-        return ResponseEntity.ok(ApiResponse.ok("컬렉션 삭제 완료"));
+        return ResponseEntity.ok(ApiResponse.ok("컬렉션 휴지통 이동"));
     }
 
     @GetMapping

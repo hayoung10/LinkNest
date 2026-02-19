@@ -4,10 +4,12 @@ import com.linknest.backend.common.dto.IdCount;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     // -------------------- Bookmarks (Collection) --------------------
@@ -16,6 +18,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   left join bt.tag t " +
             "where b.user.id = :userId " +
             "   and b.collection.id = :collectionId " +
+            "   and b.deletedAt is null " +
             "   and (:pattern is null " +
             "       or lower(coalesce(b.title, '')) like :pattern escape '\\' " +
             "       or lower(coalesce(b.url, '')) like :pattern escape '\\' " +
@@ -28,6 +31,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   left join bt.tag t " +
             "where b.user.id = :userId " +
             "   and b.collection.id = :collectionId " +
+            "   and b.deletedAt is null " +
             "   and (:pattern is null " +
             "       or lower(coalesce(b.title, '')) like :pattern escape '\\' " +
             "       or lower(coalesce(b.url, '')) like :pattern escape '\\' " +
@@ -38,11 +42,12 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     Slice<Bookmark> findAllByCollectionWithSearchSortedByTitle(@Param("userId") Long userId, @Param("collectionId") Long collectionId,
                                                                @Param("pattern") String pattern, Pageable pageable);
 
-    long countByCollectionId(Long collectionId);
+    long countByCollectionIdAndDeletedAtIsNull(Long collectionId);
 
     @Query("select new com.linknest.backend.common.dto.IdCount(b.collection.id, count(b)) " +
             "from Bookmark b " +
             "where b.collection.id in :collectionIds " +
+            "   and b.deletedAt is null " +
             "group by b.collection.id")
     List<IdCount> countByCollectionIds(@Param("collectionIds") List<Long> collectionIds);
 
@@ -52,6 +57,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   left join bt.tag t " +
             "where b.user.id = :userId " +
             "   and b.isFavorite = true " +
+            "   and b.deletedAt is null " +
             "   and (:pattern is null " +
             "       or lower(coalesce(b.title, '')) like :pattern escape '\\' " +
             "       or lower(coalesce(b.url, '')) like :pattern escape '\\' " +
@@ -63,6 +69,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   left join bt.tag t " +
             "where b.user.id = :userId " +
             "   and b.isFavorite = true " +
+            "   and b.deletedAt is null " +
             "   and (:pattern is null " +
             "       or lower(coalesce(b.title, '')) like :pattern escape '\\' " +
             "       or lower(coalesce(b.url, '')) like :pattern escape '\\' " +
@@ -75,4 +82,45 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
     // -------------------- Bookmark Ownership Validation --------------------
     long countByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    Optional<Bookmark> findByIdAndUserId(Long id, Long userId);
+
+    @Query(value = "select * from bookmarks where id = :id and user_id = :userId", nativeQuery = true)
+    Optional<Bookmark> findIncludingDeletedByIdAndUserId(Long id, Long userId);
+
+    // -------------------- Bulk Ops --------------------
+    @Modifying
+    @Query(value =
+            "update bookmarks set deleted_at = now(6) " +
+            "   where user_id = :userId and collection_id in (:collectionIds) and deleted_at is null", nativeQuery = true)
+    int softDeleteAllByCollectionIds(@Param("userId") Long userId, @Param("collectionIds") List<Long> collectionIds);
+
+    // -------------------- Trash --------------------
+    @Modifying
+    @Query(value = "update bookmarks set deleted_at = null " +
+            "where user_id = :userId " +
+            "   and deleted_at is not null " +
+            "   and id in (:ids)", nativeQuery = true)
+    int restoreDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    @Modifying
+    @Query(value = "update bookmarks b " +
+            "   left join collections c on c.id = b.collection_id and c.user_id = b.user_id " +
+            "   set b.collection_id = :defaultId " +
+            "where b.user_id = :userId " +
+            "   and b.id in (:ids) " +
+            "   and (c.id is null or c.deleted_at is not null)", nativeQuery = true)
+    int moveDeletedToDefaultIfParentDeleted(@Param("userId") Long userId, @Param("ids") List<Long> ids,
+                                            @Param("defaultId") Long defaultId);
+
+    @Modifying
+    @Query(value = "delete from bookmarks where user_id = :userId and deleted_at is not null", nativeQuery = true)
+    int deleteAllDeletedByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query(value = "delete from bookmarks " +
+            "where user_id = :userId " +
+            "   and deleted_at is not null " +
+            "   and id in (:ids)", nativeQuery = true)
+    int deleteDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
 }

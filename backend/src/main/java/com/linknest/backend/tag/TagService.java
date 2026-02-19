@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,15 +38,25 @@ public class TagService {
     private final TaggedBookmarkMapper taggedBookmarkMapper;
 
     @Transactional
-    public TagRes create(Long userId, TagCreateReq req) {
+    public TagCreateResultRes create(Long userId, TagCreateReq req) {
         String displayName = normalizeName(req.name());
         String nameKey = toNameKey(displayName);
 
-        // 중복 체크
-        tagRepository.findByUserIdAndNameKey(userId, nameKey)
-                .ifPresent(existingTag -> {
-                    throw new BusinessException(ErrorCode.TAG_NAME_DUPLICATED);
-                });
+        // 중복 체크 (휴지통 포함)
+        Optional<Tag> existingOpt = tagRepository.findIncludingDeletedByUserIdAndNameKey(userId, nameKey);
+
+        if(existingOpt.isPresent()) {
+            Tag existing = existingOpt.get();
+
+            if(existing.isDeleted()) {
+                existing.restore();
+                existing.setName(displayName);
+                long count = bookmarkTagRepository.countDistinctBookmarksByUserIdAndTagId(userId, existing.getId());
+                return new TagCreateResultRes(tagMapper.toResWithCount(existing, count), true);
+            }
+
+            throw new BusinessException(ErrorCode.TAG_NAME_DUPLICATED);
+        }
 
         // Tag 생성
         Tag tag = Tag.builder()
@@ -57,7 +66,7 @@ public class TagService {
                 .build();
 
         Tag saved = tagRepository.save(tag);
-        return tagMapper.toResWithCount(saved, 0L);
+        return new TagCreateResultRes(tagMapper.toResWithCount(saved, 0L), false);
     }
 
     public SliceResponse<TagRes> getTags(Long userId, String q, TagSort sort, int page, int size) {
@@ -91,8 +100,8 @@ public class TagService {
             return tagMapper.toResWithCount(tag, count);
         }
 
-        // 중복 체크
-        tagRepository.findByUserIdAndNameKey(userId, nameKey)
+        // 중복 체크 (휴지통 포함)
+        tagRepository.findIncludingDeletedByUserIdAndNameKey(userId, nameKey)
                 .filter(existingTag -> !existingTag.getId().equals(id))
                 .ifPresent(existingTag -> {
                     throw new BusinessException(ErrorCode.TAG_NAME_DUPLICATED);
@@ -130,12 +139,9 @@ public class TagService {
     }
 
     @Transactional
-    public void delete(Long userId, Long id) {
+    public void softDelete(Long userId, Long id) {
         Tag tag = requireOwnedTag(userId, id);
-
-        bookmarkTagRepository.deleteByUserIdAndTagId(userId, id);
-
-        tagRepository.delete(tag);
+        tag.softDelete();
     }
 
     // ==========================================================
@@ -223,10 +229,74 @@ public class TagService {
     // ==========================================================
 
     public TagSummaryRes getSummary(Long userId) {
-        long totalTags = tagRepository.countByUserId(userId);
+        long totalTags = tagRepository.countByUserIdAndDeletedAtIsNull(userId);
         long totalTaggedBookmarks = bookmarkTagRepository.countDistinctTaggedBookmarks(userId);
 
         return new TagSummaryRes(totalTags, totalTaggedBookmarks);
+    }
+
+    // ==========================================================
+    // Trash
+    // ==========================================================
+
+    @Transactional
+    public void restoreFromTrash(Long userId, Long id) {
+        Tag tag = requiredOwnedTagIncludingDeleted(userId, id);
+
+        if(!tag.isDeleted()) return;
+
+        tagRepository.findByUserIdAndNameKey(userId, tag.getNameKey())
+                .ifPresent(active -> { throw new BusinessException(ErrorCode.TAG_NAME_DUPLICATED); });
+
+        tag.restore();
+    }
+
+    @Transactional
+    public void restoreFromTrashBulk(Long userId, List<Long> ids) {
+        if(ids == null || ids.isEmpty()) return;
+
+        List<String> keys = tagRepository.findDeletedNameKeysByUserIdAndIdIn(userId, ids);
+        if(keys.isEmpty()) return;
+
+        boolean hasConflict = tagRepository.existsByUserIdAndDeletedAtIsNullAndNameKeyIn(userId, keys);
+        if(hasConflict) {
+            throw new BusinessException(ErrorCode.TAG_NAME_DUPLICATED);
+        }
+
+        tagRepository.restoreDeletedByUserIdAndIdIn(userId, ids);
+    }
+
+    @Transactional
+    public void deleteFromTrash(Long userId, Long id) {
+        Tag tag = requiredOwnedTagIncludingDeleted(userId, id);
+
+        if(!tag.isDeleted()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        bookmarkTagRepository.deleteByUserIdAndTagId(userId, id);
+
+        tagRepository.delete(tag);
+    }
+
+    @Transactional
+    public void deleteAllFromTrash(Long userId) {
+        List<Long> tagIds = tagRepository.findAllDeletedIdsByUserId(userId);
+        if(tagIds.isEmpty()) return;
+
+        bookmarkTagRepository.deleteByUserIdAndTagIdIn(userId, tagIds);
+        tagRepository.deleteAllByIdInBatch(tagIds);
+    }
+
+    @Transactional
+    public void deleteFromTrashBulk(Long userId, List<Long> ids) {
+        if(ids == null || ids.isEmpty()) return;
+
+        List<Long> tagIds = tagRepository.findDeletedIdsByUserIdAndIdIn(userId, ids);
+        if(tagIds.isEmpty()) return;
+
+        bookmarkTagRepository.deleteByUserIdAndTagIdIn(userId, tagIds);
+        tagRepository.deleteDeletedByUserIdAndIdIn(userId, ids);
     }
 
     // ==========================================================
@@ -252,10 +322,17 @@ public class TagService {
 
         Set<String> keys = keyToDisplay.keySet();
 
-        // 기존 태그 조회
-        List<Tag> existing = tagRepository.findByUserIdAndNameKeyIn(userId, keys);
-        Map<String, Tag> byKey = existing.stream()
-                .collect(Collectors.toMap(Tag::getNameKey, Function.identity()));
+        // 기존 태그 조회 (휴지통 포함)
+        List<Tag> existing = tagRepository.findAllIncludingDeletedByUserIdAndNameKeyIn(userId, keys);
+
+        Map<String, Tag> byKey = new HashMap<>();
+        for(Tag t : existing) {
+            if(t.isDeleted()) {
+                t.restore();
+                t.setName(keyToDisplay.get(t.getNameKey()));
+            }
+            byKey.put(t.getNameKey(), t);
+        }
 
         // 없는 key 생성
         List<Tag> toCreate = keys.stream()
@@ -313,6 +390,11 @@ public class TagService {
 
     private Tag requireOwnedTag(Long userId, Long id) {
         return tagRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TAG_NOT_FOUND));
+    }
+
+    private Tag requiredOwnedTagIncludingDeleted(Long userId, Long id) {
+        return tagRepository.findIncludingDeletedByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TAG_NOT_FOUND));
     }
 

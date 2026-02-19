@@ -56,7 +56,7 @@ public class BookmarkController {
     public ResponseEntity<ApiResponse<Void>> delete(@AuthenticationPrincipal(expression = "id") Long userId,
                                        @PathVariable @Min(1) Long id) {
         service.delete(userId, id);
-        return ResponseEntity.ok(ApiResponse.ok("북마크 삭제 완료"));
+        return ResponseEntity.ok(ApiResponse.ok("북마크 휴지통 이동"));
     }
 
     @GetMapping

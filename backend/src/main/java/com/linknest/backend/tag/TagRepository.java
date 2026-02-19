@@ -4,6 +4,7 @@ import com.linknest.backend.tag.dto.TagRes;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -15,13 +16,24 @@ import java.util.Optional;
 public interface TagRepository extends JpaRepository<Tag, Long> {
     Optional<Tag> findByIdAndUserId(Long id, Long userId);
 
-    List<Tag> findByUserIdAndNameKeyIn(Long userId, Collection<String> nameKeys);
-
     Optional<Tag> findByUserIdAndNameKey(Long userId, String nameKey);
+
+    @Query(value = "select * from tags " +
+            "where user_id = :userId and name_key = :nameKey", nativeQuery = true)
+    Optional<Tag> findIncludingDeletedByUserIdAndNameKey(@Param("userId") Long userId, String nameKey);
+
+    @Query(value = "select * from tags " +
+            "where user_id = :userId and name_key in (:nameKeys)", nativeQuery = true)
+    List<Tag> findAllIncludingDeletedByUserIdAndNameKeyIn(@Param("userId") Long userId,
+                                                          @Param("nameKeys") Collection<String> nameKeys);
+
+    @Query(value = "select * from tags where id = :id and user_id = :userId", nativeQuery = true)
+    Optional<Tag> findIncludingDeletedByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
     // -------------------- Tag Cleanup --------------------
     @Query(value = "select t.id from tags t " +
-            "where t.created_at < :cutoff " +
+            "where t.deleted_at is null " +
+            "and t.created_at < :cutoff " +
             "and not exists (select 1 from bookmark_tags bt where bt.tag_id = t.id) " +
             "limit :batchSize", nativeQuery = true)
     List<Long> findOrphanTagIds(@Param("cutoff") Instant cutoff, @Param("batchSize") int batchSize);
@@ -32,6 +44,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   left join t.bookmarkTags bt " +
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
+            "   and t.deletedAt is null " +
+            "   and (b is null or b.deletedAt is null) " +
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.createdAt desc")
@@ -43,6 +57,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   left join t.bookmarkTags bt " +
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
+            "   and t.deletedAt is null " +
+            "   and (b is null or b.deletedAt is null) " +
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.createdAt asc")
@@ -54,6 +70,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   left join t.bookmarkTags bt " +
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
+            "   and t.deletedAt is null " +
+            "   and (b is null or b.deletedAt is null) " +
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.name asc")
@@ -65,6 +83,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   left join t.bookmarkTags bt " +
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
+            "   and t.deletedAt is null " +
+            "   and (b is null or b.deletedAt is null) " +
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by count(distinct b.id) desc, t.name asc, t.id asc")
@@ -72,5 +92,43 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
                                                                      Pageable pageable);
 
     // -------------------- Summary --------------------
-    long countByUserId(Long userId);
+    long countByUserIdAndDeletedAtIsNull(Long userId);
+
+    // -------------------- Trash --------------------
+    @Query(value = "select id from tags where user_id = :userId and deleted_at is not null", nativeQuery = true)
+    List<Long> findAllDeletedIdsByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query(value = "update tags set deleted_at = null " +
+            "where user_id = :userId " +
+            "   and deleted_at is not null " +
+            "   and id in (:ids)", nativeQuery = true)
+    int restoreDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    @Modifying
+    @Query(value = "delete from tags " +
+            "where user_id = :userId " +
+            "   and deleted_at is not null " +
+            "   and id in (:ids)", nativeQuery = true)
+    int deleteDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    @Query(value = "select distinct t.name_key from tags t " +
+            "where t.user_id = :userId " +
+            "   and t.deleted_at is not null " +
+            "   and t.id in (:ids)", nativeQuery = true)
+    List<String> findDeletedNameKeysByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    @Query(value = "select exists(" +
+            "   select 1 from tags t " +
+            "   where t.user_id = :userId " +
+            "       and t.deleted_at is null " +
+            "       and t.name_key in (:keys)" +
+            ")", nativeQuery = true)
+    boolean existsByUserIdAndDeletedAtIsNullAndNameKeyIn(Long userId, List<String> keys);
+
+    @Query(value = "select t.id from tags t " +
+            "where t.user_id = :userId " +
+            "   and t.deleted_at is not null " +
+            "   and t.id in (:ids)", nativeQuery = true)
+    List<Long> findDeletedIdsByUserIdAndIdIn(Long userId, List<Long> ids);
 }
