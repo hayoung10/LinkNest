@@ -7,6 +7,7 @@ import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
 import com.linknest.backend.bookmark.preview.BookmarkPreviewService;
 import com.linknest.backend.collection.Collection;
 import com.linknest.backend.collection.CollectionRepository;
+import com.linknest.backend.collection.CollectionService;
 import com.linknest.backend.common.dto.SliceResponse;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
@@ -38,9 +39,11 @@ public class BookmarkService {
     private final BookmarkRepository bookmarkRepository;
     private final CollectionRepository collectionRepository;
     private final UserRepository userRepository;
+
     private final UserPreferencesService userPreferencesService;
     private final BookmarkPreviewService previewService;
     private final TagService tagService;
+    private final CollectionService collectionService;
 
     private final BookmarkMapper mapper;
     private final Storage storage;
@@ -262,10 +265,60 @@ public class BookmarkService {
     }
 
     // ==========================================================
+    // Trash
+    // ==========================================================
+    @Transactional
+    public void restoreFromTrash(Long userId, Long id) {
+        Bookmark b = requiredOwnedBookmarkIncludingDeleted(userId, id);
+
+        if(!b.isDeleted()) return;
+
+        // 부모 컬렉션이 없으면 디폴트 컬렉션으로 이동
+        Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
+        bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, List.of(id), defaultC.getId());
+
+        b.restore();
+    }
+
+    @Transactional
+    public void restoreFromTrashBulk(Long userId, List<Long> ids) {
+        if(ids == null || ids.isEmpty()) return;
+
+        Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
+
+        bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, ids, defaultC.getId());
+        bookmarkRepository.restoreDeletedByUserIdAndIdIn(userId, ids);
+    }
+
+    @Transactional
+    public void deleteFromTrash(Long userId, Long id) {
+        Bookmark b = requiredOwnedBookmarkIncludingDeleted(userId, id);
+
+        if(!b.isDeleted()) throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+
+        bookmarkRepository.delete(b);
+    }
+
+    @Transactional
+    public void deleteAllFromTrash(Long userId) {
+        bookmarkRepository.deleteAllDeletedByUserId(userId);
+    }
+
+    @Transactional
+    public void deleteFromTrashBulk(Long userId, List<Long> ids) {
+        bookmarkRepository.deleteDeletedByUserIdAndIdIn(userId, ids);
+    }
+
+    // ==========================================================
     // 내부 유틸
     // ==========================================================
     private Bookmark requireOwnedBookmark(Long userId, Long id) {
         return bookmarkRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BOOKMARK_NOT_FOUND));
+    }
+
+    private Bookmark requiredOwnedBookmarkIncludingDeleted(Long userId, Long id) {
+        return bookmarkRepository.findIncludingDeletedByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BOOKMARK_NOT_FOUND));
     }
 

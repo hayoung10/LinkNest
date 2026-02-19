@@ -1,6 +1,5 @@
 package com.linknest.backend.collection;
 
-import com.linknest.backend.bookmark.Bookmark;
 import com.linknest.backend.bookmark.BookmarkRepository;
 import com.linknest.backend.collection.dto.request.*;
 import com.linknest.backend.collection.dto.response.*;
@@ -199,11 +198,99 @@ public class CollectionService {
     }
 
     // ==========================================================
+    // Trash
+    // ==========================================================
+    @Transactional
+    public void restoreFromTrash(Long userId, Long id) {
+        Collection c = requiredOwnedCollectionIncludingDeleted(userId, id);
+
+        if(!c.isDeleted()) return;
+
+        // 부모가 삭제 상태면 루트로 복구
+        Collection parent = c.getParent();
+        if(parent != null) {
+            Collection p = collectionRepository.findIncludingDeletedByIdAndUserId(parent.getId(), userId).orElse(null);
+
+            if(p == null || p.isDeleted()) {
+                c.setParent(null);
+            }
+        }
+
+        c.restore();
+    }
+
+    @Transactional
+    public void deleteFromTrash(Long userId, Long id) {
+        Collection c = requiredOwnedCollectionIncludingDeleted(userId, id);
+
+        if(!c.isDeleted()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        collectionRepository.delete(c);
+    }
+
+    @Transactional
+    public void deleteAllFromTrash(Long userId) {
+        collectionRepository.deleteAllDeletedByUserId(userId);
+    }
+
+    @Transactional
+    public void deleteFromTrashBulk(Long userId, List<Long> ids) {
+        collectionRepository.deleteDeletedByUserIdAndIdIn(userId, ids);
+    }
+
+    @Transactional
+    public Collection getOrCreateDefaultCollection(Long userId) {
+        final String DEFAULT_NAME = "임시 보관함";
+        final String DEFAULT_EMOJI = "📥";
+
+        // 기본 컬렉션이 있으면 반환
+        Optional<Collection> active = collectionRepository.findByUserIdAndParentIsNullAndName(userId, DEFAULT_NAME);
+        if(active.isPresent()) {
+            return active.get();
+        }
+
+        // 휴지통 포함해서 기본 컬렉션 있으면 반환
+        Optional<Collection> defaultCollection = collectionRepository.findIncludingDeletedDefault(userId, DEFAULT_NAME);
+
+        if(defaultCollection.isPresent()) {
+            Collection c = defaultCollection.get();
+
+            if(c.isDeleted()) c.restore();
+
+            c.setParent(null);
+            c.setSortOrder(nextOrderForRoot(userId));
+            if(c.getEmoji() == null) c.setEmoji(DEFAULT_EMOJI);
+
+            return c;
+        }
+
+        // 없으면 새로 생성
+        int nextOrder = nextOrderForRoot(userId);
+
+        Collection created = Collection.builder()
+                .name(DEFAULT_NAME)
+                .emoji(DEFAULT_EMOJI)
+                .sortOrder(nextOrder)
+                .user(userRepository.getReferenceById(userId))
+                .parent(null)
+                .build();
+
+        return collectionRepository.save(created);
+    }
+
+    // ==========================================================
     // 내부 유틸
     // ==========================================================
 
     private Collection requireOwnedCollection(Long userId, Long id) {
         return collectionRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COLLECTION_NOT_FOUND));
+    }
+
+    private Collection requiredOwnedCollectionIncludingDeleted(Long userId, Long id) {
+        return collectionRepository.findIncludingDeletedByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COLLECTION_NOT_FOUND));
     }
 

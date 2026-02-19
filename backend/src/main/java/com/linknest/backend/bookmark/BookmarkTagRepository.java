@@ -124,4 +124,9 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
             "where bt.bookmark.user.id = :userId " +
             "   and bt.bookmark.deletedAt is null")
     long countDistinctTaggedBookmarks(@Param("userId") Long userId);
+
+    // -------------------- Trash --------------------
+    @Modifying
+    @Query("delete from BookmarkTag bt where bt.bookmark.user.id = :userId and bt.tag.id in :tagIds")
+    int deleteByUserIdAndTagIdIn(@Param("userId") Long userId, @Param("tagIds") List<Long> tagIds);
 }

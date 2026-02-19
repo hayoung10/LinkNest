@@ -85,10 +85,42 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
     Optional<Bookmark> findByIdAndUserId(Long id, Long userId);
 
+    @Query(value = "select * from bookmarks where id = :id and user_id = :userId", nativeQuery = true)
+    Optional<Bookmark> findIncludingDeletedByIdAndUserId(Long id, Long userId);
+
     // -------------------- Bulk Ops --------------------
     @Modifying
     @Query(value =
             "update bookmarks set deleted_at = now(6) " +
             "   where user_id = :userId and collection_id in (:collectionIds) and deleted_at is null", nativeQuery = true)
     int softDeleteAllByCollectionIds(@Param("userId") Long userId, @Param("collectionIds") List<Long> collectionIds);
+
+    // -------------------- Trash --------------------
+    @Modifying
+    @Query(value = "update bookmarks set deleted_at = null " +
+            "where user_id = :userId " +
+            "   and deleted_at is not null " +
+            "   and id in (:ids)", nativeQuery = true)
+    int restoreDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    @Modifying
+    @Query(value = "update bookmarks b " +
+            "   left join collections c on c.id = b.collection_id and c.user_id = b.user_id " +
+            "   set b.collection_id = :defaultId " +
+            "where b.user_id = :userId " +
+            "   and b.id in (:ids) " +
+            "   and (c.id is null or c.deleted_at is not null)", nativeQuery = true)
+    int moveDeletedToDefaultIfParentDeleted(@Param("userId") Long userId, @Param("ids") List<Long> ids,
+                                            @Param("defaultId") Long defaultId);
+
+    @Modifying
+    @Query(value = "delete from bookmarks where user_id = :userId and deleted_at is not null", nativeQuery = true)
+    int deleteAllDeletedByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query(value = "delete from bookmarks " +
+            "where user_id = :userId " +
+            "   and deleted_at is not null " +
+            "   and id in (:ids)", nativeQuery = true)
+    int deleteDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
 }

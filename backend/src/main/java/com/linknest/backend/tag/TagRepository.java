@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.security.core.parameters.P;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -16,8 +15,6 @@ import java.util.Optional;
 
 public interface TagRepository extends JpaRepository<Tag, Long> {
     Optional<Tag> findByIdAndUserId(Long id, Long userId);
-
-    List<Tag> findByUserIdAndNameKeyIn(Long userId, Collection<String> nameKeys);
 
     Optional<Tag> findByUserIdAndNameKey(Long userId, String nameKey);
 
@@ -30,8 +27,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     List<Tag> findAllIncludingDeletedByUserIdAndNameKeyIn(@Param("userId") Long userId,
                                                           @Param("nameKeys") Collection<String> nameKeys);
 
-    @Query(value = "select * from tags " +
-            "where id = :id and user_id = :userId", nativeQuery = true)
+    @Query(value = "select * from tags where id = :id and user_id = :userId", nativeQuery = true)
     Optional<Tag> findIncludingDeletedByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
     // -------------------- Tag Cleanup --------------------
@@ -98,8 +94,41 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     // -------------------- Summary --------------------
     long countByUserIdAndDeletedAtIsNull(Long userId);
 
-    // -------------------- Hard Delete --------------------
+    // -------------------- Trash --------------------
+    @Query(value = "select id from tags where user_id = :userId and deleted_at is not null", nativeQuery = true)
+    List<Long> findAllDeletedIdsByUserId(@Param("userId") Long userId);
+
     @Modifying
-    @Query(value = "delete from tags where id = :id and user_id = :userId", nativeQuery = true)
-    int hardDeleteByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
+    @Query(value = "update tags set deleted_at = null " +
+            "where user_id = :userId " +
+            "   and deleted_at is not null " +
+            "   and id in (:ids)", nativeQuery = true)
+    int restoreDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    @Modifying
+    @Query(value = "delete from tags " +
+            "where user_id = :userId " +
+            "   and deleted_at is not null " +
+            "   and id in (:ids)", nativeQuery = true)
+    int deleteDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    @Query(value = "select distinct t.name_key from tags t " +
+            "where t.user_id = :userId " +
+            "   and t.deleted_at is not null " +
+            "   and t.id in (:ids)", nativeQuery = true)
+    List<String> findDeletedNameKeysByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    @Query(value = "select exists(" +
+            "   select 1 from tags t " +
+            "   where t.user_id = :userId " +
+            "       and t.deleted_at is null " +
+            "       and t.name_key in (:keys)" +
+            ")", nativeQuery = true)
+    boolean existsByUserIdAndDeletedAtIsNullAndNameKeyIn(Long userId, List<String> keys);
+
+    @Query(value = "select t.id from tags t " +
+            "where t.user_id = :userId " +
+            "   and t.deleted_at is not null " +
+            "   and t.id in (:ids)", nativeQuery = true)
+    List<Long> findDeletedIdsByUserIdAndIdIn(Long userId, List<Long> ids);
 }

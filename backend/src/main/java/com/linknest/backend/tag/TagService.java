@@ -144,15 +144,6 @@ public class TagService {
         tag.softDelete();
     }
 
-    @Transactional
-    public void hardDelete(Long userId, Long id) {
-        requiredOwnedTagIncludingDeleted(userId, id);
-
-        bookmarkTagRepository.deleteByUserIdAndTagId(userId, id);
-
-        tagRepository.hardDeleteByIdAndUserId(id, userId);
-    }
-
     // ==========================================================
     // Tagged Bookmarks
     // ==========================================================
@@ -242,6 +233,70 @@ public class TagService {
         long totalTaggedBookmarks = bookmarkTagRepository.countDistinctTaggedBookmarks(userId);
 
         return new TagSummaryRes(totalTags, totalTaggedBookmarks);
+    }
+
+    // ==========================================================
+    // Trash
+    // ==========================================================
+
+    @Transactional
+    public void restoreFromTrash(Long userId, Long id) {
+        Tag tag = requiredOwnedTagIncludingDeleted(userId, id);
+
+        if(!tag.isDeleted()) return;
+
+        tagRepository.findByUserIdAndNameKey(userId, tag.getNameKey())
+                .ifPresent(active -> { throw new BusinessException(ErrorCode.TAG_NAME_DUPLICATED); });
+
+        tag.restore();
+    }
+
+    @Transactional
+    public void restoreFromTrashBulk(Long userId, List<Long> ids) {
+        if(ids == null || ids.isEmpty()) return;
+
+        List<String> keys = tagRepository.findDeletedNameKeysByUserIdAndIdIn(userId, ids);
+        if(keys.isEmpty()) return;
+
+        boolean hasConflict = tagRepository.existsByUserIdAndDeletedAtIsNullAndNameKeyIn(userId, keys);
+        if(hasConflict) {
+            throw new BusinessException(ErrorCode.TAG_NAME_DUPLICATED);
+        }
+
+        tagRepository.restoreDeletedByUserIdAndIdIn(userId, ids);
+    }
+
+    @Transactional
+    public void deleteFromTrash(Long userId, Long id) {
+        Tag tag = requiredOwnedTagIncludingDeleted(userId, id);
+
+        if(!tag.isDeleted()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        bookmarkTagRepository.deleteByUserIdAndTagId(userId, id);
+
+        tagRepository.delete(tag);
+    }
+
+    @Transactional
+    public void deleteAllFromTrash(Long userId) {
+        List<Long> tagIds = tagRepository.findAllDeletedIdsByUserId(userId);
+        if(tagIds.isEmpty()) return;
+
+        bookmarkTagRepository.deleteByUserIdAndTagIdIn(userId, tagIds);
+        tagRepository.deleteAllByIdInBatch(tagIds);
+    }
+
+    @Transactional
+    public void deleteFromTrashBulk(Long userId, List<Long> ids) {
+        if(ids == null || ids.isEmpty()) return;
+
+        List<Long> tagIds = tagRepository.findDeletedIdsByUserIdAndIdIn(userId, ids);
+        if(tagIds.isEmpty()) return;
+
+        bookmarkTagRepository.deleteByUserIdAndTagIdIn(userId, tagIds);
+        tagRepository.deleteDeletedByUserIdAndIdIn(userId, ids);
     }
 
     // ==========================================================
