@@ -21,7 +21,8 @@ import java.util.Set;
         indexes = {
                 @Index(name = "idx_tags_user", columnList = "user_id"),
                 @Index(name = "idx_tags_user_name_key", columnList = "user_id, name_key"),
-                @Index(name = "idx_tags_user_deleted_at", columnList = "user_id, deleted_at")
+                @Index(name = "idx_tags_user_deleted_at", columnList = "user_id, deleted_at"),
+                @Index(name = "idx_tags_orphaned_at", columnList = "orphaned_at")
         }
 )
 @SQLDelete(sql = "UPDATE tags SET deleted_at = NOW(6) WHERE id = ?")
@@ -56,6 +57,9 @@ public class Tag {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    @Column(name = "orphaned_at")
+    private Instant orphanedAt;
 
     public void softDelete(Instant now) {
         this.deletedAt = now;

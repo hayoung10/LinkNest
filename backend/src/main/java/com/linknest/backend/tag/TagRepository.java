@@ -33,8 +33,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     // -------------------- Unused Tag --------------------
     @Query(value = "select t.id from tags t " +
             "where t.deleted_at is null " +
-            "and t.created_at < :cutoff " +
-            "and not exists (select 1 from bookmark_tags bt where bt.tag_id = t.id) " +
+            "   and t.orphaned_at is not null " +
+            "   and t.orphaned_at < :cutoff " +
             "limit :batchSize", nativeQuery = true)
     List<Long> findOrphanTagIds(@Param("cutoff") Instant cutoff, @Param("batchSize") int batchSize);
 
@@ -42,6 +42,27 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     @Query(value = "update tags set deleted_at = :now " +
             "where id in (:ids) and deleted_at is null", nativeQuery = true)
     int moveToTrashByIds(@Param("ids") List<Long> ids, @Param("now") Instant now);
+
+    @Modifying
+    @Query(value = "update tags set orphaned_at = null " +
+            "where id in (:ids) and deleted_at is null and orphaned_at is not null", nativeQuery = true)
+    int clearOrphanedAtByIds(@Param("ids") List<Long> ids);
+
+    @Modifying
+    @Query(value = "update tags t set orphaned_at = :now " +
+            "where id in (:ids) " +
+            "   and deleted_at is null " +
+            "   and not exists (" +
+            "       select 1 from bookmark_tags bt " +
+            "           join bookmarks b on b.id = bt.bookmark_id " +
+            "       where bt.tag_id = t.id and b.deleted_at is null" +
+            ")", nativeQuery = true)
+    int setOrphanedAtIfUnusedByIds(@Param("ids") List<Long> ids, @Param("now") Instant now);
+
+    @Modifying
+    @Query(value = "update tags set orphaned_at = :now " +
+            "where id in (:ids) and deleted_at is null", nativeQuery = true)
+    int resetOrphanedAtByIds(@Param("ids") List<Long> ids, @Param("now") Instant now);
 
     // -------------------- Tagged Bookmarks --------------------
     @Query("select new com.linknest.backend.tag.dto.TagRes(t.id, t.name, t.createdAt, t.updatedAt, count(distinct b.id)) " +

@@ -61,17 +61,26 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
     // -------------------- Trash --------------------
     @Modifying
     @Query(value = "delete from collections where user_id = :userId and deleted_at is not null", nativeQuery = true)
-    int deleteAllDeletedByUserId(Long userId);
+    int deleteAllDeletedByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query(value = "delete from collections where user_id = :userId and id = :id and deleted_at is not null", nativeQuery = true)
+    int deleteDeletedByUserIdAndId(@Param("userId") Long userId, @Param("id") Long id);
 
     @Modifying
     @Query(value = "delete from collections " +
             "where user_id = :userId " +
             "   and deleted_at is not null " +
             "   and id in (:ids)", nativeQuery = true)
-    int deleteDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+    int deleteDeletedByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 
     @Query(value = "select * from collections " +
             "where user_id = :userId and parent_id is null and name = :name " +
             "limit 1", nativeQuery = true)
     Optional<Collection> findIncludingDeletedDefault(@Param("userId") Long userId, @Param("name") String name);
+
+    @Modifying
+    @Query(value = "update collections set deleted_at = null " +
+            "where user_id = :userId and deleted_at is not null and id in (:ids)", nativeQuery = true)
+    int restoreDeletedByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 }

@@ -6,11 +6,14 @@ import com.linknest.backend.collection.dto.response.*;
 import com.linknest.backend.common.dto.IdCount;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
+import com.linknest.backend.tag.TagService;
 import com.linknest.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,10 +21,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CollectionService {
+    private final Clock clock;
+
     private final CollectionRepository collectionRepository;
     private final BookmarkRepository bookmarkRepository;
     private final UserRepository userRepository;
+
     private final CollectionMapper mapper;
+
+    private final TagService tagService;
 
     // ---------- 생성 ----------
     @Transactional
@@ -74,9 +82,17 @@ public class CollectionService {
         requireOwnedCollection(userId, id);
 
         List<Long> ids = collectionRepository.findSubtreeIds(userId, id);
+        if(ids.isEmpty()) return;
+
+        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndCollectionIds(userId, ids);
 
         bookmarkRepository.softDeleteAllByCollectionIds(userId, ids);
         collectionRepository.softDeleteAllByIds(userId, ids);
+
+        if(!tagIds.isEmpty()) {
+            Instant now = Instant.now(clock);
+            tagService.onTagsDetached(tagIds, now);
+        }
     }
 
     // ---------- 하위 컬렉션 목록 조회 ----------
@@ -206,6 +222,9 @@ public class CollectionService {
 
         if(!c.isDeleted()) return;
 
+        List<Long> ids = collectionRepository.findSubtreeIds(userId, id);
+        if(ids.isEmpty()) return;
+
         // 부모가 삭제 상태면 루트로 복구
         Collection parent = c.getParent();
         if(parent != null) {
@@ -216,27 +235,44 @@ public class CollectionService {
             }
         }
 
-        c.restore();
+        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndDeletedBookmarksInCollectionIds(userId, ids);
+
+        collectionRepository.restoreDeletedByUserIdAndIdIn(userId, ids);
+        bookmarkRepository.restoreDeletedByUserIdAndCollectionIds(userId, ids);
+
+        if(!tagIds.isEmpty()) {
+            tagService.onTagsAttached(tagIds);
+        }
     }
 
     @Transactional
     public void deleteFromTrash(Long userId, Long id) {
         Collection c = requiredOwnedCollectionIncludingDeleted(userId, id);
-
         if(!c.isDeleted()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        collectionRepository.delete(c);
+        List<Long> childIds = collectionRepository.findSubtreeIds(userId, id);
+
+        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndDeletedBookmarksInCollectionIds(userId, childIds);
+
+        int deleted = collectionRepository.deleteDeletedByUserIdAndId(userId, id);
+
+        if(deleted > 0 && !tagIds.isEmpty()) {
+            Instant now = Instant.now(clock);
+            tagService.onTagsDetached(tagIds, now);
+        }
     }
 
     @Transactional
     public void deleteAllFromTrash(Long userId) {
+        // TODO: 스케줄러 purge 로직 통합 시 tag orphanedAt 처리 추가
         collectionRepository.deleteAllDeletedByUserId(userId);
     }
 
     @Transactional
     public void deleteFromTrashBulk(Long userId, List<Long> ids) {
+        // TODO: 스케줄러 purge 로직 통합 시 tag orphanedAt 처리 추가
         collectionRepository.deleteDeletedByUserIdAndIdIn(userId, ids);
     }
 
