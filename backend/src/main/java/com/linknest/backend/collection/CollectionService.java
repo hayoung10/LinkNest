@@ -81,7 +81,7 @@ public class CollectionService {
     public void delete(Long userId, Long id) {
         requireOwnedCollection(userId, id);
 
-        List<Long> ids = collectionRepository.findSubtreeIds(userId, id);
+        List<Long> ids = collectionRepository.findSubtreeIdsByUserIdAndRootId(userId, id);
         if(ids.isEmpty()) return;
 
         Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndCollectionIds(userId, ids);
@@ -222,7 +222,7 @@ public class CollectionService {
 
         if(!c.isDeleted()) return;
 
-        List<Long> ids = collectionRepository.findSubtreeIds(userId, id);
+        List<Long> ids = collectionRepository.findSubtreeIdsByUserIdAndRootId(userId, id);
         if(ids.isEmpty()) return;
 
         // 부모가 삭제 상태면 루트로 복구
@@ -252,7 +252,7 @@ public class CollectionService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        List<Long> childIds = collectionRepository.findSubtreeIds(userId, id);
+        List<Long> childIds = collectionRepository.findSubtreeIdsByUserIdAndRootId(userId, id);
 
         Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndDeletedBookmarksInCollectionIds(userId, childIds);
 

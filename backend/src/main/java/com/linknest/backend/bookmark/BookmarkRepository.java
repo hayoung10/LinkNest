@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -151,4 +152,27 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   and b.deleted_at is not null " +
             "   and b.collection_id in (:collectionIds)", nativeQuery = true)
     Set<Long> findTagIdsByUserIdAndDeletedBookmarksInCollectionIds(@Param("userId") Long userId, @Param("collectionIds") List<Long> collectionIds);
+
+    // -------------------- Trash (Purge) --------------------
+    @Query(value = "select distinct bt.tag_id from bookmark_tags bt " +
+            "   join bookmarks b on b.id = bt.bookmark_id " +
+            "where b.deleted_at is not null and b.collection_id in (:collectionIds)", nativeQuery = true)
+    Set<Long> findTagIdsByDeletedBookmarksInCollectionIds(@Param("collectionIds") List<Long> collectionIds);
+
+    @Query(value = "select b.id from bookmarks b " +
+            "   left join collections c on c.id = b.collection_id " +
+            "where b.deleted_at is not null " +
+            "   and b.deleted_at < :cutoff " +
+            "   and (c.id is null or c.deleted_at is null) " +
+            "order by b.deleted_at asc, b.id asc " +
+            "limit :batchSize", nativeQuery = true)
+    List<Long> findExpiredDeletedBookmarkIds(@Param("cutoff") Instant cutoff, @Param("batchSize") int batchSize);
+
+    @Modifying
+    @Query(value = "delete from bookmarks where id in (:ids) and deleted_at is not null", nativeQuery = true)
+    int deleteDeletedByIdIn(@Param("ids") List<Long> ids);
+
+    @Query(value = "select distinct bt.tag_id from bookmark_tags bt " +
+            "where bt.bookmark_id in (:bookmarkIds)", nativeQuery = true)
+    Set<Long> findTagIdsByDeletedBookmarkIds(@Param("bookmarkIds") List<Long> bookmarkIds);
 }

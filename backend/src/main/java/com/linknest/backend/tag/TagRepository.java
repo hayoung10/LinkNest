@@ -52,6 +52,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     @Query(value = "update tags t set orphaned_at = :now " +
             "where id in (:ids) " +
             "   and deleted_at is null " +
+            "   and t.orphaned_at is null" +
             "   and not exists (" +
             "       select 1 from bookmark_tags bt " +
             "           join bookmarks b on b.id = bt.bookmark_id " +
@@ -157,4 +158,16 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   and t.deleted_at is not null " +
             "   and t.id in (:ids)", nativeQuery = true)
     List<Long> findDeletedIdsByUserIdAndIdIn(Long userId, List<Long> ids);
+
+    // -------------------- Trash (Purge) --------------------
+    @Query(value = "select t.id from tags t " +
+            "where t.deleted_at is not null and t.deleted_at < :cutoff " +
+            "order by t.deleted_at asc, t.id asc " +
+            "limit :batchSize", nativeQuery = true)
+    List<Long> findExpiredDeletedTagIds(@Param("cutoff") Instant cutoff, @Param("batchSize") int batchSize);
+
+    @Modifying
+    @Query(value = "delete from tags where id in (:ids) and deleted_at is not null", nativeQuery = true)
+    int deleteDeletedByIdIn(@Param("ids") List<Long> ids);
+
 }

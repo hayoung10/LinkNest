@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,7 +51,7 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
             "   where c.user_id = :userId and c.deleted_at is null" +
             ")" +
             "select id from tree", nativeQuery = true)
-    List<Long> findSubtreeIds(@Param("userId") Long userId, @Param("rootId") Long rootId);
+    List<Long> findSubtreeIdsByUserIdAndRootId(@Param("userId") Long userId, @Param("rootId") Long rootId);
 
     @Modifying
     @Query(value =
@@ -83,4 +84,38 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
     @Query(value = "update collections set deleted_at = null " +
             "where user_id = :userId and deleted_at is not null and id in (:ids)", nativeQuery = true)
     int restoreDeletedByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
+
+    // -------------------- Trash (Purge) --------------------
+    @Query(value = "select c.id from collections c " +
+            "   left join collections p on p.id = c.parent_id " +
+            "where c.deleted_at is not null " +
+            "   and c.deleted_at < :cutoff " +
+            "   and (c.parent_id is null or p.deleted_at is null) " +
+            "order by c.deleted_at asc, c.id asc " +
+            "limit :batchSize", nativeQuery = true)
+    List<Long> findExpiredDeletedRootIds(@Param("cutoff") Instant cutoff, @Param("batchSize") int batchSize);
+
+    @Modifying
+    @Query(value = "delete from collections where id in (:ids) and deleted_at is not null", nativeQuery = true)
+    int deleteDeletedByIdIn(@Param("ids") List<Long> ids);
+
+    @Query(value = "with recursive tree as (" +
+            "   select id, parent_id from collections " +
+            "   where id = :rootId " +
+            "   union all " +
+            "   select c.id, c.parent_id from collections c " +
+            "       join tree t on c.parent_id = t.id" +
+            ")" +
+            "select id from tree", nativeQuery = true)
+    List<Long> findSubtreeIdsByRootId(@Param("rootId") Long rootId);
+
+    @Query(value = "with recursive tree as (" +
+            "   select id, parent_id from collections " +
+            "   where id in (:rootIds) " +
+            "   union all " +
+            "   select c.id, c.parent_id from collections c " +
+            "       join tree t on c.parent_id = t.id" +
+            ")" +
+            "select distinct id from tree", nativeQuery = true)
+    List<Long> findSubtreeIdsByRootIds(@Param("rootIds") List<Long> rootIds);
 }
