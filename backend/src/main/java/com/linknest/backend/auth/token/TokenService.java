@@ -10,6 +10,7 @@ import io.jsonwebtoken.lang.Maps;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -17,6 +18,8 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class TokenService {
+    private final Clock clock;
+
     private final JwtTokenizer jwtTokenizer;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProperties jwtProperties;
@@ -35,7 +38,7 @@ public class TokenService {
                 .id(jti)
                 .userId(userId)
                 .token(refreshToken)
-                .expiration(Instant.now().plus(ttl))
+                .expiration(Instant.now(clock).plus(ttl))
                 .build();
         refreshTokenRepository.save(entity, ttl);
 
@@ -72,7 +75,7 @@ public class TokenService {
                 .id(newJti)
                 .userId(rtClaims.userId())
                 .token(newRefreshToken)
-                .expiration(Instant.now().plus(ttl))
+                .expiration(Instant.now(clock).plus(ttl))
                 .build();
         refreshTokenRepository.save(newEntity, ttl);
 
