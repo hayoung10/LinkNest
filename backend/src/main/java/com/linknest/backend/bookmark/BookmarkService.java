@@ -27,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -36,6 +38,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BookmarkService {
+    private final Clock clock;
+
     private final BookmarkRepository bookmarkRepository;
     private final CollectionRepository collectionRepository;
     private final UserRepository userRepository;
@@ -111,7 +115,18 @@ public class BookmarkService {
     @Transactional
     public void delete(Long userId, Long id) {
         Bookmark bookmark = requireOwnedBookmark(userId, id);
+
+        Set<Long> tagIds = bookmark.getBookmarkTags().stream()
+                        .map(bt -> bt.getTag().getId())
+                                .collect(Collectors.toSet());
+
         bookmarkRepository.delete(bookmark);
+
+        // 태그 제거
+        if(!tagIds.isEmpty()) {
+            Instant now = Instant.now(clock);
+            tagService.onTagsDetached(tagIds, now);
+        }
     }
 
     // ---------- 북마크 목록 조회 ----------
@@ -278,6 +293,15 @@ public class BookmarkService {
         bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, List.of(id), defaultC.getId());
 
         b.restore();
+
+        // 태그 orphanedAt 해제
+        Set<Long> tagIds = b.getBookmarkTags().stream()
+                .map(bt -> bt.getTag().getId())
+                .collect(Collectors.toSet());
+
+        if(!tagIds.isEmpty()) {
+            tagService.onTagsAttached(tagIds);
+        }
     }
 
     @Transactional
@@ -288,6 +312,10 @@ public class BookmarkService {
 
         bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, ids, defaultC.getId());
         bookmarkRepository.restoreDeletedByUserIdAndIdIn(userId, ids);
+
+        // 태그 orphanedAt 해제
+        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndBookmarkIds(userId, ids);
+        tagService.onTagsAttached(tagIds);
     }
 
     @Transactional
@@ -296,17 +324,39 @@ public class BookmarkService {
 
         if(!b.isDeleted()) throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
 
+        Set<Long> tagIds = b.getBookmarkTags().stream()
+                .map(bt -> bt.getTag().getId())
+                .collect(Collectors.toSet());
+
         bookmarkRepository.delete(b);
+
+        // orphanedAt 갱신
+        tagService.onTagsDetached(tagIds, Instant.now(clock));
     }
 
     @Transactional
     public void deleteAllFromTrash(Long userId) {
+        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndDeletedBookmarks(userId);
+
         bookmarkRepository.deleteAllDeletedByUserId(userId);
+
+        // orphanedAt 갱신
+        if(!tagIds.isEmpty()) {
+            Instant now = Instant.now(clock);
+            tagService.onTagsDetached(tagIds, now);
+        }
     }
 
     @Transactional
     public void deleteFromTrashBulk(Long userId, List<Long> ids) {
+        if(ids == null || ids.isEmpty()) return;
+
+        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndBookmarkIds(userId, ids);
+
         bookmarkRepository.deleteDeletedByUserIdAndIdIn(userId, ids);
+
+        // orphanedAt 갱신
+        tagService.onTagsDetached(tagIds, Instant.now(clock));
     }
 
     // ==========================================================
@@ -379,30 +429,47 @@ public class BookmarkService {
         if(tagNames == null) return;
 
         Long userId = bookmark.getUser().getId();
-
-        Set<Tag> tags = tagService.getOrCreateByName(userId, tagNames);
-
-        if(tags.isEmpty()) {
-            bookmark.getBookmarkTags().clear();
-            return;
-        }
-
-        // 목표 tagId 집합
-        Set<Long> targetTagIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
+        Instant now = Instant.now(clock);
 
         // 기존 태그 조회
         Set<Long> existingTagIds = bookmark.getBookmarkTags().stream()
                 .map(bt -> bt.getTag().getId())
                 .collect(Collectors.toSet());
 
+        Set<Tag> tags = tagService.getOrCreateByName(userId, tagNames);
+
+        // 요청이 빈 태그면, 전부 제거
+        if(tags.isEmpty()) {
+            bookmark.getBookmarkTags().clear();
+            tagService.onTagsDetached(existingTagIds, now);
+            return;
+        }
+
+        // 목표 tagId 집합
+        Set<Long> targetTagIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
+
+        // detached / attached
+        Set<Long> detachedTagIds = new HashSet<>(existingTagIds);
+        detachedTagIds.removeAll(targetTagIds);
+
+        Set<Long> attachedTagIds = new HashSet<>(targetTagIds);
+        attachedTagIds.removeAll(existingTagIds);
+
         // 제거: 목표 집합에 없는 관계 제거
         bookmark.getBookmarkTags().removeIf(bt -> !targetTagIds.contains(bt.getTag().getId()));
 
         // 추가: 없는 관계만 추가
         Map<Long, Tag> byId = tags.stream().collect(Collectors.toMap(Tag::getId, Function.identity()));
-        for(Long tagId : targetTagIds) {
-            if(existingTagIds.contains(tagId)) continue;
+        for(Long tagId : attachedTagIds) {
             bookmark.getBookmarkTags().add(BookmarkTag.create(bookmark, byId.get(tagId)));
+        }
+
+        // orphanedAt 처리
+        if(!detachedTagIds.isEmpty()) {
+            tagService.onTagsDetached(detachedTagIds, now);
+        }
+        if(!attachedTagIds.isEmpty()) {
+            tagService.onTagsAttached(attachedTagIds);
         }
     }
 }

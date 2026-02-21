@@ -9,12 +9,14 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.sql.Date;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class JwtTokenizer {
+    private final Clock clock;
     private final JwtProperties properties;
 
     private SecretKey key() {
@@ -36,7 +38,7 @@ public class JwtTokenizer {
     }
 
     public String createAccessToken(Long userId, String username, List<String> roles) {
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         Instant exp = now.plusSeconds(properties.getAccessExpMinutes() * 60L);
 
         return Jwts.builder()
@@ -52,7 +54,7 @@ public class JwtTokenizer {
     }
 
     public String createRefreshToken(Long userId, String familyId, String jti) {
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         Instant exp = now.plusSeconds(properties.getRefreshExpDays() * 24L * 3600L);
 
         return Jwts.builder()

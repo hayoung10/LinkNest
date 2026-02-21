@@ -3,6 +3,7 @@ package com.linknest.backend.trash;
 import com.linknest.backend.collection.Collection;
 import com.linknest.backend.tag.Tag;
 import com.linknest.backend.trash.dto.TrashBookmarkRow;
+import com.linknest.backend.trash.dto.TrashCollectionRow;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -19,10 +20,13 @@ public class TrashRepositoryImpl implements TrashRepository {
     private final EntityManager em;
 
     @Override
-    public List<Collection> findDeletedCollections(Long userId, int offset, int limit) {
+    public List<TrashCollectionRow> findDeletedCollections(Long userId, int offset, int limit) {
         @SuppressWarnings("unchecked")
-        List<Collection> rows = em.createNativeQuery(
-                "select c.* from collections c " +
+        List<Object[]> rows = em.createNativeQuery(
+                "select c.id, c.name, c.emoji, c.deleted_at, " +
+                        "   p.name as parent_name, p.emoji as parent_emoji " +
+                        "from collections c " +
+                        "left join collections p on p.id = c.parent_id " +
                         "where c.user_id = :userId and c.deleted_at is not null " +
                         "order by c.deleted_at desc, c.id desc " +
                         "limit :limit offset :offset"
@@ -32,7 +36,7 @@ public class TrashRepositoryImpl implements TrashRepository {
                 .setParameter("offset", offset)
                 .getResultList();
 
-        return rows;
+        return rows.stream().map(this::mapCollectionRow).toList();
     }
 
     @Override
@@ -56,12 +60,12 @@ public class TrashRepositoryImpl implements TrashRepository {
     public List<TrashBookmarkRow> findDeletedBookmarks(Long userId, int offset, int limit) {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery(
-                "select b.id, b.title, b.url, b.emoji, b.deleted_at " +
-                        "c.id as collection_id, " +
-                        "c.name as collection_name, " +
-                        "c.emoji as collection_emoji " +
+                "select b.id, b.title, b.url, b.emoji, b.deleted_at, " +
+                        "   c.id as collection_id, " +
+                        "   c.name as collection_name, " +
+                        "   c.emoji as collection_emoji " +
                         "from bookmarks b " +
-                        "join collections c on c.id = b.collection_id" +
+                        "join collections c on c.id = b.collection_id " +
                         "where b.user_id = :userId and b.deleted_at is not null " +
                         "order by b.deleted_at desc, b.id desc " +
                         "limit :limit offset :offset"
@@ -71,10 +75,27 @@ public class TrashRepositoryImpl implements TrashRepository {
                 .setParameter("offset", offset)
                 .getResultList();
 
-        return rows.stream().map(this::mapRow).toList();
+        return rows.stream().map(this::mapBookmarkRow).toList();
     }
 
-    private TrashBookmarkRow mapRow(Object[] rows) {
+    private TrashCollectionRow mapCollectionRow(Object[] rows) {
+        Long id = ((Number) rows[0]).longValue();
+        String name = (String) rows[1];
+        String emoji = (String) rows[2];
+
+        Instant deletedAt = null;
+        Object ts = rows[4];
+        if(ts instanceof Timestamp t) deletedAt = t.toInstant();
+        else if(ts instanceof java.util.Date d) deletedAt = d.toInstant();
+        else if(ts instanceof Instant i) deletedAt = i;
+
+        String parentName = (String) rows[4];
+        String parentEmoji = (String) rows[5];
+
+        return new TrashCollectionRow(id, name, emoji, parentName, parentEmoji, deletedAt);
+    }
+
+    private TrashBookmarkRow mapBookmarkRow(Object[] rows) {
         Long id = ((Number) rows[0]).longValue();
         String title = (String) rows[1];
         String url = (String) rows[2];

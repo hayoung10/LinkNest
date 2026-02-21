@@ -38,12 +38,18 @@ app:
     header: Authorization
     prefix: Bearer
     clock-skew-seconds: 60
-  tag-cleanup:
+  tag-unused:
     enabled: false
     cron: "0 0 3 * * *"
     zone: "Asia/Seoul"
     batch-size: 500
     ttl-days: 1
+  trash:
+    enabled: true
+    cron: "0 0 4 * * *"
+    zone: "Asia/Seoul"
+    batch-size: 300
+    ttl-days: 15
 
 storage:
   provider: local
@@ -64,7 +70,10 @@ spring:
 app:
   frontend:
     oauth2-success-redirect: "http://localhost:5173/redirect"
-  tag-cleanup:
+  tag-unused:
+    enabled: false
+    # cron: "0 */1 * * * *" #테스트용
+  trash:
     enabled: false
     # cron: "0 */1 * * * *" #테스트용
 
@@ -91,7 +100,9 @@ spring:
     clean-disabled: true
 
 app:
-  tag-cleanup:
+  tag-unused:
+    enabled: true
+  trash:
     enabled: true
 
 logging:

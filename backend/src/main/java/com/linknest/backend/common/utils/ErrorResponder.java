@@ -11,12 +11,15 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
 
 // ErrorResponse를 JSON 응답으로 출력
 
 @Component
 @RequiredArgsConstructor
 public class ErrorResponder {
+    private final Clock clock;
     private final ObjectMapper objectMapper;
 
     public void send(HttpServletResponse response,
@@ -31,7 +34,9 @@ public class ErrorResponder {
 
     public void send(HttpServletRequest request, HttpServletResponse response,
                              HttpStatus status, String code, String message) throws IOException {
+        Instant now = Instant.now(clock);
         ErrorResponse error = ErrorResponse.of(
+                now,
                 status.value(),
                 code,
                 message,

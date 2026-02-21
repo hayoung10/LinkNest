@@ -1,14 +1,13 @@
 package com.linknest.backend.trash;
 
-import com.linknest.backend.bookmark.Bookmark;
 import com.linknest.backend.bookmark.BookmarkService;
-import com.linknest.backend.collection.Collection;
 import com.linknest.backend.collection.CollectionService;
 import com.linknest.backend.common.dto.SliceResponse;
 import com.linknest.backend.tag.Tag;
 import com.linknest.backend.tag.TagService;
 import com.linknest.backend.trash.domain.TrashType;
 import com.linknest.backend.trash.dto.TrashBookmarkRow;
+import com.linknest.backend.trash.dto.TrashCollectionRow;
 import com.linknest.backend.trash.dto.TrashItemRes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
@@ -45,7 +44,7 @@ public class TrashService {
 
         List<TrashItemRes> merged = new ArrayList<>(fetchSize *  3);
 
-        List<Collection> collections = trashRepository.findDeletedCollections(userId, 0, fetchSize);
+        List<TrashCollectionRow> collections = trashRepository.findDeletedCollections(userId, 0, fetchSize);
         List<TrashBookmarkRow> bookmarks = trashRepository.findDeletedBookmarks(userId, 0, fetchSize);
         List<Tag> tags = trashRepository.findDeletedTags(userId, 0, fetchSize);
 
@@ -141,7 +140,7 @@ public class TrashService {
 
         return switch(type) {
             case COLLECTION -> {
-                List<Collection> rows = trashRepository.findDeletedCollections(userId, offset, limit);
+                List<TrashCollectionRow> rows = trashRepository.findDeletedCollections(userId, offset, limit);
                 yield SliceResponse.of(toSlice(rows, safePage, safeSize).map(trashMapper::fromCollection));
             }
             case BOOKMARK -> {

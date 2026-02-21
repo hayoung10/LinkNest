@@ -66,8 +66,8 @@ public class Collection {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
-    public void softDelete() {
-        this.deletedAt = Instant.now();
+    public void softDelete(Instant now) {
+        this.deletedAt = now;
     }
 
     public void restore() {

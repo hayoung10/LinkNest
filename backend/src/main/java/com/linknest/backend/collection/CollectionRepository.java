@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,7 +51,7 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
             "   where c.user_id = :userId and c.deleted_at is null" +
             ")" +
             "select id from tree", nativeQuery = true)
-    List<Long> findSubtreeIds(@Param("userId") Long userId, @Param("rootId") Long rootId);
+    List<Long> findSubtreeIdsByUserIdAndRootId(@Param("userId") Long userId, @Param("rootId") Long rootId);
 
     @Modifying
     @Query(value =
@@ -61,17 +62,53 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
     // -------------------- Trash --------------------
     @Modifying
     @Query(value = "delete from collections where user_id = :userId and deleted_at is not null", nativeQuery = true)
-    int deleteAllDeletedByUserId(Long userId);
+    int deleteAllDeletedByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query(value = "delete from collections where user_id = :userId and id = :id and deleted_at is not null", nativeQuery = true)
+    int deleteDeletedByUserIdAndId(@Param("userId") Long userId, @Param("id") Long id);
 
     @Modifying
     @Query(value = "delete from collections " +
             "where user_id = :userId " +
             "   and deleted_at is not null " +
             "   and id in (:ids)", nativeQuery = true)
-    int deleteDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+    int deleteDeletedByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 
     @Query(value = "select * from collections " +
             "where user_id = :userId and parent_id is null and name = :name " +
             "limit 1", nativeQuery = true)
     Optional<Collection> findIncludingDeletedDefault(@Param("userId") Long userId, @Param("name") String name);
+
+    @Modifying
+    @Query(value = "update collections set deleted_at = null " +
+            "where user_id = :userId and deleted_at is not null and id in (:ids)", nativeQuery = true)
+    int restoreDeletedByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
+
+    @Query(value = "select id from collections where user_id = :userId and deleted_at is not null", nativeQuery = true)
+    List<Long> findAllDeletedIdsByUserId(@Param("userId") Long userId);
+
+    // -------------------- Trash (Purge) --------------------
+    @Query(value = "select c.id from collections c " +
+            "   left join collections p on p.id = c.parent_id " +
+            "where c.deleted_at is not null " +
+            "   and c.deleted_at < :cutoff " +
+            "   and (c.parent_id is null or p.deleted_at is null) " +
+            "order by c.deleted_at asc, c.id asc " +
+            "limit :batchSize", nativeQuery = true)
+    List<Long> findExpiredDeletedRootIds(@Param("cutoff") Instant cutoff, @Param("batchSize") int batchSize);
+
+    @Modifying
+    @Query(value = "delete from collections where id in (:ids) and deleted_at is not null", nativeQuery = true)
+    int deleteDeletedByIdIn(@Param("ids") List<Long> ids);
+
+    @Query(value = "with recursive tree as (" +
+            "   select id, parent_id from collections " +
+            "   where id in (:rootIds) " +
+            "   union all " +
+            "   select c.id, c.parent_id from collections c " +
+            "       join tree t on c.parent_id = t.id" +
+            ")" +
+            "select distinct id from tree", nativeQuery = true)
+    List<Long> findSubtreeIdsByRootIds(@Param("rootIds") List<Long> rootIds);
 }

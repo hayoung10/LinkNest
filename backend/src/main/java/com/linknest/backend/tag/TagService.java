@@ -19,6 +19,8 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,6 +29,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class TagService {
     private static final int MAX_TAGS = 3;
+
+    private final Clock clock;
 
     private final TagRepository tagRepository;
     private final BookmarkTagRepository bookmarkTagRepository;
@@ -49,8 +53,13 @@ public class TagService {
             Tag existing = existingOpt.get();
 
             if(existing.isDeleted()) {
+                Instant now = Instant.now(clock);
+
                 existing.restore();
                 existing.setName(displayName);
+
+                onTagsRestored(List.of(existing.getId()), now);
+
                 long count = bookmarkTagRepository.countDistinctBookmarksByUserIdAndTagId(userId, existing.getId());
                 return new TagCreateResultRes(tagMapper.toResWithCount(existing, count), true);
             }
@@ -130,7 +139,7 @@ public class TagService {
 
         // 충돌 제거
         List<Long> conflictIds = bookmarkTagRepository.findBookmarkIdsByUserIdAndTagIdAndBookmarkIdIn(userId, targetTagId, bookmarkIds);
-        if(conflictIds.isEmpty()) {
+        if(!conflictIds.isEmpty()) {
             bookmarkTagRepository.deleteByUserIdAndTagIdAndBookmarkIdIn(userId, id, conflictIds);
         }
 
@@ -141,7 +150,8 @@ public class TagService {
     @Transactional
     public void softDelete(Long userId, Long id) {
         Tag tag = requireOwnedTag(userId, id);
-        tag.softDelete();
+        Instant now = Instant.now(clock);
+        tag.softDelete(now);
     }
 
     // ==========================================================
@@ -194,7 +204,11 @@ public class TagService {
         requireOwnedTag(userId, id);
         requireOwnedBookmarks(userId, req.bookmarkIds());
 
+        Instant now = Instant.now(clock);
+
         bookmarkTagRepository.deleteByUserIdAndTagIdAndBookmarkIdIn(userId, id, req.bookmarkIds());
+
+        onTagsDetached(List.of(id), now); // orphanedAt 처리
     }
 
     @Transactional
@@ -209,6 +223,8 @@ public class TagService {
         requireOwnedTag(userId, targetTagId);
         requireOwnedBookmarks(userId, req.bookmarkIds());
 
+        Instant now = Instant.now(clock);
+
         List<Long> bookmarkIds = req.bookmarkIds();
 
         Set<Long> conflictSet = new HashSet<>(
@@ -222,6 +238,10 @@ public class TagService {
                 bookmarkTagRepository.replaceTagOnBookmark(bookmarkId, id, targetTagId);
             }
         }
+
+        // orphanedAt 갱신
+        onTagsDetached(List.of(id), now);
+        onTagsAttached(List.of(targetTagId));
     }
 
     // ==========================================================
@@ -249,6 +269,9 @@ public class TagService {
                 .ifPresent(active -> { throw new BusinessException(ErrorCode.TAG_NAME_DUPLICATED); });
 
         tag.restore();
+
+        Instant now = Instant.now(clock);
+        onTagsRestored(List.of(id), now); // 태그 orphanedAt 갱신
     }
 
     @Transactional
@@ -264,6 +287,8 @@ public class TagService {
         }
 
         tagRepository.restoreDeletedByUserIdAndIdIn(userId, ids);
+
+        onTagsRestored(ids, Instant.now(clock)); // 태그 orphanedAt 갱신
     }
 
     @Transactional
@@ -302,12 +327,12 @@ public class TagService {
     // ==========================================================
     // 공통 유틸 (BookmarkService)
     // ==========================================================
-
     @Transactional
     public Set<Tag> getOrCreateByName(Long userId, Collection<String> tagNames) {
         if(tagNames == null) return Set.of();
 
         Map<String, String> keyToDisplay = new LinkedHashMap<>();
+
         for(String name : tagNames) {
             if(name == null) continue;
 
@@ -326,12 +351,20 @@ public class TagService {
         List<Tag> existing = tagRepository.findAllIncludingDeletedByUserIdAndNameKeyIn(userId, keys);
 
         Map<String, Tag> byKey = new HashMap<>();
+        List<Long> restoredIds = new ArrayList<>();
+
         for(Tag t : existing) {
             if(t.isDeleted()) {
                 t.restore();
                 t.setName(keyToDisplay.get(t.getNameKey()));
+                restoredIds.add(t.getId());
             }
             byKey.put(t.getNameKey(), t);
+        }
+
+        // orphanedAt 해제
+        if(!restoredIds.isEmpty()) {
+            onTagsAttached(restoredIds);
         }
 
         // 없는 key 생성
@@ -352,6 +385,24 @@ public class TagService {
         LinkedHashSet<Tag> result = new LinkedHashSet<>();
         for(String k : keys) result.add(byKey.get(k));
         return result;
+    }
+
+    @Transactional
+    public int onTagsAttached(Collection<Long> tagIds) {
+        if(tagIds == null || tagIds.isEmpty()) return 0;
+        return tagRepository.clearOrphanedAtByIds(List.copyOf(tagIds));
+    }
+
+    @Transactional
+    public int onTagsDetached(Collection<Long> tagIds, Instant now) {
+        if(tagIds == null || tagIds.isEmpty()) return 0;
+        return tagRepository.setOrphanedAtIfUnusedByIds(List.copyOf(tagIds), now);
+    }
+
+    @Transactional
+    public int onTagsRestored(Collection<Long> tagIds, Instant now) {
+        if(tagIds == null || tagIds.isEmpty()) return 0;
+        return tagRepository.resetOrphanedAtByIds(List.copyOf(tagIds), now);
     }
 
     // ==========================================================
