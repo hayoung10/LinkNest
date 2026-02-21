@@ -12,8 +12,8 @@ public record TrashItemRes(
         String subtitle,    // COLLECTION/TAG: null, BOOKMARK: url
         String emoji,       // COLLECTION/BOOKMARK: emoji, TAG: null
 
-        String parentName,  // BOOKMARK only (collection name)
-        String parentEmoji, // BOOKMARK only (collection emoji)
+        String parentName,  // COLLECTION/BOOKMARK: parent name, TAG: null
+        String parentEmoji, // COLLECTION/BOOKMARK: parent emoji, TAG: null
 
         Instant deletedAt,
 
