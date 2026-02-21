@@ -85,6 +85,9 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
             "where user_id = :userId and deleted_at is not null and id in (:ids)", nativeQuery = true)
     int restoreDeletedByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 
+    @Query(value = "select id from collections where user_id = :userId and deleted_at is not null", nativeQuery = true)
+    List<Long> findAllDeletedIdsByUserId(@Param("userId") Long userId);
+
     // -------------------- Trash (Purge) --------------------
     @Query(value = "select c.id from collections c " +
             "   left join collections p on p.id = c.parent_id " +
@@ -98,16 +101,6 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
     @Modifying
     @Query(value = "delete from collections where id in (:ids) and deleted_at is not null", nativeQuery = true)
     int deleteDeletedByIdIn(@Param("ids") List<Long> ids);
-
-    @Query(value = "with recursive tree as (" +
-            "   select id, parent_id from collections " +
-            "   where id = :rootId " +
-            "   union all " +
-            "   select c.id, c.parent_id from collections c " +
-            "       join tree t on c.parent_id = t.id" +
-            ")" +
-            "select id from tree", nativeQuery = true)
-    List<Long> findSubtreeIdsByRootId(@Param("rootId") Long rootId);
 
     @Query(value = "with recursive tree as (" +
             "   select id, parent_id from collections " +

@@ -266,14 +266,29 @@ public class CollectionService {
 
     @Transactional
     public void deleteAllFromTrash(Long userId) {
-        // TODO: 스케줄러 purge 로직 통합 시 tag orphanedAt 처리 추가
+        List<Long> ids = collectionRepository.findAllDeletedIdsByUserId(userId);
+        if(ids.isEmpty()) return;
+
+        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndDeletedBookmarksInCollectionIds(userId, ids);
+
         collectionRepository.deleteAllDeletedByUserId(userId);
+
+        if(!tagIds.isEmpty()) {
+            tagService.onTagsDetached(tagIds, Instant.now(clock));
+        }
     }
 
     @Transactional
     public void deleteFromTrashBulk(Long userId, List<Long> ids) {
-        // TODO: 스케줄러 purge 로직 통합 시 tag orphanedAt 처리 추가
+        if(ids == null || ids.isEmpty()) return;
+
+        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndDeletedBookmarksInCollectionIds(userId, ids);
+
         collectionRepository.deleteDeletedByUserIdAndIdIn(userId, ids);
+
+        if(!tagIds.isEmpty()) {
+            tagService.onTagsDetached(tagIds, Instant.now(clock));
+        }
     }
 
     @Transactional
