@@ -4,8 +4,8 @@ import java.time.Instant;
 
 public record TrashBookmarkRow(
         Long id,
-        String url,
         String title,
+        String url,
         String emoji,
 
         Instant deletedAt,
