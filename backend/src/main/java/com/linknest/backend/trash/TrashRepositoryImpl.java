@@ -30,7 +30,7 @@ public class TrashRepositoryImpl implements TrashRepository {
                         "where c.user_id = :userId and c.deleted_at is not null " +
                         "order by c.deleted_at desc, c.id desc " +
                         "limit :limit offset :offset"
-                , Collection.class)
+                )
                 .setParameter("userId", userId)
                 .setParameter("limit", limit)
                 .setParameter("offset", offset)
