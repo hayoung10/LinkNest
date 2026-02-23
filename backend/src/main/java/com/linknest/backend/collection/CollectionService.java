@@ -223,7 +223,9 @@ public class CollectionService {
         if(!c.isDeleted()) return;
 
         List<Long> ids = collectionRepository.findSubtreeIdsByUserIdAndRootId(userId, id);
-        if(ids.isEmpty()) return;
+        if(ids.isEmpty()) {
+            throw new BusinessException(ErrorCode.COLLECTION_TRASH_RESTORE_FAILED);
+        }
 
         // 부모가 삭제 상태면 루트로 복구
         Collection parent = c.getParent();

@@ -28,6 +28,7 @@ public enum ErrorCode {
     COLLECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "컬렉션을 찾을 수 없습니다."),
     COLLECTION_PARENT_SELF(HttpStatus.BAD_REQUEST, "컬렉션을 자기 자신으로 이동할 수 없습니다."),
     COLLECTION_CYCLE_DETECTED(HttpStatus.BAD_REQUEST, "컬렉션 이동으로 인해 순환 구조가 발생합니다."),
+    COLLECTION_TRASH_RESTORE_FAILED(HttpStatus.CONFLICT, "컬렉션 복구에 실패했습니다."),
 
     // tag
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "태그를 찾을 수 없습니다."),
