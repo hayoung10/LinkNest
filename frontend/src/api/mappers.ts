@@ -4,6 +4,7 @@ import {
   CollectionNode,
   Tag,
   TaggedBookmark,
+  TrashItem,
   User,
   UserPreferences,
 } from "@/types/common";
@@ -13,6 +14,7 @@ import {
   CollectionRes,
   TaggedBookmarkRes,
   TagRes,
+  TrashItemRes,
   UserPreferencesRes,
   UserRes,
 } from "./types";
@@ -135,6 +137,26 @@ export function mapTaggedBookmarkRes(dto: TaggedBookmarkRes): TaggedBookmark {
 
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
+  };
+}
+
+export function mapTrashItemRes(dto: TrashItemRes): TrashItem {
+  return {
+    type: dto.type,
+    id: dto.id,
+
+    title: dto.title,
+    subtitle: dto.subtitle ?? null,
+    emoji: dto.emoji ?? null,
+
+    parentName: dto.parentName ?? null,
+    parentEmoji: dto.parentEmoji ?? null,
+
+    deletedAt: dto.deletedAt,
+
+    childCount: dto.childCount ?? null,
+    bookmarkCount: dto.bookmarkCount ?? null,
+    taggedCount: dto.taggedCount ?? null,
   };
 }
 

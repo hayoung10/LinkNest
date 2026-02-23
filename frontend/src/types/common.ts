@@ -119,3 +119,23 @@ export interface Tag {
   updatedAt: string;
   bookmarkCount: number;
 }
+
+export type TrashType = "COLLECTION" | "BOOKMARK" | "TAG";
+
+export interface TrashItem {
+  type: TrashType;
+
+  id: ID;
+  title: string;
+  subtitle: string | null;
+  emoji: string | null;
+
+  parentName: string | null;
+  parentEmoji: string | null;
+
+  deletedAt: ISODateTime;
+
+  childCount: number | null; // COLLECTION only
+  bookmarkCount: number | null; // COLLECTION only
+  taggedCount: number | null; // TAG only
+}
