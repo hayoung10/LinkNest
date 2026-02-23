@@ -44,11 +44,11 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
     @Query(value =
             "with recursive tree AS (" +
             "   select id from collections " +
-            "   where id = :rootId and user_id = :userId and deleted_at is null " +
+            "   where id = :rootId and user_id = :userId " +
             "   union all " +
             "   select c.id from collections c " +
             "       join tree t on c.parent_id = t.id" +
-            "   where c.user_id = :userId and c.deleted_at is null" +
+            "   where c.user_id = :userId " +
             ")" +
             "select id from tree", nativeQuery = true)
     List<Long> findSubtreeIdsByUserIdAndRootId(@Param("userId") Long userId, @Param("rootId") Long rootId);

@@ -291,14 +291,10 @@ public class BookmarkService {
         // 부모 컬렉션이 없으면 디폴트 컬렉션으로 이동
         Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
         bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, List.of(id), defaultC.getId());
-
-        b.restore();
+        bookmarkRepository.restoreDeletedByUserIdAndIdIn(userId, List.of(id));
 
         // 태그 orphanedAt 해제
-        Set<Long> tagIds = b.getBookmarkTags().stream()
-                .map(bt -> bt.getTag().getId())
-                .collect(Collectors.toSet());
-
+        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndBookmarkIds(userId, List.of(id));
         if(!tagIds.isEmpty()) {
             tagService.onTagsAttached(tagIds);
         }
