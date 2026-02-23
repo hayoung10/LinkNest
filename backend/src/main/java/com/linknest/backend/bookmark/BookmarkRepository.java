@@ -120,6 +120,7 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
             "   left join collections c on c.id = b.collection_id and c.user_id = b.user_id " +
             "   set b.collection_id = :defaultId " +
             "where b.user_id = :userId " +
+            "   and b.deleted_at is not null " +
             "   and b.id in (:ids) " +
             "   and (c.id is null or c.deleted_at is not null)", nativeQuery = true)
     int moveDeletedToDefaultIfParentDeleted(@Param("userId") Long userId, @Param("ids") List<Long> ids,

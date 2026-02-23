@@ -84,7 +84,7 @@ public class TrashRepositoryImpl implements TrashRepository {
         String emoji = (String) rows[2];
 
         Instant deletedAt = null;
-        Object ts = rows[4];
+        Object ts = rows[3];
         if(ts instanceof Timestamp t) deletedAt = t.toInstant();
         else if(ts instanceof java.util.Date d) deletedAt = d.toInstant();
         else if(ts instanceof Instant i) deletedAt = i;
