@@ -84,7 +84,24 @@
           태그 관리
         </button>
 
-        <div class="divider" v-if="props.showTagManagement" />
+        <!-- 휴지통 -->
+        <button
+          v-if="props.showTrash"
+          class="menu-item"
+          role="menuitem"
+          @click="handleOpenTrash"
+        >
+          <TrashIcon
+            klass="menu-icon"
+            aria-hidden="true"
+            :stroke-width="2"
+          />휴지통
+        </button>
+
+        <div
+          class="divider"
+          v-if="props.showTagManagement || props.showTrash"
+        />
 
         <!-- 로그아웃 -->
         <button
@@ -120,19 +137,22 @@ import ChevronIcon from "@/components/icons/ChevronIcon.vue";
 import SettingsIcon from "@/components/icons/SettingsIcon.vue";
 import TagIcon from "@/components/icons/TagIcon.vue";
 import { useAuthStore } from "@/stores/auth";
+import TrashIcon from "@/components/icons/TrashIcon.vue";
 
 type Placement = "top" | "bottom";
 
 const props = withDefaults(
   defineProps<{
     showTagManagement?: boolean;
+    showTrash?: boolean;
   }>(),
-  { showTagManagement: true },
+  { showTagManagement: true, showTrash: true },
 );
 
 const emit = defineEmits<{
   (e: "open-settings"): void;
   (e: "open-tag-management"): void;
+  (e: "open-trash"): void;
   (e: "logout"): void;
 }>();
 
@@ -240,6 +260,11 @@ function handleOpenSettings() {
 function handleOpenTagManagement() {
   closeMenu();
   emit("open-tag-management");
+}
+
+function handleOpenTrash() {
+  closeMenu();
+  emit("open-trash");
 }
 
 function handleLogout() {

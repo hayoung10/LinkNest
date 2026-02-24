@@ -127,6 +127,7 @@
       <UserMenu
         @open-settings="$emit('open-settings')"
         @open-tag-management="() => router.push({ name: 'tags' })"
+        @open-trash="() => router.push({ name: 'trash' })"
         @logout="$emit('logout')"
       />
     </footer>
