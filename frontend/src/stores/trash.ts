@@ -140,7 +140,10 @@ export const useTrashStore = defineStore("trash", {
 
     async safeReload() {
       try {
-        await this.load(true);
+        this.page = 0;
+        this.loaded = false;
+
+        await this.load(true, { silent: true });
       } catch {
         // mutation 이후 목록 갱신 실패는 UI를 깨지 않기 위해 무시
       }
@@ -224,16 +227,6 @@ export const useTrashStore = defineStore("trash", {
       this.isMutating.empty = true;
       try {
         await TrashApi.emptyTrash(type ?? undefined);
-
-        if (!type) {
-          this.items = [];
-        } else {
-          this.items = this.items.filter((i) => i.type !== type);
-        }
-
-        this.page = 0;
-        this.meta = null;
-        this.loaded = false;
 
         await this.safeReload();
       } catch (e) {

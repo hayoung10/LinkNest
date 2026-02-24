@@ -511,10 +511,13 @@ async function onRestore(type: TrashType, id: ID) {
   try {
     await trash.restore(type, id);
     toast.info("복원했습니다.");
+
     const k = `${type}:${id}`;
     const next = new Set(selectedKeys.value);
     next.delete(k);
     selectedKeys.value = next;
+
+    await reconnect();
   } catch {
     toast.error("복원에 실패했습니다.");
   }
@@ -595,7 +598,12 @@ watch(
 );
 
 onMounted(async () => {
-  await trash.load(false);
+  clearSelection();
+  isSettingsOpen.value = false;
+
+  trash.setQuery({ type: null, page: 0 });
+  await trash.load(true).catch(() => {});
+
   await reconnect();
 });
 
@@ -663,6 +671,11 @@ function closeConfirm() {
   confirmAction.value = null;
 }
 
+async function afterMutation() {
+  clearSelection();
+  await reconnect();
+}
+
 async function onConfirm() {
   const action = confirmAction.value;
   if (!action) return;
@@ -671,33 +684,27 @@ async function onConfirm() {
     if (action.kind === "EMPTY") {
       await trash.empty(action.type);
       toast.info("휴지통을 비웠습니다.");
-      clearSelection();
       closeConfirm();
+      await afterMutation();
       return;
     }
 
     if (action.kind === "DELETE_ONE") {
       await trash.delete(action.type, action.id);
       toast.info("영구 삭제했습니다.");
-
-      const k = `${action.type}:${action.id}`;
-      const next = new Set(selectedKeys.value);
-      next.delete(k);
-      selectedKeys.value = next;
-
       closeConfirm();
+      await afterMutation();
       return;
     }
 
-    // DELETE_SELECTED
-    const byType = groupSelectedByType(action.items);
-    for (const [type, ids] of byType) {
-      await trash.deleteBulk(type, ids);
+    if (action.kind === "DELETE_SELECTED") {
+      const byType = groupSelectedByType(action.items);
+      for (const [type, ids] of byType) await trash.deleteBulk(type, ids);
+      toast.info("선택 항목을 영구 삭제했습니다.");
+      closeConfirm();
+      await afterMutation();
+      return;
     }
-
-    toast.info("선택 항목을 영구 삭제했습니다.");
-    clearSelection();
-    closeConfirm();
   } catch {
     if (action.kind === "EMPTY") toast.error("휴지통 비우기에 실패했습니다.");
     else toast.error("영구 삭제에 실패했습니다.");
