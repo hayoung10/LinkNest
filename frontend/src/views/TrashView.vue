@@ -272,6 +272,51 @@
       </section>
     </main>
 
+    <!-- 삭제/비우기 확인 다이얼로그 -->
+    <teleport to="#modals">
+      <div
+        v-if="confirmOpen"
+        class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
+        @click.self="closeConfirm"
+        @keydown.esc="closeConfirm"
+      >
+        <div
+          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6"
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="dialogTitleId"
+        >
+          <header class="mb-4">
+            <h3 :id="dialogTitleId" class="text-[17px] font-semibold leading-6">
+              {{ dialogTitle }}
+            </h3>
+            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              {{ dialogDescription }}
+            </p>
+          </header>
+
+          <footer class="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              class="px-4 py-2 border rounded-md text-sm hover:bg-accent"
+              @click="closeConfirm"
+            >
+              취소
+            </button>
+            <button
+              ref="confirmBtnRef"
+              type="button"
+              :disabled="confirmMutating"
+              class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500 disabled:opacity-50"
+              @click="onConfirm"
+            >
+              {{ confirmActionLabel }}
+            </button>
+          </footer>
+        </div>
+      </div>
+    </teleport>
+
     <!-- 설정 패널 -->
     <SidePanel
       :open="isSettingsOpen"
@@ -286,7 +331,7 @@
 
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useToastStore } from "@/stores/toast";
 import { useTrashStore } from "@/stores/trash";
@@ -410,7 +455,7 @@ function clearSelection() {
 }
 
 // ------------------------
-// List actions
+// Card actions
 // ------------------------
 function typeBarClass(type: TrashType) {
   if (type === "COLLECTION") return "bg-amber-400";
@@ -459,19 +504,7 @@ function daysLeftText(iso: string) {
 }
 
 async function onEmpty() {
-  const label = trash.type ? `${typeLabel(trash.type)} 휴지통` : "휴지통";
-  const ok = window.confirm(
-    `${label}을(를) 비울까요? 이 작업은 되돌릴 수 없어요.`,
-  );
-  if (!ok) return;
-
-  try {
-    await trash.empty(trash.type);
-    toast.info("휴지통을 비웠습니다.");
-    clearSelection();
-  } catch {
-    toast.error("휴지통 비우기에 실패했습니다.");
-  }
+  openConfirm({ kind: "EMPTY", type: trash.type });
 }
 
 async function onRestore(type: TrashType, id: ID) {
@@ -488,19 +521,8 @@ async function onRestore(type: TrashType, id: ID) {
 }
 
 async function onDelete(type: TrashType, id: ID) {
-  const ok = window.confirm("영구 삭제할까요? 이 작업은 되돌릴 수 없어요.");
-  if (!ok) return;
-
-  try {
-    await trash.delete(type, id);
-    toast.info("영구 삭제했습니다.");
-    const k = `${type}:${id}`;
-    const next = new Set(selectedKeys.value);
-    next.delete(k);
-    selectedKeys.value = next;
-  } catch {
-    toast.error("영구 삭제에 실패했습니다.");
-  }
+  const item = trash.items.find((i) => i.type === type && i.id === id);
+  openConfirm({ kind: "DELETE_ONE", type, id, title: item?.title ?? null });
 }
 
 // ------------------------
@@ -542,21 +564,7 @@ async function onRestoreSelected() {
 async function onDeleteSelected() {
   const items = selectedItems();
   if (items.length === 0) return;
-
-  const ok = window.confirm("선택 항목을 영구 삭제할까요? 되돌릴 수 없어요.");
-  if (!ok) return;
-
-  const byType = groupSelectedByType(items);
-
-  try {
-    for (const [type, ids] of byType) {
-      await trash.deleteBulk(type, ids);
-    }
-    toast.info("선택 항목을 영구 삭제했습니다.");
-    clearSelection();
-  } catch {
-    toast.error("선택 영구 삭제에 실패했습니다.");
-  }
+  openConfirm({ kind: "DELETE_SELECTED", items });
 }
 
 // ------------------------
@@ -590,4 +598,109 @@ onMounted(async () => {
   await trash.load(false);
   await reconnect();
 });
+
+// ------------------------
+// 삭제/비우기 확인 다이얼로그
+// ------------------------
+type ConfirmAction =
+  | { kind: "EMPTY"; type: TrashType | null }
+  | { kind: "DELETE_ONE"; type: TrashType; id: ID; title?: string | null }
+  | { kind: "DELETE_SELECTED"; items: TrashItem[] };
+
+const confirmOpen = ref(false);
+const confirmAction = ref<ConfirmAction | null>(null);
+const confirmBtnRef = ref<HTMLButtonElement | null>(null);
+
+const dialogTitleId = "trash-confirm-title";
+
+const confirmMutating = computed(() => {
+  if (!confirmAction.value) return false;
+  if (confirmAction.value.kind === "EMPTY") return trash.isMutating.empty;
+  return trash.isMutating.delete;
+});
+
+const dialogTitle = computed(() => {
+  const a = confirmAction.value;
+  if (!a) return "";
+  if (a.kind === "EMPTY") return "휴지통 비우기";
+  if (a.kind === "DELETE_ONE") return "영구 삭제";
+  return "선택 항목 영구 삭제";
+});
+
+const dialogDescription = computed(() => {
+  const a = confirmAction.value;
+  if (!a) return "";
+
+  if (a.kind === "EMPTY") {
+    const label = a.type ? `${typeLabel(a.type)} 휴지통` : "휴지통";
+    return `${label}을(를) 비울까요? 이 작업은 되돌릴 수 없습니다.`;
+  }
+  if (a.kind === "DELETE_ONE") {
+    const t = a.title?.trim() ? `"${a.title}"` : "이 항목";
+    return `${t}을(를) 영구 삭제할까요? 이 작업은 되돌릴 수 없습니다.`;
+  }
+  return `선택한 ${a.items.length}개 항목을 영구 삭제할까요? 이 작업은 되돌릴 수 없습니다.`;
+});
+
+const confirmActionLabel = computed(() => {
+  const a = confirmAction.value;
+  if (!a) return "확인";
+  if (a.kind === "EMPTY") return "비우기";
+  return "삭제";
+});
+
+function openConfirm(action: ConfirmAction) {
+  confirmAction.value = action;
+  confirmOpen.value = true;
+
+  nextTick(() => {
+    requestAnimationFrame(() => confirmBtnRef.value?.focus());
+  });
+}
+
+function closeConfirm() {
+  confirmOpen.value = false;
+  confirmAction.value = null;
+}
+
+async function onConfirm() {
+  const action = confirmAction.value;
+  if (!action) return;
+
+  try {
+    if (action.kind === "EMPTY") {
+      await trash.empty(action.type);
+      toast.info("휴지통을 비웠습니다.");
+      clearSelection();
+      closeConfirm();
+      return;
+    }
+
+    if (action.kind === "DELETE_ONE") {
+      await trash.delete(action.type, action.id);
+      toast.info("영구 삭제했습니다.");
+
+      const k = `${action.type}:${action.id}`;
+      const next = new Set(selectedKeys.value);
+      next.delete(k);
+      selectedKeys.value = next;
+
+      closeConfirm();
+      return;
+    }
+
+    // DELETE_SELECTED
+    const byType = groupSelectedByType(action.items);
+    for (const [type, ids] of byType) {
+      await trash.deleteBulk(type, ids);
+    }
+
+    toast.info("선택 항목을 영구 삭제했습니다.");
+    clearSelection();
+    closeConfirm();
+  } catch {
+    if (action.kind === "EMPTY") toast.error("휴지통 비우기에 실패했습니다.");
+    else toast.error("영구 삭제에 실패했습니다.");
+  }
+}
 </script>
