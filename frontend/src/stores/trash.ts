@@ -64,6 +64,10 @@ export const useTrashStore = defineStore("trash", {
       this.type = null;
       this.page = 0;
       this.size = 20;
+
+      this.items = [];
+      this.meta = null;
+
       this.loaded = false;
     },
 
@@ -118,10 +122,10 @@ export const useTrashStore = defineStore("trash", {
             (i) => !existingKeys.has(`${i.type}:${i.id}`),
           );
           this.items = [...this.items, ...toAppend];
-
-          this.meta = res.meta;
-          this.loaded = true;
         }
+
+        this.meta = res.meta;
+        this.loaded = true;
       } catch (e) {
         if (!opts?.silent) this.error = e;
         throw e;
