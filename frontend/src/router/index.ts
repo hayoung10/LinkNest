@@ -19,6 +19,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import("@/views/TagManagementView.vue"),
     meta: { requiresAuth: true },
   },
+  {
+    path: "/trash",
+    name: "trash",
+    component: () => import("@/views/TrashView.vue"),
+    meta: { requiresAuth: true },
+  },
 
   // 게스트 전용
   {

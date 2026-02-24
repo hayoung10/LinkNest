@@ -1,6 +1,6 @@
 import http, { unwrap } from "@/api/http";
-import type { ID, Tag, TaggedBookmark } from "@/types/common";
-import type { TagRes, TagSummaryRes } from "./types";
+import type { ApiSuccess, ID, Tag, TaggedBookmark } from "@/types/common";
+import type { TagCreateResult, TagRes, TagSummaryRes } from "./types";
 import type { SliceResponse } from "./common";
 import { mapTaggedBookmarkRes, mapTagRes } from "./mappers";
 
@@ -39,10 +39,19 @@ export interface TagReplaceReq {
   bookmarkIds: ID[];
 }
 
+export interface TagCreateResultRes {
+  res: TagRes;
+  restored: boolean;
+}
+
 /** 생성 */
-export async function createTag(payload: TagCreateReq): Promise<Tag> {
-  const data = await unwrap<TagRes>(http.post(`/tags`, payload));
-  return mapTagRes(data);
+export async function createTag(
+  payload: TagCreateReq,
+): Promise<TagCreateResult> {
+  const data = await unwrap<TagCreateResultRes>(
+    http.post<ApiSuccess<TagCreateResultRes>>(`/tags`, payload),
+  );
+  return { tag: mapTagRes(data.res), restored: data.restored };
 }
 
 /** 태그 목록 조회 */

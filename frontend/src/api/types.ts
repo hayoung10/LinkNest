@@ -5,8 +5,9 @@ import type {
   LayoutOption,
   Provider,
   Role,
+  Tag,
+  TrashType,
 } from "@/types/common";
-import type { PageMeta } from "./common";
 
 /** === 백엔드 응답 DTO (Res) === */
 export interface UserRes {
@@ -118,3 +119,26 @@ export interface TagSummaryRes {
   totalTags: number;
   totalTaggedBookmarks: number;
 }
+
+export type TagCreateResult = {
+  tag: Tag;
+  restored: boolean;
+};
+
+export type TrashItemRes = {
+  type: TrashType;
+  id: ID;
+
+  title: string;
+  subtitle?: string | null;
+  emoji?: string | null;
+
+  parentName?: string | null;
+  parentEmoji?: string | null;
+
+  deletedAt: string;
+
+  childCount?: number | null; // COLLECTION only
+  bookmarkCount?: number | null; // COLLECTION only
+  taggedCount?: number | null; // TAG only
+};

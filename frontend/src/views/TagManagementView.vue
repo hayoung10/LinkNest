@@ -1,34 +1,16 @@
 <template>
   <div class="h-screen w-full bg-background flex flex-col">
     <!-- 상단 헤더 -->
-    <header class="h-16 border-b border-border px-6 flex items-center gap-4">
-      <!-- 뒤로 -->
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 px-3 py-2 rounded-md transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
-        @click="goBack"
-      >
-        <span aria-hidden="true">←</span>
-        <span class="text-sm font-medium">뒤로</span>
-      </button>
-
-      <!-- 타이틀 -->
-      <div class="min-w-0">
-        <h1 class="text-lg font-semibold leading-6 truncate">태그 관리</h1>
-        <p class="text-xs text-muted-foreground leading-4 truncate">
-          북마크에 사용할 태그를 관리합니다.
-        </p>
-      </div>
-
-      <div class="flex-1" />
-
-      <!-- 우측: 유저 메뉴 -->
-      <UserMenu
-        :show-tag-management="false"
-        @open-settings="onOpenSettings"
-        @logout="onLogout"
-      />
-    </header>
+    <PageHeader
+      title="태그 관리"
+      subtitle="북마크에 사용할 태그를 관리합니다."
+      :show-tag-management="false"
+      :show-trash="true"
+      @back="goBack"
+      @open-trash="onOpenTrash"
+      @open-settings="onOpenSettings"
+      @logout="onLogout"
+    />
 
     <!-- 본문 -->
     <main class="flex-1 min-h-0 flex">
@@ -102,7 +84,6 @@ import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import SidePanel from "@/components/overlays/SidePanel.vue";
 import Settings from "@/features/settings/Settings.vue";
-import UserMenu from "@/features/workspace/menus/UserMenu.vue";
 import {
   TagSidebar,
   TagDashboard,
@@ -115,6 +96,7 @@ import { usePreferencesStore } from "@/stores/preferences";
 import { useToastStore } from "@/stores/toast";
 import { useTagsStore } from "@/stores/tags";
 import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
+import PageHeader from "@/components/layout/PageHeader.vue";
 
 type Mode = "dashboard" | "bookmarks";
 
@@ -148,6 +130,13 @@ function onSelectTag(id: ID) {
 
   focusBookmarkId.value = null;
   selectedBookmarkId.value = null;
+}
+
+function onOpenTrash() {
+  selectedBookmarkId.value = null;
+  isSettingsOpen.value = false;
+
+  router.push({ name: "trash" });
 }
 
 function onOpenSettings() {
