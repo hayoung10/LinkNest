@@ -49,8 +49,9 @@ export function usePagingScrollBase(params: Params) {
   const canLoadMore = computed(
     () => enabled.value && hasNext.value && !isLoading.value,
   );
-  const isLoadingMore =
-    computed(() => enabled.value && isLoading.value) && itemCount.value > 0;
+  const isLoadingMore = computed(
+    () => enabled.value && isLoading.value && itemCount.value > 0,
+  );
   const isEndReached = computed(
     () => enabled.value && loaded.value && !hasNext.value,
   );
