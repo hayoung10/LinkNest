@@ -117,8 +117,10 @@ public class BookmarkService {
         Bookmark bookmark = requireOwnedBookmark(userId, id);
 
         Set<Long> tagIds = bookmark.getBookmarkTags().stream()
-                        .map(bt -> bt.getTag().getId())
-                                .collect(Collectors.toSet());
+                .map(BookmarkTag::getTag)
+                .filter(Objects::nonNull)
+                .map(Tag::getId)
+                .collect(Collectors.toSet());
 
         bookmarkRepository.delete(bookmark);
 
@@ -317,17 +319,19 @@ public class BookmarkService {
     @Transactional
     public void deleteFromTrash(Long userId, Long id) {
         Bookmark b = requiredOwnedBookmarkIncludingDeleted(userId, id);
-
         if(!b.isDeleted()) throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
 
         Set<Long> tagIds = b.getBookmarkTags().stream()
-                .map(bt -> bt.getTag().getId())
+                .map(BookmarkTag::getTag)
+                .filter(Objects::nonNull)
+                .map(Tag::getId)
                 .collect(Collectors.toSet());
 
-        bookmarkRepository.delete(b);
+        int deleted = bookmarkRepository.deleteDeletedByUserIdAndId(userId, id);
 
-        // orphanedAt 갱신
-        tagService.onTagsDetached(tagIds, Instant.now(clock));
+        if(deleted > 0 && !tagIds.isEmpty()) {
+            tagService.onTagsDetached(tagIds, Instant.now(clock));
+        }
     }
 
     @Transactional
@@ -429,7 +433,9 @@ public class BookmarkService {
 
         // 기존 태그 조회
         Set<Long> existingTagIds = bookmark.getBookmarkTags().stream()
-                .map(bt -> bt.getTag().getId())
+                .map(BookmarkTag::getTag)
+                .filter(Objects::nonNull)
+                .map(Tag::getId)
                 .collect(Collectors.toSet());
 
         Set<Tag> tags = tagService.getOrCreateByName(userId, tagNames);
@@ -452,7 +458,11 @@ public class BookmarkService {
         attachedTagIds.removeAll(existingTagIds);
 
         // 제거: 목표 집합에 없는 관계 제거
-        bookmark.getBookmarkTags().removeIf(bt -> !targetTagIds.contains(bt.getTag().getId()));
+        bookmark.getBookmarkTags().removeIf(bt -> {
+            Tag t = bt.getTag();
+            if(t == null) return false;
+            return !targetTagIds.contains(bt.getTag().getId());
+        });
 
         // 추가: 없는 관계만 추가
         Map<Long, Tag> byId = tags.stream().collect(Collectors.toMap(Tag::getId, Function.identity()));

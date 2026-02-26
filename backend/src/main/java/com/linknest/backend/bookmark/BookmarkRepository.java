@@ -131,11 +131,15 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     int deleteAllDeletedByUserId(@Param("userId") Long userId);
 
     @Modifying
+    @Query(value = "delete from bookmarks where user_id = :userId and deleted_at is not null and id = :id", nativeQuery = true)
+    int deleteDeletedByUserIdAndId(@Param("userId") Long userId, @Param("id") Long id);
+
+    @Modifying
     @Query(value = "delete from bookmarks " +
             "where user_id = :userId " +
             "   and deleted_at is not null " +
             "   and id in (:ids)", nativeQuery = true)
-    int deleteDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+    int deleteDeletedByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 
     @Query(value = "select distinct bt.tag_id from bookmark_tags bt " +
             "   join bookmarks b on b.id = bt.bookmark_id " +

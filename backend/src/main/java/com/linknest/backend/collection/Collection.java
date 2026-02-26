@@ -5,6 +5,8 @@ import com.linknest.backend.user.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
@@ -44,6 +46,7 @@ public class Collection {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
+    @NotFound(action = NotFoundAction.IGNORE)
     private Collection parent;
 
     @OneToMany(mappedBy = "parent")

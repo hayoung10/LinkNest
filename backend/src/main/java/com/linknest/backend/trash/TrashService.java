@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -67,6 +68,8 @@ public class TrashService {
 
         boolean hasNext = content.size() > safeSize;
         List<TrashItemRes> result = hasNext ? content.subList(0, safeSize) : content;
+
+        result = enrichCounts(userId, result);
 
         Slice<TrashItemRes> slice = new SliceImpl<>(result, PageRequest.of(safePage, safeSize), hasNext);
         return SliceResponse.of(slice);
@@ -141,7 +144,8 @@ public class TrashService {
         return switch(type) {
             case COLLECTION -> {
                 List<TrashCollectionRow> rows = trashRepository.findDeletedCollections(userId, offset, limit);
-                yield SliceResponse.of(toSlice(rows, safePage, safeSize).map(trashMapper::fromCollection));
+                Slice<TrashItemRes> slice = toSlice(rows, safePage, safeSize).map(trashMapper::fromCollection);
+                yield SliceResponse.of(enrichCounts(userId, slice));
             }
             case BOOKMARK -> {
                 List<TrashBookmarkRow> rows = trashRepository.findDeletedBookmarks(userId, offset, limit);
@@ -149,7 +153,8 @@ public class TrashService {
             }
             case TAG -> {
                 List<Tag> rows = trashRepository.findDeletedTags(userId, offset, limit);
-                yield SliceResponse.of(toSlice(rows, safePage, safeSize).map(trashMapper::fromTag));
+                Slice<TrashItemRes> slice = toSlice(rows, safePage, safeSize).map(trashMapper::fromTag);
+                yield SliceResponse.of(enrichCounts(userId, slice));
             }
         };
     }
@@ -159,5 +164,58 @@ public class TrashService {
         List<T> content = hasNext ? rows.subList(0, size) : rows;
         Pageable pageable = PageRequest.of(page, size);
         return new SliceImpl<>(content, pageable, hasNext);
+    }
+
+    private Slice<TrashItemRes> enrichCounts(Long userId, Slice<TrashItemRes> slice) {
+        List<TrashItemRes> enriched = enrichCounts(userId, slice.getContent());
+        return new SliceImpl<>(enriched, slice.getPageable(), slice.hasNext());
+    }
+
+    private List<TrashItemRes> enrichCounts(Long userId, List<TrashItemRes> items) {
+        if(items == null || items.isEmpty()) return items;
+
+        List<Long> collectionIds = items.stream()
+                .filter(i -> i.type() == TrashType.COLLECTION)
+                .map(TrashItemRes::id)
+                .toList();
+
+        List<Long> tagIds = items.stream()
+                .filter(i -> i.type() == TrashType.TAG)
+                .map(TrashItemRes::id)
+                .toList();
+
+        Map<Long, Long> childCounts = trashRepository.countDeletedChildCollections(userId, collectionIds);
+        Map<Long, Long> bookmarkCounts = trashRepository.countDeletedBookmarksInCollections(userId, collectionIds);
+        Map<Long, Long> taggedCounts = trashRepository.countTaggedCountByTagIds(userId, tagIds);
+
+        List<TrashItemRes> result = new ArrayList<>(items.size());
+        for(TrashItemRes i : items) {
+            if(i.type() == TrashType.COLLECTION) {
+                Long cc = childCounts.getOrDefault(i.id(), 0L);
+                Long bc = bookmarkCounts.getOrDefault(i.id(), 0L);
+
+                result.add(new TrashItemRes(
+                        i.type(), i.id(), i.title(), i.subtitle(), i.emoji(),
+                        i.parentName(), i.parentEmoji(), i.deletedAt(),
+                        cc, bc, null
+                ));
+                continue;
+            }
+
+            if(i.type() == TrashType.TAG) {
+                Long tagged = taggedCounts.getOrDefault(i.id(), 0L);
+
+                result.add(new TrashItemRes(
+                        i.type(), i.id(), i.title(), i.subtitle(), i.emoji(),
+                        i.parentName(), i.parentEmoji(), i.deletedAt(),
+                        null, null, tagged
+                ));
+                continue;
+            }
+
+            result.add(i);
+        }
+
+        return result;
     }
 }
