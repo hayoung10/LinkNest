@@ -72,7 +72,6 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
             "   and t.deletedAt is null " +
-            "   and (b is null or b.deletedAt is null) " +
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.createdAt desc")
@@ -85,7 +84,6 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
             "   and t.deletedAt is null " +
-            "   and (b is null or b.deletedAt is null) " +
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.createdAt asc")
@@ -98,7 +96,6 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
             "   and t.deletedAt is null " +
-            "   and (b is null or b.deletedAt is null) " +
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by t.name asc")
@@ -111,7 +108,6 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   left join bt.bookmark b " +
             "where t.user.id = :userId " +
             "   and t.deletedAt is null " +
-            "   and (b is null or b.deletedAt is null) " +
             "   and (:pattern is null or lower(t.name) like :pattern escape '\\') " +
             "group by t.id, t.name, t.createdAt, t.updatedAt " +
             "order by count(distinct b.id) desc, t.name asc, t.id asc")
