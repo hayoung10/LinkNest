@@ -64,7 +64,7 @@ public class TrashRepositoryImpl implements TrashRepository {
                 "select b.id, b.title, b.url, b.emoji, " +
                         "   c.name as collection_name, c.emoji as collection_emoji, b.deleted_at " +
                         "from bookmarks b " +
-                        "join collections c on c.id = b.collection_id " +
+                        "left join collections c on c.id = b.collection_id " +
                         "where b.user_id = :userId and b.deleted_at is not null " +
                         "order by b.deleted_at desc, b.id desc " +
                         "limit :limit offset :offset"
