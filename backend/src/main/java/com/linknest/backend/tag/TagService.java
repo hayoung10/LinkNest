@@ -310,7 +310,7 @@ public class TagService {
         if(tagIds.isEmpty()) return;
 
         bookmarkTagRepository.deleteByUserIdAndTagIdIn(userId, tagIds);
-        tagRepository.deleteAllByIdInBatch(tagIds);
+        tagRepository.deleteDeletedByUserIdAndIdIn(userId, tagIds);
     }
 
     @Transactional

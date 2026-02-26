@@ -126,20 +126,20 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "where user_id = :userId " +
             "   and deleted_at is not null " +
             "   and id in (:ids)", nativeQuery = true)
-    int restoreDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+    int restoreDeletedByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 
     @Modifying
     @Query(value = "delete from tags " +
             "where user_id = :userId " +
             "   and deleted_at is not null " +
             "   and id in (:ids)", nativeQuery = true)
-    int deleteDeletedByUserIdAndIdIn(Long userId, List<Long> ids);
+    int deleteDeletedByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 
     @Query(value = "select distinct t.name_key from tags t " +
             "where t.user_id = :userId " +
             "   and t.deleted_at is not null " +
             "   and t.id in (:ids)", nativeQuery = true)
-    List<String> findDeletedNameKeysByUserIdAndIdIn(Long userId, List<Long> ids);
+    List<String> findDeletedNameKeysByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 
     @Query(value = "select exists(" +
             "   select 1 from tags t " +
@@ -147,13 +147,13 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "       and t.deleted_at is null " +
             "       and t.name_key in (:keys)" +
             ")", nativeQuery = true)
-    boolean existsByUserIdAndDeletedAtIsNullAndNameKeyIn(Long userId, List<String> keys);
+    boolean existsByUserIdAndDeletedAtIsNullAndNameKeyIn(@Param("userId") Long userId, @Param("keys") List<String> keys);
 
     @Query(value = "select t.id from tags t " +
             "where t.user_id = :userId " +
             "   and t.deleted_at is not null " +
             "   and t.id in (:ids)", nativeQuery = true)
-    List<Long> findDeletedIdsByUserIdAndIdIn(Long userId, List<Long> ids);
+    List<Long> findDeletedIdsByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 
     // -------------------- Trash (Purge) --------------------
     @Query(value = "select t.id from tags t " +
