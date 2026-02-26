@@ -55,7 +55,7 @@ public interface TrashMapper {
                 r.deletedAt(),
                 null,
                 null,
-                null
+                null // (enrich 단계에서 채움)
         );
     }
 }

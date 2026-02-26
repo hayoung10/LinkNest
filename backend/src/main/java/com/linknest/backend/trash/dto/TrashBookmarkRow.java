@@ -8,9 +8,8 @@ public record TrashBookmarkRow(
         String url,
         String emoji,
 
-        Instant deletedAt,
-
-        Long collectionId,
         String collectionName,
-        String collectionEmoji
+        String collectionEmoji,
+
+        Instant deletedAt
 ) {}
