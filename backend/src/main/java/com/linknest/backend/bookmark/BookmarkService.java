@@ -317,17 +317,17 @@ public class BookmarkService {
     @Transactional
     public void deleteFromTrash(Long userId, Long id) {
         Bookmark b = requiredOwnedBookmarkIncludingDeleted(userId, id);
-
         if(!b.isDeleted()) throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
 
         Set<Long> tagIds = b.getBookmarkTags().stream()
                 .map(bt -> bt.getTag().getId())
                 .collect(Collectors.toSet());
 
-        bookmarkRepository.delete(b);
+        int deleted = bookmarkRepository.deleteDeletedByUserIdAndId(userId, id);
 
-        // orphanedAt 갱신
-        tagService.onTagsDetached(tagIds, Instant.now(clock));
+        if(deleted > 0 && !tagIds.isEmpty()) {
+            tagService.onTagsDetached(tagIds, Instant.now(clock));
+        }
     }
 
     @Transactional

@@ -300,8 +300,7 @@ public class TagService {
         }
 
         bookmarkTagRepository.deleteByUserIdAndTagId(userId, id);
-
-        tagRepository.delete(tag);
+        tagRepository.deleteDeletedByUserIdAndId(userId, id);
     }
 
     @Transactional
