@@ -3,9 +3,11 @@ package com.linknest.backend.bookmark;
 import com.linknest.backend.bookmark.dto.BookmarkCreateReq;
 import com.linknest.backend.bookmark.dto.BookmarkRes;
 import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
+import com.linknest.backend.tag.Tag;
 import org.mapstruct.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @Mapper(componentModel = "spring",
         unmappedTargetPolicy = ReportingPolicy.IGNORE)
@@ -22,7 +24,9 @@ public interface BookmarkMapper {
         if(bookmark == null) return null;
 
         List<String> tags = bookmark.getBookmarkTags().stream()
-                .map(bt -> bt.getTag().getName())
+                .map(BookmarkTag::getTag)
+                .filter(Objects::nonNull)
+                .map(Tag::getName)
                 .toList();
 
         return new BookmarkRes(

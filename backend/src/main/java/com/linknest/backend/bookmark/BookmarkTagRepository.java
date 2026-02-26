@@ -45,20 +45,19 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
     void deleteByBookmarkIdAndTagId(@Param("bookmarkId") Long bookmarkId, @Param("tagId") Long tagId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("update BookmarkTag bt " +
-            "set bt.tag.id = :toTagId " +
+    @Query("update BookmarkTag bt set bt.tag = :toTag " +
             "where bt.bookmark.id = :bookmarkId and bt.tag.id = :fromTagId")
-    int replaceTagOnBookmark(@Param("bookmarkId") Long bookmarkId, @Param("fromTagId") Long fromTagId, @Param("toTagId") Long toTagId);
+    int replaceTagOnBookmark(@Param("bookmarkId") Long bookmarkId, @Param("fromTagId") Long fromTagId, @Param("toTag") Tag toTag);
 
     // -------------------- Bulk Ops --------------------
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("delete BookmarkTag bt " +
-            "where bt.bookmark.user.id = :userId and bt.tag.id = :tagId")
-    int deleteByUserIdAndTagId(@Param("userId") Long userId, @Param("tagId") Long tagId);
+    @Modifying
+    @Query(value = "delete from bookmark_tags where tag_id = :tagId", nativeQuery = true)
+    int deleteByTagId(@Param("tagId") Long tagId);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("delete BookmarkTag bt " +
-            "where bt.bookmark.user.id = :userId and bt.tag.id = :tagId and bt.bookmark.id in :bookmarkIds")
+    @Modifying
+    @Query(value = "delete bt from bookmark_tags bt " +
+            "   join bookmarks b on b.id = bt.bookmark_id " +
+            "where b.user_id = :userId and bt.tag_id = :tagId and bt.bookmark_id in (:bookmarkIds)", nativeQuery = true)
     int deleteByUserIdAndTagIdAndBookmarkIdIn(@Param("userId") Long userId,
                                               @Param("tagId") Long tagId, @Param("bookmarkIds") List<Long> bookmarkIds);
 
@@ -127,6 +126,6 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
 
     // -------------------- Trash --------------------
     @Modifying
-    @Query("delete from BookmarkTag bt where bt.bookmark.user.id = :userId and bt.tag.id in :tagIds")
-    int deleteByUserIdAndTagIdIn(@Param("userId") Long userId, @Param("tagIds") List<Long> tagIds);
+    @Query(value = "delete from bookmark_tags where tag_id in :tagIds", nativeQuery = true)
+    int deleteByTagIdIn(@Param("tagIds") List<Long> tagIds);
 }

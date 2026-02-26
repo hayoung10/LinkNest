@@ -97,7 +97,7 @@ public class TagService {
 
     @Transactional
     public TagRes rename(Long userId, Long id, TagUpdateReq req) {
-        Tag tag = requireOwnedTag(userId, id);
+        Tag tag = requireOwnedActiveTag(userId, id);
 
         String displayName = normalizeName(req.name());
         String nameKey = toNameKey(displayName);
@@ -131,8 +131,8 @@ public class TagService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        requireOwnedTag(userId, id);
-        requireOwnedTag(userId, targetTagId);
+        requireOwnedActiveTag(userId, id);
+        requireOwnedActiveTag(userId, targetTagId);
 
         List<Long> bookmarkIds = bookmarkTagRepository.findAllBookmarkIdsByUserIdAndTagId(userId, id);
         if(bookmarkIds.isEmpty()) return;
@@ -149,7 +149,7 @@ public class TagService {
 
     @Transactional
     public void softDelete(Long userId, Long id) {
-        Tag tag = requireOwnedTag(userId, id);
+        Tag tag = requireOwnedActiveTag(userId, id);
         Instant now = Instant.now(clock);
         tag.softDelete(now);
     }
@@ -159,7 +159,7 @@ public class TagService {
     // ==========================================================
 
     public SliceResponse<TaggedBookmarkRes> getTaggedBookmarks(Long userId, Long id, int page, int size) {
-        requireOwnedTag(userId, id);
+        requireOwnedActiveTag(userId, id);
 
         int safePage = Math.max(0, page);
         int safeSize = Math.min(Math.max(1, size), 100);
@@ -201,8 +201,8 @@ public class TagService {
 
     @Transactional
     public void detachTagFromBookmarks(Long userId, Long id, TagDetachReq req) {
-        requireOwnedTag(userId, id);
-        requireOwnedBookmarks(userId, req.bookmarkIds());
+        requireOwnedActiveTag(userId, id);
+        requireOwnedActiveBookmarks(userId, req.bookmarkIds());
 
         Instant now = Instant.now(clock);
 
@@ -219,24 +219,30 @@ public class TagService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        requireOwnedTag(userId, id);
-        requireOwnedTag(userId, targetTagId);
-        requireOwnedBookmarks(userId, req.bookmarkIds());
+        requireOwnedActiveTag(userId, id);
+        requireOwnedActiveTag(userId, targetTagId);
+
+        List<Long> bookmarkIds = req.bookmarkIds();
+        requireOwnedActiveBookmarks(userId, req.bookmarkIds());
 
         Instant now = Instant.now(clock);
 
-        List<Long> bookmarkIds = req.bookmarkIds();
+        // 충돌 제거
+        List<Long> conflictIds = bookmarkTagRepository
+                .findBookmarkIdsByUserIdAndTagIdAndBookmarkIdIn(userId, targetTagId, bookmarkIds);
+        if(!conflictIds.isEmpty()) {
+            bookmarkTagRepository.deleteByUserIdAndTagIdAndBookmarkIdIn(userId, id, conflictIds);
+        }
 
-        Set<Long> conflictSet = new HashSet<>(
-                bookmarkTagRepository.findBookmarkIdsByUserIdAndTagIdAndBookmarkIdIn(userId, targetTagId, bookmarkIds)
-        );
+        // replace
+        Set<Long> conflictSet = new HashSet<>(conflictIds);
+        List<Long> toReplaceIds = bookmarkIds.stream()
+                .filter(bid -> !conflictSet.contains(bid))
+                .toList();
 
-        for(Long bookmarkId : bookmarkIds) {
-            if(conflictSet.contains(bookmarkId)) {
-                bookmarkTagRepository.deleteByBookmarkIdAndTagId(bookmarkId, id);
-            } else {
-                bookmarkTagRepository.replaceTagOnBookmark(bookmarkId, id, targetTagId);
-            }
+        if(!toReplaceIds.isEmpty()) {
+            Tag toTag = tagRepository.getReferenceById(targetTagId);
+            bookmarkTagRepository.replaceTagOnBookmarks(userId, id, toTag, toReplaceIds);
         }
 
         // orphanedAt 갱신
@@ -299,7 +305,7 @@ public class TagService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        bookmarkTagRepository.deleteByUserIdAndTagId(userId, id);
+        bookmarkTagRepository.deleteByTagId(id);
         tagRepository.deleteDeletedByUserIdAndId(userId, id);
     }
 
@@ -308,7 +314,7 @@ public class TagService {
         List<Long> tagIds = tagRepository.findAllDeletedIdsByUserId(userId);
         if(tagIds.isEmpty()) return;
 
-        bookmarkTagRepository.deleteByUserIdAndTagIdIn(userId, tagIds);
+        bookmarkTagRepository.deleteByTagIdIn(tagIds);
         tagRepository.deleteDeletedByUserIdAndIdIn(userId, tagIds);
     }
 
@@ -319,7 +325,7 @@ public class TagService {
         List<Long> tagIds = tagRepository.findDeletedIdsByUserIdAndIdIn(userId, ids);
         if(tagIds.isEmpty()) return;
 
-        bookmarkTagRepository.deleteByUserIdAndTagIdIn(userId, tagIds);
+        bookmarkTagRepository.deleteByTagIdIn(tagIds);
         tagRepository.deleteDeletedByUserIdAndIdIn(userId, ids);
     }
 
@@ -438,7 +444,7 @@ public class TagService {
         return "%" + s + "%";
     }
 
-    private Tag requireOwnedTag(Long userId, Long id) {
+    private Tag requireOwnedActiveTag(Long userId, Long id) {
         return tagRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TAG_NOT_FOUND));
     }
@@ -448,7 +454,7 @@ public class TagService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.TAG_NOT_FOUND));
     }
 
-    private void requireOwnedBookmarks(Long userId, List<Long> bookmarkIds) {
+    private void requireOwnedActiveBookmarks(Long userId, List<Long> bookmarkIds) {
         long ownedCount = bookmarkRepository.countByUserIdAndIdIn(userId, bookmarkIds);
         if(ownedCount != bookmarkIds.size()) {
             throw new BusinessException(ErrorCode.BOOKMARK_NOT_FOUND);
