@@ -180,4 +180,15 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     @Query(value = "select distinct bt.tag_id from bookmark_tags bt " +
             "where bt.bookmark_id in (:bookmarkIds)", nativeQuery = true)
     Set<Long> findTagIdsByDeletedBookmarkIds(@Param("bookmarkIds") List<Long> bookmarkIds);
+
+    // -------------------- AutoImage --------------------
+    @Modifying
+    @Query("update Bookmark b set b.autoImageUrl = :autoImageUrl " +
+            "where b.id = :bookmarkId " +
+            "   and b.user.id = :userId " +
+            "   and b.imageMode = com.linknest.backend.bookmark.Bookmark.ImageMode.AUTO " +
+            "   and b.url = :url " +
+            "   and (b.autoImageUrl is null or b.autoImageUrl = '')")
+    int updateAutoImageUrlIfAutoMode(@Param("userId") Long userId, @Param("bookmarkId") Long bookmarkId,
+                                     @Param("url") String url, @Param("autoImageUrl") String autoImageUrl);
 }
