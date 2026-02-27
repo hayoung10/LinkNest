@@ -4,6 +4,7 @@ import com.linknest.backend.bookmark.Bookmark.ImageMode;
 import com.linknest.backend.bookmark.dto.BookmarkCreateReq;
 import com.linknest.backend.bookmark.dto.BookmarkRes;
 import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
+import com.linknest.backend.bookmark.event.BookmarkAutoImageRequestedEvent;
 import com.linknest.backend.bookmark.preview.BookmarkPreviewService;
 import com.linknest.backend.collection.Collection;
 import com.linknest.backend.collection.CollectionRepository;
@@ -19,6 +20,7 @@ import com.linknest.backend.userpreferences.UserPreferencesService;
 import com.linknest.backend.userpreferences.domain.DefaultBookmarkSort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -51,6 +53,7 @@ public class BookmarkService {
 
     private final BookmarkMapper mapper;
     private final Storage storage;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ---------- 생성 ----------
     @Transactional
@@ -67,15 +70,15 @@ public class BookmarkService {
         if(mode == ImageMode.CUSTOM) throw new BusinessException(ErrorCode.INVALID_IMAGE_MODE);
         bookmark.setCustomImageUrl(null);
 
-        if(mode == ImageMode.AUTO) {
-            String autoImageUrl = previewService.extractAutoImageUrl(req.url()).orElse(null);
-            bookmark.setAutoImageUrl(autoImageUrl);
-        } else {
-            bookmark.setAutoImageUrl(null);
-        }
+        bookmark.setAutoImageUrl(null);
 
         Bookmark saved = bookmarkRepository.save(bookmark);
         updateBookmarkTags(saved, req.tags());
+
+        // 비동기 auto image 요청
+        if(mode == ImageMode.AUTO) {
+            eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, saved.getId(), saved.getUrl()));
+        }
 
         return mapper.toRes(saved);
     }
@@ -218,10 +221,9 @@ public class BookmarkService {
         }
         bookmark.setCustomImageUrl(null);
         bookmark.setImageMode(ImageMode.AUTO);
+        bookmark.setAutoImageUrl(null);
 
-        if(bookmark.getAutoImageUrl() == null) {
-            bookmark.setAutoImageUrl(previewService.extractAutoImageUrl(bookmark.getUrl()).orElse(null));
-        }
+        eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
 
         return mapper.toRes(bookmark);
     }
