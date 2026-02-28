@@ -7,6 +7,7 @@ import axios, {
 } from "axios";
 import type { ApiSuccess, ApiError } from "@/types/common";
 import { useAuthStore } from "@/stores/auth";
+import { toHttpError } from "./errors";
 
 const BASE_URL = import.meta.env.VITE_APP_BASE_URL as string;
 const API_PREFIX = (import.meta.env.VITE_API_PREFIX as string) ?? "/api/v1";
@@ -36,7 +37,7 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-// 응답 인터셉터: 401 -> Refresh Token 재발급
+// 응답 인터셉터
 http.interceptors.response.use(
   (res) => res,
   async (error: AxiosError<ApiError>) => {
@@ -48,6 +49,31 @@ http.interceptors.response.use(
       typeof original?.url === "string" &&
       original.url.includes("/auth/refresh");
 
+    // 1. Timeout 처리
+    if (error.code === "ECONNABORTED") {
+      return Promise.reject({
+        type: "timeout",
+        message: "요청이 지연되고 있습니다. 잠시 후 다시 시도해주세요.",
+      });
+    }
+
+    // 2. Cancel 처리
+    if (error.code === "ERR_CANCELED") {
+      return Promise.reject({
+        type: "canceled",
+        message: "요청이 취소되었습니다.",
+      });
+    }
+
+    // 3. 네트워크 에러 (서버 응답 없음)
+    if (!error.response) {
+      return Promise.reject({
+        type: "network",
+        message: "네트워크 연결을 확인해주세요.",
+      });
+    }
+
+    // 4. 401 처리 (RT 재발급)
     if (error.response?.status === 401 && !original._retry && !isRefreshCall) {
       original._retry = true;
       try {
@@ -58,7 +84,9 @@ http.interceptors.response.use(
         throw e;
       }
     }
-    throw error;
+
+    // 5. 그 외 서버 에러
+    throw Promise.reject(error);
   },
 );
 
@@ -67,6 +95,10 @@ export default http;
 export async function unwrap<T>(
   p: Promise<AxiosResponse<ApiSuccess<T>>>,
 ): Promise<T> {
-  const res = await p;
-  return res.data.data;
+  try {
+    const res = await p;
+    return res.data.data;
+  } catch (e) {
+    throw toHttpError(e);
+  }
 }
