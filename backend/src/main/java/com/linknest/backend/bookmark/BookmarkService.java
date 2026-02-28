@@ -92,6 +92,7 @@ public class BookmarkService {
         Bookmark bookmark = requireOwnedBookmark(userId, id);
 
         final String beforeUrl = bookmark.getUrl();
+        final ImageMode beforeMode = bookmark.getImageMode();
 
         mapper.updateFromDto(req, bookmark);
 
@@ -99,15 +100,17 @@ public class BookmarkService {
             throw new BusinessException(ErrorCode.INVALID_BOOKMARK_URL);
         }
 
-        ImageMode imageMode = bookmark.getImageMode();
-        if(imageMode == null) {
-            imageMode = ImageMode.NONE;
-        }
-
         boolean urlChanged = !Objects.equals(beforeUrl, bookmark.getUrl());
-        applyImageMode(bookmark, imageMode, urlChanged);
 
-        if(imageMode == ImageMode.AUTO && urlChanged) {
+        ImageMode mode = bookmark.getImageMode();
+        if(mode == null) mode = ImageMode.NONE;
+
+        applyImageMode(bookmark, mode, urlChanged);
+
+        boolean switchedToAuto = beforeMode != ImageMode.AUTO && mode == ImageMode.AUTO;
+        boolean autoUrlChanged = mode == ImageMode.AUTO && urlChanged;
+
+        if(switchedToAuto || autoUrlChanged) {
             eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
         }
 
@@ -221,9 +224,8 @@ public class BookmarkService {
         if(oldImgUrl != null && !oldImgUrl.isBlank()) {
             deleteStoredCover(id, oldImgUrl);
         }
-        bookmark.setCustomImageUrl(null);
-        bookmark.setImageMode(ImageMode.AUTO);
-        bookmark.setAutoImageUrl(null);
+
+        applyImageMode(bookmark, ImageMode.AUTO, false);
 
         eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
 
@@ -239,9 +241,11 @@ public class BookmarkService {
             throw new BusinessException(ErrorCode.INVALID_IMAGE_MODE);
         }
 
+        ImageMode beforeMode = bookmark.getImageMode();
+
         applyImageMode(bookmark, imageMode, false);
 
-        if(imageMode == ImageMode.AUTO) {
+        if(beforeMode != ImageMode.AUTO && imageMode == ImageMode.AUTO) {
             eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
         }
 
