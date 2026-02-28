@@ -1,9 +1,10 @@
 import { defineStore } from "pinia";
-import { Bookmark, CollectionNode, ID } from "@/types/common";
+import type { Bookmark, CollectionNode, ID } from "@/types/common";
+import type { SliceMeta } from "@/api/common";
 import * as CollectionApi from "@/api/collections";
 import * as BookmarkApi from "@/api/bookmarks";
 import { DropResult } from "@/types/dnd";
-import type { SliceMeta } from "@/api/common";
+import { refreshBookmarkAutoImage } from "@/utils/refreshAutoImage";
 
 type ViewMode = "collection" | "favorites";
 type LoadKey = "collectionTree" | "bookmarks";
@@ -647,6 +648,18 @@ export const useWorkspaceStore = defineStore("workspace", {
           this.bookmarks = [...this.bookmarks, created];
         }
         this.updateBookmarkCount(created.collectionId, +1);
+
+        const needsAutoRefresh =
+          created.imageMode === "AUTO" &&
+          (!created.autoImageUrl || created.autoImageUrl.trim() === "");
+
+        if (needsAutoRefresh) {
+          refreshBookmarkAutoImage(
+            created.id,
+            BookmarkApi.getBookmark,
+            (latest) => this.replaceBookmark(latest),
+          );
+        }
       } catch (e) {
         fail(
           this.mutateError,
@@ -666,6 +679,18 @@ export const useWorkspaceStore = defineStore("workspace", {
       try {
         const updated = await BookmarkApi.updateBookmark(id, payload);
         this.replaceBookmark(updated);
+
+        const needsAutoRefresh =
+          updated.imageMode === "AUTO" &&
+          (!updated.autoImageUrl || updated.autoImageUrl.trim() === "");
+
+        if (needsAutoRefresh) {
+          refreshBookmarkAutoImage(
+            updated.id,
+            BookmarkApi.getBookmark,
+            (latest) => this.replaceBookmark(latest),
+          );
+        }
       } catch (e) {
         fail(
           this.mutateError,

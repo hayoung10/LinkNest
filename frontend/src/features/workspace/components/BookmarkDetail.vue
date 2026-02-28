@@ -508,6 +508,7 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import { useToastStore } from "@/stores/toast";
 import StarIcon from "@/components/icons/StarIcon.vue";
 import TagInput from "./TagInput.vue";
+import { refreshBookmarkAutoImage } from "@/utils/refreshAutoImage";
 
 const props = defineProps<{
   bookmark: Bookmark;
@@ -748,6 +749,12 @@ async function setCoverMode(mode: Exclude<ImageMode, "CUSTOM">) {
       imageMode: mode,
     });
     emit("replace-bookmark", updated);
+
+    if (updated.imageMode === "AUTO" && !updated.autoImageUrl?.trim()) {
+      refreshBookmarkAutoImage(updated.id, BookmarkApi.getBookmark, (latest) =>
+        emit("replace-bookmark", latest),
+      );
+    }
   } catch (e) {
     console.error("ImageMode 업데이트 실패:", e);
     toast.error("커버 설정 변경에 실패했습니다.");
@@ -800,6 +807,12 @@ async function removeCustomCover() {
   try {
     const updated = await BookmarkApi.removeCover(props.bookmark.id);
     emit("replace-bookmark", updated);
+
+    if (updated.imageMode === "AUTO") {
+      refreshBookmarkAutoImage(updated.id, BookmarkApi.getBookmark, (latest) =>
+        emit("replace-bookmark", latest),
+      );
+    }
   } catch (e) {
     console.error("커버 이미지 삭제 실패:", e);
     toast.error("커버 이미지 삭제에 실패했습니다.");
