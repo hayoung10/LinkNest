@@ -101,7 +101,7 @@ export async function uploadCover(id: ID, file: File): Promise<Bookmark> {
   formData.append("file", file);
 
   const data = await unwrap<BookmarkRes>(
-    http.post(`/bookmarks/${id}/cover`, formData),
+    http.post(`/bookmarks/${id}/cover`, formData, { timeout: 30000 }),
   );
 
   return mapBookmarkRes(data);
@@ -109,7 +109,9 @@ export async function uploadCover(id: ID, file: File): Promise<Bookmark> {
 
 /** 북마크 커버 삭제 */
 export async function removeCover(id: ID): Promise<Bookmark> {
-  const data = await unwrap<BookmarkRes>(http.delete(`/bookmarks/${id}/cover`));
+  const data = await unwrap<BookmarkRes>(
+    http.delete(`/bookmarks/${id}/cover`, { timeout: 30000 }),
+  );
   return mapBookmarkRes(data);
 }
 
@@ -119,7 +121,7 @@ export async function updateImageMode(
   payload: BookmarkImageModeUpdateReq,
 ): Promise<Bookmark> {
   const data = await unwrap<BookmarkRes>(
-    http.patch(`/bookmarks/${id}/image-mode`, payload),
+    http.patch(`/bookmarks/${id}/image-mode`, payload, { timeout: 30000 }),
   );
   return mapBookmarkRes(data);
 }
