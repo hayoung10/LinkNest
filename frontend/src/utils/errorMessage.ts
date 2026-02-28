@@ -1,11 +1,13 @@
-import axios from "axios";
+import { isHttpError } from "@/api/errors";
 
 export function getErrorMessage(e: unknown, fallback: string) {
-  if (axios.isAxiosError(e)) {
-    const msg = (e.response?.data as any)?.message;
-    if (typeof msg === "string" && msg.trim()) return msg;
+  if (isHttpError(e)) {
+    return e.message;
   }
 
-  if (e instanceof Error && e.message.trim()) return e.message;
+  if (e instanceof Error && e.message.trim()) {
+    return e.message;
+  }
+
   return fallback;
 }
