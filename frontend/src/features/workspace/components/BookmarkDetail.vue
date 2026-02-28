@@ -190,112 +190,160 @@
     <div class="flex-1 overflow-auto px-5 py-4 space-y-6">
       <!-- 커버 이미지 -->
       <section
-        class="rounded-2xl border border-border/60 bg-zinc-50/60 dark:bg-zinc-900/20 p-5"
+        class="rounded-2xl border border-border/60 bg-zinc-50/60 dark:bg-zinc-900/20 p-5 relative"
       >
+        <div
+          v-if="isEditing"
+          class="absolute inset-0 rounded-2xl z-10 cursor-not-allowed"
+          aria-hidden="true"
+        />
+
         <div class="flex items-start gap-4">
           <!-- 좌: 미리보기 -->
-          <div class="shrink-0">
+          <div
+            class="shrink-0"
+            :class="isEditing ? 'opacity-70 grayscale-[0.25] saturate-50' : ''"
+          >
             <div
               class="relative h-20 w-20 rounded-xl overflow-hidden bg-zinc-200/70 dark:bg-zinc-800/70 border border-border/60"
             >
               <img
                 v-if="coverPreviewUrl"
                 :src="coverPreviewUrl"
-                alt="커버 이미지 미리보기"
-                class="h-full w-full object-cover"
-                draggable="false"
+                class="h-full w-full object-cover transition-opacity duration-300"
               />
+              <!-- AUTO 생성 중 -->
+              <div
+                v-else-if="isAutoGenerating"
+                class="h-full bg-zinc-200/60 dark:bg-zinc-800/60"
+              />
+
+              <!-- NONE 모드 -->
               <div
                 v-else
                 class="h-full w-full grid place-items-center text-zinc-500/70 dark:text-zinc-400/60"
               >
-                <span class="text-xs select-none"> 없음 </span>
+                <span class="text-xs select-none">없음</span>
+              </div>
+
+              <!-- 스피너 오버레이 -->
+              <div
+                v-if="isAutoGenerating"
+                class="absolute inset-0 bg-black/10 dark:bg-black/20 backdrop-blur-[1px] flex items-center justify-center"
+              >
+                <div
+                  class="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"
+                />
               </div>
             </div>
           </div>
 
           <!-- 우: 설정 -->
           <div class="min-w-0 flex-1">
-            <div class="flex items-center justify-between gap-3">
-              <p class="text-sm font-semibold text-zinc-700 dark:text-zinc-200">
-                커버 이미지
-              </p>
+            <div
+              :class="
+                isEditing ? 'opacity-70 grayscale-[0.25] saturate-50' : ''
+              "
+            >
+              <div class="flex items-center justify-between gap-3">
+                <p
+                  class="text-sm font-semibold text-zinc-700 dark:text-zinc-200"
+                >
+                  커버 이미지
+                </p>
 
-              <!-- 모드 선택 -->
-              <div
-                class="shrink-0 inline-flex rounded-lg border border-border/60 bg-background overflow-hidden"
-              >
-                <button
-                  type="button"
-                  :disabled="isCoverMutating || isEditing"
-                  class="px-3 py-1.5 text-xs transition-colors"
-                  :class="
-                    currentBookmark.imageMode === 'AUTO'
-                      ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
-                      : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40'
-                  "
-                  @click="setCoverMode('AUTO')"
+                <!-- 모드 선택 -->
+                <div
+                  class="shrink-0 inline-flex rounded-lg border border-border/60 bg-background overflow-hidden"
                 >
-                  AUTO
-                </button>
-                <button
-                  type="button"
-                  :disabled="isCoverMutating || isEditing"
-                  class="px-3 py-1.5 text-xs transition-colors border-l border-border/60"
-                  :class="
-                    currentBookmark.imageMode === 'CUSTOM'
-                      ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
-                      : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40'
-                  "
-                  @click="onClickChangeCover"
-                >
-                  CUSTOM
-                </button>
-                <button
-                  type="button"
-                  :disabled="isCoverMutating || isEditing"
-                  class="px-3 py-1.5 text-xs transition-colors border-l border-border/60"
-                  :class="
-                    currentBookmark.imageMode === 'NONE'
-                      ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
-                      : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40'
-                  "
-                  @click="setCoverMode('NONE')"
-                >
-                  NONE
-                </button>
+                  <button
+                    type="button"
+                    :disabled="isCoverMutating || isEditing"
+                    class="px-3 py-1.5 text-xs transition-colors"
+                    :class="[
+                      currentBookmark.imageMode === 'AUTO'
+                        ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
+                        : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40',
+                      isCoverMutating || isEditing
+                        ? 'opacity-50 cursor-not-allowed'
+                        : '',
+                    ]"
+                    @click="setCoverMode('AUTO')"
+                  >
+                    AUTO
+                  </button>
+                  <button
+                    type="button"
+                    :disabled="isCoverMutating || isEditing"
+                    class="px-3 py-1.5 text-xs transition-colors border-l border-border/60"
+                    :class="[
+                      currentBookmark.imageMode === 'CUSTOM'
+                        ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
+                        : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40',
+                      isCoverMutating || isEditing
+                        ? 'opacity-50 cursor-not-allowed'
+                        : '',
+                    ]"
+                    @click="onClickChangeCover"
+                  >
+                    CUSTOM
+                  </button>
+                  <button
+                    type="button"
+                    :disabled="isCoverMutating || isEditing"
+                    class="px-3 py-1.5 text-xs transition-colors border-l border-border/60"
+                    :class="[
+                      currentBookmark.imageMode === 'NONE'
+                        ? 'bg-zinc-200 dark:bg-zinc-800 text-foreground'
+                        : 'text-muted-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900/40',
+                      isCoverMutating || isEditing
+                        ? 'opacity-50 cursor-not-allowed'
+                        : '',
+                    ]"
+                    @click="setCoverMode('NONE')"
+                  >
+                    NONE
+                  </button>
+                </div>
+              </div>
+
+              <!-- 커스텀 업로드/삭제 -->
+              <div class="mt-3 flex flex-wrap items-center gap-2">
+                <input
+                  ref="coverInputRef"
+                  type="file"
+                  accept="image/*"
+                  class="hidden"
+                  @change="onCoverFileChange"
+                />
+                <template v-if="currentBookmark.imageMode === 'CUSTOM'">
+                  <button
+                    type="button"
+                    :disabled="isCoverMutating || isEditing"
+                    class="inline-flex items-center h-9 px-3 rounded-md text-sm border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
+                    @click="onClickChangeCover"
+                  >
+                    사진 변경
+                  </button>
+                  <button
+                    v-if="hasCustomCover"
+                    type="button"
+                    :disabled="isCoverMutating || isEditing"
+                    class="inline-flex items-center h-9 px-3 rounded-md text-sm text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
+                    @click="removeCustomCover"
+                  >
+                    사진 삭제
+                  </button>
+                </template>
               </div>
             </div>
 
-            <!-- 커스텀 업로드/삭제 -->
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-              <input
-                ref="coverInputRef"
-                type="file"
-                accept="image/*"
-                class="hidden"
-                @change="onCoverFileChange"
-              />
-              <template v-if="currentBookmark.imageMode === 'CUSTOM'">
-                <button
-                  type="button"
-                  :disabled="isCoverMutating || isEditing"
-                  class="inline-flex items-center h-9 px-3 rounded-md text-sm border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
-                  @click="onClickChangeCover"
-                >
-                  사진 변경
-                </button>
-                <button
-                  v-if="hasCustomCover"
-                  type="button"
-                  :disabled="isCoverMutating || isEditing"
-                  class="inline-flex items-center h-9 px-3 rounded-md text-sm text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 border border-border/60 hover:bg-zinc-100 dark:hover:bg-zinc-900/40 transition-colors"
-                  @click="removeCustomCover"
-                >
-                  사진 삭제
-                </button>
-              </template>
-            </div>
+            <p
+              v-if="isEditing"
+              class="mt-2 text-xs font-medium text-red-600 dark:text-red-400"
+            >
+              편집 중에는 커버/모드를 변경할 수 없어요
+            </p>
           </div>
         </div>
       </section>
@@ -733,6 +781,11 @@ const coverPreviewUrl = computed(() => {
   return null;
 });
 
+const isAutoGenerating = computed(() => {
+  const b = currentBookmark.value;
+  return b.imageMode === "AUTO" && !b.autoImageUrl?.trim();
+});
+
 const hasCustomCover = computed(() => {
   const b = currentBookmark.value;
   return b.imageMode === "CUSTOM" && !!b.customImageUrl;
@@ -808,7 +861,7 @@ async function removeCustomCover() {
     const updated = await BookmarkApi.removeCover(props.bookmark.id);
     emit("replace-bookmark", updated);
 
-    if (updated.imageMode === "AUTO") {
+    if (updated.imageMode === "AUTO" && !updated.autoImageUrl?.trim()) {
       refreshBookmarkAutoImage(updated.id, BookmarkApi.getBookmark, (latest) =>
         emit("replace-bookmark", latest),
       );
