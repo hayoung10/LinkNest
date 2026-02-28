@@ -5,7 +5,6 @@ import com.linknest.backend.bookmark.dto.BookmarkCreateReq;
 import com.linknest.backend.bookmark.dto.BookmarkRes;
 import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
 import com.linknest.backend.bookmark.event.BookmarkAutoImageRequestedEvent;
-import com.linknest.backend.bookmark.preview.BookmarkPreviewService;
 import com.linknest.backend.collection.Collection;
 import com.linknest.backend.collection.CollectionRepository;
 import com.linknest.backend.collection.CollectionService;
@@ -47,7 +46,6 @@ public class BookmarkService {
     private final UserRepository userRepository;
 
     private final UserPreferencesService userPreferencesService;
-    private final BookmarkPreviewService previewService;
     private final TagService tagService;
     private final CollectionService collectionService;
 
@@ -108,6 +106,10 @@ public class BookmarkService {
 
         boolean urlChanged = !Objects.equals(beforeUrl, bookmark.getUrl());
         applyImageMode(bookmark, imageMode, urlChanged);
+
+        if(imageMode == ImageMode.AUTO && urlChanged) {
+            eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
+        }
 
         updateBookmarkTags(bookmark, req.tags());
 
@@ -238,6 +240,10 @@ public class BookmarkService {
         }
 
         applyImageMode(bookmark, imageMode, false);
+
+        if(imageMode == ImageMode.AUTO) {
+            eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
+        }
 
         return mapper.toRes(bookmark);
     }
@@ -410,9 +416,7 @@ public class BookmarkService {
         bookmark.setCustomImageUrl(null);
 
         if(mode == ImageMode.AUTO) {
-            if(bookmark.getAutoImageUrl() == null || urlChanged) {
-                bookmark.setAutoImageUrl(previewService.extractAutoImageUrl(bookmark.getUrl()).orElse(null));
-            }
+            bookmark.setAutoImageUrl(null);
         }
     }
 
