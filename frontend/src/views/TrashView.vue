@@ -4,8 +4,9 @@
     <PageHeader
       title="휴지통"
       subtitle="삭제된 항목을 복구하거나 영구 삭제할 수 있습니다."
-      :show-tag-management="false"
-      :show-trash="true"
+      back-label="워크스페이스"
+      :show-tag-management="true"
+      :show-trash="false"
       @back="goBack"
       @open-tag-management="onOpenTagManagement"
       @open-settings="onOpenSettings"
@@ -392,8 +393,7 @@ function onRetry() {
 }
 
 function goBack() {
-  if (window.history.length > 1) router.back();
-  else router.push({ name: "workspace" });
+  router.push({ name: "workspace" });
 }
 
 function onOpenSettings() {
