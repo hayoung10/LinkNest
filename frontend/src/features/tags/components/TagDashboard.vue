@@ -404,12 +404,8 @@
               태그 삭제
             </h3>
             <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              정말로 이 태그를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-            </p>
-            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              <span class="font-bold"
-                >{{ tag?.bookmarkCount ?? 0 }}개의 북마크</span
-              >에서 이 태그가 제거됩니다.
+              이 태그를 휴지통으로 이동하시겠습니까?<br />
+              휴지통에 있는 동안 북마크에서는 표시되지 않습니다.
             </p>
           </header>
 

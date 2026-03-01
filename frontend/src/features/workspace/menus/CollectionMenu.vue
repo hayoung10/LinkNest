@@ -148,9 +148,8 @@
           <header class="mb-4">
             <h3 class="text-[17px] font-semibold leading-6">컬렉션 삭제</h3>
             <p class="mt-1 text-sm text-muted-foreground">
-              정말로 "{{ collection.name }}" 컬렉션을 삭제하시겠습니까?<br />
-              이 컬렉션에 포함된 모든 북마크도 함께 삭제됩니다. 이 작업은 되돌릴
-              수 없습니다.
+              "{{ collection.name }}" 컬렉션을 휴지통으로 이동하시겠습니까?<br />
+              이 컬렉션 아래의 모든 하위 컬렉션과 북마크도 함께 이동됩니다.
             </p>
           </header>
           <footer class="mt-6 flex justify-end gap-2">
@@ -310,7 +309,7 @@ function updateEmojiPickerPosition() {
 
   const left = Math.min(
     Math.max(t.left, 8),
-    window.innerWidth - emojiPickerWidth - 8
+    window.innerWidth - emojiPickerWidth - 8,
   );
 
   emojiPos.value = {
@@ -403,7 +402,9 @@ watch(isDisabled, (w) => {
   border: 1px solid color-mix(in oklab, currentColor 12%, transparent);
   background: color-mix(in oklab, var(--color-bg, #fff) 100%, transparent);
   color: var(--popover-foreground, inherit);
-  box-shadow: 0 19px 30px rgba(0, 0, 0, 0.08), 0 4px 12px rgb(0, 0, 0, 0.06);
+  box-shadow:
+    0 19px 30px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgb(0, 0, 0, 0.06);
   padding: 4px;
   font-size: 14px;
   line-height: 20px;
@@ -431,8 +432,8 @@ watch(isDisabled, (w) => {
 
 /** 키보드 포커스 */
 .menu-item:focus-visible {
-  box-shadow: 0 0 0 2px
-      color-mix(in oklab, var(--ring, #3b82f6) 55%, transparent),
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--ring, #3b82f6) 55%, transparent),
     0 0 0 4px var(--popover, #fff);
 }
 

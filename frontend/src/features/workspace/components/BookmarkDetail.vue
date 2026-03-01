@@ -513,7 +513,7 @@
               북마크 삭제
             </h3>
             <p class="mt-1 text-sm text-muted-foreground">
-              정말로 이 북마크를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+              이 북마크를 휴지통으로 이동하시겠습니까?
             </p>
           </header>
           <footer class="mt-6 flex justify-end gap-2">
