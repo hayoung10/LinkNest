@@ -52,7 +52,7 @@ withDefaults(
   {
     showBack: false,
     backLabel: "뒤로",
-    showTagmanagement: true,
+    showTagManagement: true,
     showTrash: true,
   },
 );

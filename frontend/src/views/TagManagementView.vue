@@ -4,6 +4,7 @@
     <PageHeader
       title="태그 관리"
       subtitle="북마크에 사용할 태그를 관리합니다."
+      back-label="워크스페이스"
       :show-tag-management="false"
       :show-trash="true"
       @back="goBack"
@@ -119,8 +120,7 @@ const focusBookmarkId = ref<ID | null>(null);
 const selectedBookmarkId = ref<ID | null>(null);
 
 function goBack() {
-  if (window.history.length > 1) router.back();
-  else router.push({ name: "workspace" });
+  router.push({ name: "workspace" });
 }
 
 function onSelectTag(id: ID) {
