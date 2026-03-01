@@ -111,7 +111,7 @@
                 v-for="item in trash.items"
                 :key="keyOf(item)"
                 :class="[
-                  'relative rounded-xl border bg-background transition-all duration-150 ease-out hover:shadow-sm',
+                  'relative rounded-xl border bg-background transition-all duration-150 ease-out hover:shadow-sm flex flex-col h-full',
                   isSelected(item)
                     ? 'ring-2 ring-zinc-300 border-zinc-400 dark:ring-zinc-400 dark:border-zinc-300 shadow-md scale-[1.01]'
                     : 'border-border',
@@ -122,7 +122,7 @@
                   :class="typeBarClass(item.type)"
                 />
 
-                <div class="p-4 flex gap-3">
+                <div class="p-4 flex gap-3 flex-1">
                   <!-- 체크 -->
                   <div class="pt-1">
                     <input
@@ -148,48 +148,66 @@
                         :class="typeBadgeClass(item.type)"
                         >{{ typeLabel(item.type) }}</span
                       >
-                      <h3 class="font-semibold truncate">{{ item.title }}</h3>
+                      <h3 class="font-semibold truncate">
+                        {{ item.title?.trim() ? item.title : "(제목 없음)" }}
+                      </h3>
                     </div>
 
-                    <p
-                      v-if="item.subtitle"
-                      class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 truncate"
-                    >
-                      {{ item.subtitle }}
-                    </p>
-
-                    <p
-                      v-if="item.parentName"
-                      class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 truncate"
-                    >
-                      상위: {{ item.parentEmoji ?? "" }} {{ item.parentName }}
-                    </p>
-
-                    <p
-                      class="mt-2 text-xs text-neutral-500 dark:text-neutral-400"
+                    <div
+                      class="mt-1 text-xs space-y-1 text-neutral-500 dark:text-neutral-400"
                     >
                       <template v-if="item.type === 'COLLECTION'">
-                        하위 {{ item.childCount ?? 0 }} · 북마크
-                        {{ item.bookmarkCount ?? 0 }}
+                        <p v-if="item.parentName" class="truncate">
+                          상위 컬렉션: {{ item.parentEmoji ?? "" }}
+                          {{ item.parentName }}
+                        </p>
+                        <p>
+                          하위 컬렉션 {{ count(item.childCount) }} · 북마크
+                          {{ count(item.bookmarkCount) }}
+                        </p>
                       </template>
-                      <template v-else-if="item.type === 'TAG'"
-                        >연결된 북마크 {{ item.taggedCount ?? 0 }}</template
-                      >
-                      <template v-else>&nbsp;</template>
-                    </p>
 
-                    <div class="mt-2 flex items-center gap-2 text-xs">
-                      <span class="text-neutral-500 dark:text-neutral-400"
-                        >삭제: {{ formatRelative(item.deletedAt) }}</span
-                      >
-                      <span class="text-orange-600"
-                        >· {{ daysLeftText(item.deletedAt) }}</span
-                      >
+                      <template v-else-if="item.type === 'BOOKMARK'">
+                        <p v-if="item.subtitle" class="truncate">
+                          {{ item.subtitle }}
+                        </p>
+                        <p v-if="item.parentName" class="truncate">
+                          컬렉션: {{ item.parentEmoji ?? "" }}
+                          {{ item.parentName }}
+                        </p>
+                        <p
+                          v-if="!item.subtitle && !item.parentName"
+                          aria-hidden="true"
+                        >
+                          &nbsp;
+                        </p>
+                      </template>
+
+                      <template v-else-if="item.type === 'TAG'">
+                        <p>북마크 {{ count(item.taggedCount) }} 연결됨</p>
+                        <p aria-hidden="true">&nbsp;</p>
+                      </template>
+
+                      <template v-else>
+                        <p>&nbsp;</p>
+                        <p>&nbsp;</p>
+                      </template>
+                    </div>
+
+                    <div
+                      class="mt-2 pt-2 border-t border-border/40 text-xs space-y-1 text-neutral-500 dark:text-neutral-400"
+                    >
+                      <p>
+                        {{ movedToTrashText(item.deletedAt) }}
+                      </p>
+                      <p :class="autoDeleteClass(item.deletedAt)">
+                        {{ autoDeleteText(item.deletedAt) }}
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                <div class="px-4 pb-4 flex items-center gap-2">
+                <div class="px-4 pb-4 flex items-center gap-2 mt-auto">
                   <button
                     type="button"
                     class="flex-1 inline-flex justify-center items-center gap-2 px-3 py-2 rounded-md border border-border text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
@@ -262,8 +280,8 @@
               <div>
                 <p class="font-semibold text-amber-800">자동 삭제 안내</p>
                 <p class="mt-1 text-amber-700 text-sm leading-relaxed">
-                  휴지통에 있는 항목은 삭제 후 15일이 지나면 자동으로 영구
-                  삭제됩니다. 복원하려는 항목이 있다면 15일 이내에 복원해주세요.
+                  항목은 최대 15일 동안 보관되며, 이후 순차적으로 영구
+                  삭제됩니다.
                 </p>
               </div>
             </div>
@@ -471,7 +489,7 @@ function typeLabel(type: TrashType) {
 
 function typeBadgeClass(type: TrashType) {
   if (type === "COLLECTION")
-    return "bg-amber-50 text-amber-700 borer-amber-200";
+    return "bg-amber-50 text-amber-700 border-amber-200";
   if (type === "BOOKMARK") return "bg-sky-50 text-sky-700 border-sky-200";
   return "bg-emerald-50 text-emerald-700 border-emerald-200";
 }
@@ -480,6 +498,14 @@ function fallbackEmoji(type: TrashType) {
   if (type === "COLLECTION") return "📁";
   if (type === "BOOKMARK") return "🔖";
   return "🏷️";
+}
+
+function count(n?: number | null) {
+  return `${n ?? 0}개`;
+}
+
+function movedToTrashText(iso: string) {
+  return `${formatRelative(iso)} 휴지통으로 이동`;
 }
 
 function formatRelative(iso: string) {
@@ -494,13 +520,26 @@ function formatRelative(iso: string) {
   return `${days}일 전`;
 }
 
-function daysLeftText(iso: string) {
+function daysLeft(iso: string) {
   const MAX_DAYS = 15;
   const d = new Date(iso);
   const diffMs = Date.now() - d.getTime();
   const daysPassed = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const left = Math.max(0, MAX_DAYS - daysPassed);
-  return `${left}일 후 영구 삭제`;
+  return Math.max(0, MAX_DAYS - daysPassed);
+}
+
+function autoDeleteText(iso: string) {
+  const left = daysLeft(iso);
+  if (left <= 0) return "곧 자동 영구 삭제";
+  return `${left}일 후 자동 영구 삭제`;
+}
+
+function autoDeleteClass(iso: string) {
+  const left = daysLeft(iso);
+
+  if (left <= 3) return "text-red-600";
+  if (left <= 7) return "text-orange-600";
+  return "";
 }
 
 async function onEmpty() {
