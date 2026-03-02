@@ -29,67 +29,94 @@
 
         <div class="divider" />
 
-        <template v-if="mode === 'menu'">
-          <button
-            class="menu-item"
-            role="menuitem"
-            :disabled="isTagMutating"
-            @click="handleDetach"
-          >
-            태그에서 제거
-          </button>
-          <button
-            class="menu-item"
-            role="menuitem"
-            :disabled="isTagMutating || replaceCandidates.length === 0"
-            @click="openReplace"
-          >
-            다른 태그로 교체
-          </button>
-        </template>
+        <button
+          class="menu-item"
+          role="menuitem"
+          :disabled="isTagMutating"
+          @click="handleDetach"
+        >
+          태그에서 제거
+        </button>
 
-        <!-- 교체 모드 -->
-        <template v-else>
-          <div class="px-2 py-1.5 text-[12px] text-zinc-500 dark:text-zinc-400">
-            교체할 태그 선택
+        <button
+          class="menu-item"
+          role="menuitem"
+          :disabled="isTagMutating || replaceCandidates.length === 0"
+          @click="openReplace"
+        >
+          다른 태그로 교체
+        </button>
+      </div>
+    </teleport>
+
+    <!-- 교체 확인 다이얼로그 -->
+    <teleport to="#modals">
+      <div
+        v-if="showReplaceDialog"
+        class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
+        @click.self="closeReplace"
+        @keydown.esc="closeReplace"
+      >
+        <form
+          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tag-replace-one"
+          @submit.prevent="handleReplace"
+        >
+          <header class="mb-4">
+            <h3 id="tag-merge" class="text-[17px] font-semibold leading-6">
+              태그 교체
+            </h3>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              이 북마크의 태그를 다른 태그로 교체하시겠습니까?
+            </p>
+          </header>
+
+          <div class="my-4 h-px bg-zinc-200/80 dark:bg-zinc-700/60"></div>
+
+          <div class="space-y-2">
+            <label class="block text-sm">대상 태그</label>
+            <select
+              ref="replaceSelectRef"
+              v-model="targetTagId"
+              type="text"
+              class="w-full rounded-md px-3 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              required
+            >
+              <option value="" disabled>선택하세요</option>
+              <option v-for="t in replaceCandidates" :key="t.id" :value="t.id">
+                {{ t.name }} ({{ t.bookmarkCount }})
+              </option>
+            </select>
           </div>
 
-          <select
-            v-model="targetTagId"
-            class="w-full rounded-md px-2 py-2 text-sm bg-zinc-100 dark:bg-zinc-800 border border-zinc-300/70 dark:border-zinc-600/60 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-          >
-            <option value="" disabled>선택하세요</option>
-            <option v-for="t in replaceCandidates" :key="t.id" :value="t.id">
-              {{ t.name }} ({{ t.bookmarkCount }})
-            </option>
-          </select>
-
-          <div class="mt-2 flex gap-2 px-1">
+          <footer class="mt-6 flex justify-end gap-2">
             <button
               type="button"
-              class="menu-item flex-1 text-center"
-              @click="cancelReplace"
+              class="px-4 py-2 rounded-md text-sm border border-zinc-300/70 dark:border-zinc-600/60 bg-zinc-100/70 dark:bg-zinc-800/70 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               :disabled="isTagMutating"
+              @click="closeReplace"
             >
               취소
             </button>
             <button
-              type="button"
-              class="menu-item flex-1 text-center"
-              @click="handleReplace"
+              ref="replaceConfirmBtnRef"
+              type="submit"
               :disabled="isTagMutating || !canReplace"
+              class="px-4 py-2 rounded-md text-sm text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              적용
+              교체
             </button>
-          </div>
-        </template>
+          </footer>
+        </form>
       </div>
     </teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeMount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import type { CSSProperties } from "vue";
 import type { ID } from "@/types/common";
 import { storeToRefs } from "pinia";
@@ -125,7 +152,6 @@ const isTagMutating = computed(
 );
 
 // state
-const mode = ref<"menu" | "replace">("menu");
 const targetTagId = ref<ID | "">("");
 
 const replaceCandidates = computed(() => {
@@ -151,6 +177,11 @@ const panelStyle = computed<CSSProperties>(() => ({
   left: `${pos.value.left}px`,
   transform: "translate3d(0,0,0)",
 }));
+
+// dialog
+const showReplaceDialog = ref(false);
+const replaceSelectRef = ref<HTMLSelectElement | null>(null);
+const replaceConfirmBtnRef = ref<HTMLButtonElement | null>(null);
 
 function updatePosition() {
   const trigger = triggerEl.value;
@@ -179,7 +210,6 @@ function toggle() {
 function close() {
   if (!open.value) return;
   open.value = false;
-  mode.value = "menu";
   targetTagId.value = "";
 }
 
@@ -212,15 +242,16 @@ async function handleDetach() {
 }
 
 function openReplace() {
-  mode.value = "replace";
+  close();
   targetTagId.value = "";
-  nextTick(updatePosition);
+  showReplaceDialog.value = true;
+
+  nextTick(() => requestAnimationFrame(() => replaceSelectRef.value?.focus()));
 }
 
-function cancelReplace() {
-  mode.value = "menu";
+function closeReplace() {
+  showReplaceDialog.value = false;
   targetTagId.value = "";
-  nextTick(updatePosition);
 }
 
 async function handleReplace() {
@@ -228,11 +259,13 @@ async function handleReplace() {
 
   try {
     const toTagId = Number(targetTagId.value);
+
     await taggedStore.replaceOnBookmarks(toTagId, [props.bookmarkId], {
       reload: false,
     });
+
     emit("tags-changed");
-    close();
+    closeReplace();
   } catch (e) {
     toast.error(getErrorMessage(e, "태그 교체에 실패했습니다."));
   }
@@ -249,7 +282,7 @@ onMounted(() =>
   document.addEventListener("click", onDocClick, { capture: true }),
 );
 
-onBeforeMount(() =>
+onBeforeUnmount(() =>
   document.removeEventListener("click", onDocClick, { capture: true } as any),
 );
 </script>
