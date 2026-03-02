@@ -77,6 +77,13 @@ export const useTagsStore = defineStore("tags", {
       this.loaded = false;
     },
 
+    resetPagingForReload() {
+      this.page = 0;
+      this.items = [];
+      this.meta = null;
+      this.loaded = false;
+    },
+
     setQuery(params: Partial<Pick<TagsState, "q" | "sort" | "page" | "size">>) {
       const prevQ = this.q;
       const prevSort = this.sort;
@@ -158,7 +165,10 @@ export const useTagsStore = defineStore("tags", {
       this.isMutating.create = true;
       try {
         await TagApi.createTag(payload);
-        await this.safeReload();
+
+        this.resetPagingForReload();
+        await this.load(true);
+
         await this.loadSummary();
       } catch (e) {
         throw e;
@@ -172,15 +182,20 @@ export const useTagsStore = defineStore("tags", {
       try {
         const updated = await TagApi.renameTag(id, payload);
 
-        const idx = this.items.findIndex((t) => t.id === id);
-        if (idx >= 0) {
+        const exists = this.items.some((t) => t.id === id);
+
+        // 목록에 있으면 즉시 반영
+        if (exists) {
           this.items = this.items.map((t) => (t.id === id ? updated : t));
-        } else {
-          await this.safeReload();
         }
 
-        if (this.q.trim()) {
-          await this.safeReload();
+        // 이름순이거나 검색 중이면 리로드
+        const needResort = this.sort === "NAME_ASC";
+        const searching = this.q.trim().length > 0;
+
+        if (needResort || searching || !exists) {
+          this.resetPagingForReload();
+          await this.load(true);
         }
       } catch (e) {
         throw e;
@@ -193,7 +208,10 @@ export const useTagsStore = defineStore("tags", {
       this.isMutating.merge = true;
       try {
         await TagApi.mergeTag(id, payload);
-        await this.safeReload();
+
+        this.resetPagingForReload();
+        await this.load(true);
+
         await this.loadSummary();
       } catch (e) {
         throw e;
@@ -207,9 +225,9 @@ export const useTagsStore = defineStore("tags", {
       try {
         await TagApi.deleteTag(id);
 
-        this.items = this.items.filter((t) => t.id !== id);
+        this.resetPagingForReload();
+        await this.load(true);
 
-        await this.safeReload();
         await this.loadSummary();
       } catch (e) {
         throw e;
