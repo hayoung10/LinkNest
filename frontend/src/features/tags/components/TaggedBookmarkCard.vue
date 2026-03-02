@@ -50,8 +50,8 @@
               :target-tag-id="bulkTargetTagId"
               :can-replace="canBulkReplace"
               @toggle-all="toggleAll"
-              @detach="handleBulkDetach"
-              @replace="handleBulkReplace"
+              @detach="openBulkDetach"
+              @replace="openBulkReplace"
               @update:target-tag-id="(v) => (bulkTargetTagId = v)"
             />
 
@@ -315,6 +315,107 @@
         </div>
       </div>
     </template>
+
+    <!-- 태그 교체 다이얼로그 -->
+    <teleport to="#modals">
+      <div
+        v-if="showBulkReplaceDialog"
+        class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
+        @click.self="showBulkReplaceDialog = false"
+        @keydown.esc="showBulkReplaceDialog = false"
+      >
+        <form
+          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tag-bulk-replace"
+        >
+          <header class="mb-4">
+            <h3
+              id="tag-bulk-replace"
+              class="text-[17px] font-semibold leading-6"
+            >
+              태그 교체
+            </h3>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              선택한 {{ selectedCount }}개의 북마크에서<br />
+              이 태그를
+              <span class="font-semibold text-zinc-800 dark:text-zinc-100"
+                >"{{ bulkReplaceTarget?.name }}"</span
+              >(으)로 교체하시겠습니까?
+            </p>
+          </header>
+
+          <footer class="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              class="px-4 py-2 border rounded-md text-sm hover:bg-accent"
+              @click="showBulkReplaceDialog = false"
+            >
+              취소
+            </button>
+            <button
+              ref="confirmBtnRef"
+              type="button"
+              :disabled="isTagMutating"
+              class="px-4 py-2 rounded-md text-sm bg-blue-600 text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="handleBulkReplace"
+            >
+              교체
+            </button>
+          </footer>
+        </form>
+      </div>
+    </teleport>
+
+    <!-- 제거 확인 다이얼로그 -->
+    <teleport to="#modals">
+      <div
+        v-if="showBulkDetachDialog"
+        class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
+        @click.self="showBulkDetachDialog = false"
+        @keydown.esc="showBulkDetachDialog = false"
+      >
+        <div
+          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tag-bulk-detach"
+        >
+          <header class="mb-4">
+            <h3
+              id="tag-bulk-detach"
+              class="text-[17px] font-semibold leading-6"
+            >
+              태그 제거
+            </h3>
+            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+              선택한 {{ selectedCount }}개의 북마크에서<br />
+              이 태그를 제거하시겠습니까?
+            </p>
+          </header>
+
+          <footer class="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              class="px-4 py-2 border rounded-md text-sm hover:bg-accent"
+              @click="showBulkDetachDialog = false"
+            >
+              취소
+            </button>
+            <button
+              ref="confirmBtnRef"
+              type="button"
+              :disabled="isTagMutating"
+              class="px-4 py-2 rounded-md text-sm bg-red-600 text-white hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="handleBulkDetach"
+            >
+              제거
+            </button>
+          </footer>
+        </div>
+      </div>
+    </teleport>
   </section>
 </template>
 
@@ -491,11 +592,13 @@ const canBulkReplace = computed(() => {
 async function handleBulkDetach() {
   if (!props.tagId) return;
   if (selectedCount.value === 0) return;
+  if (isTagMutating.value) return;
 
   try {
     await taggedStore.detachFromBookmarks(selectedList.value);
     emit("tags-changed");
     clearSelection();
+    showBulkDetachDialog.value = false;
   } catch (e) {
     toast.error(getErrorMessage(e, "태그 제거에 실패했습니다."));
   }
@@ -505,13 +608,17 @@ async function handleBulkReplace() {
   if (!props.tagId) return;
   if (selectedCount.value === 0) return;
   if (!canBulkReplace.value) return;
+  if (isTagMutating.value) return;
+
+  const target = bulkReplaceTarget.value;
+  if (!target) return;
 
   try {
-    const toTagId = Number(bulkTargetTagId.value);
-    await taggedStore.replaceOnBookmarks(toTagId, selectedList.value);
+    await taggedStore.replaceOnBookmarks(Number(target.id), selectedList.value);
     emit("tags-changed");
     clearSelection();
     bulkTargetTagId.value = "";
+    showBulkReplaceDialog.value = false;
   } catch (e) {
     toast.error(getErrorMessage(e, "태그 교체에 실패했습니다."));
   }
@@ -591,6 +698,41 @@ watch(
     selectedIds.value = next;
   },
 );
+
+// ------------------------
+// Dialogs
+// ------------------------
+const showBulkDetachDialog = ref(false);
+const showBulkReplaceDialog = ref(false);
+const confirmBtnRef = ref<HTMLButtonElement | null>(null);
+
+const bulkReplaceTarget = computed(() => {
+  const id = bulkTargetTagId.value;
+  if (!id) return null;
+  return (
+    replaceCandidates.value.find((t) => String(t.id) === String(id)) ?? null
+  );
+});
+
+function openBulkDetach() {
+  if (props.tagId == null) return;
+  if (selectedCount.value === 0) return;
+  if (isTagMutating.value) return;
+
+  showBulkDetachDialog.value = true;
+  nextTick(() => requestAnimationFrame(() => confirmBtnRef.value?.focus()));
+}
+
+function openBulkReplace() {
+  if (props.tagId == null) return;
+  if (selectedCount.value === 0) return;
+  if (!canBulkReplace.value) return;
+  if (!bulkReplaceTarget.value) return;
+  if (isTagMutating.value) return;
+
+  showBulkReplaceDialog.value = true;
+  nextTick(() => requestAnimationFrame(() => confirmBtnRef.value?.focus()));
+}
 </script>
 
 <style scoped>
