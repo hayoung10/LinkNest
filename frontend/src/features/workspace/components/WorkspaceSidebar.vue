@@ -2,7 +2,7 @@
   <aside
     id="workspace-sidebar"
     v-bind="$attrs"
-    class="relative w-64 border-r border-border flex flex-col bg-card text-card-foreground"
+    class="relative w-72 xl:w-80 border-r border-border flex flex-col bg-card text-card-foreground"
   >
     <!-- 상단 로고 영역 -->
     <header
