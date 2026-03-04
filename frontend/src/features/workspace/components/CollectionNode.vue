@@ -4,9 +4,9 @@
     <div
       :ref="setDroppableEl"
       :class="[
-        'relative flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer select-none',
+        'relative w-full max-w-full flex items-center gap-0.5 pl-2 pr-3 py-1 rounded-md cursor-pointer select-none',
         isActive
-          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 font-medium ring-1 ring-blue-300'
+          ? 'bg-blue-50 text-blue-900 dark:bg-blue-900/20 dark:text-blue-100 font-medium'
           : !props.dndActiveId
             ? 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
             : '',
@@ -16,10 +16,15 @@
       role="button"
       :aria-expanded="hasChildren ? expanded : undefined"
       :tabindex="isEditing || disabled || isRenaming ? -1 : 0"
-      :style="{ paddingLeft: `${depth * 12}px` }"
+      :style="{ paddingLeft: `${8 + depth * 12}px` }"
       v-on="nodeHandlers"
     >
-      <span class="mr-1 inline-flex w-5 justify-center shrink-0">
+      <div
+        v-if="isActive"
+        class="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-blue-500"
+      />
+
+      <span class="inline-flex w-5 justify-center shrink-0">
         <button
           v-show="!isEditing && !disabled && !isRenaming"
           :ref="setDraggableEl"
@@ -59,7 +64,7 @@
       <span v-else class="inline-block w-5" aria-hidden="true"></span>
 
       <!-- 아이콘 (폴더 / 이모지) -->
-      <span class="inline-flex size-5 items-center justify-center">
+      <span class="inline-flex size-5 items-center justify-center ml-0.5">
         <span
           v-if="node.emoji"
           class="text-base leading-none"
@@ -75,9 +80,12 @@
 
       <!-- 이름 -->
       <div class="flex-1 min-w-0">
-        <span v-if="!isEditing" class="truncate" :title="node.name">{{
-          node.name
-        }}</span>
+        <span
+          v-if="!isEditing"
+          class="block w-full truncate"
+          :title="node.name"
+          >{{ node.name }}</span
+        >
         <input
           v-else
           :id="`col-rename-${node.id}`"
@@ -97,30 +105,32 @@
       </div>
 
       <!-- 북마크 개수 -->
-      <span
-        v-if="bookmarkCount && !isEditing"
-        class="text-xs text-muted-foreground tabular-nums"
-        >{{ bookmarkCount }}</span
-      >
+      <div v-if="!isEditing" class="ml-auto shrink-0 flex items-center gap-1">
+        <span
+          v-if="bookmarkCount"
+          class="shrink-0 text-[11px] tabular-nums px-2 py-0.5 rounded-full bg-zinc-100/90 text-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200"
+          >{{ bookmarkCount }}</span
+        >
 
-      <!-- … 메뉴 버튼 -->
-      <div
-        v-if="!isEditing"
-        class="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
-        @click.stop
-      >
-        <CollectionMenu
-          :collection="node"
-          :editing-id="editingId"
-          :draft-name="draftName"
-          :is-renaming="isRenaming"
-          :disabled="disabled || isRenaming"
-          @open-all="$emit('open-all', $event)"
-          @add-collection="$emit('add-collection', $event)"
-          @start-rename="$emit('start-rename', $event)"
-          @update-emoji="$emit('update-emoji', $event)"
-          @delete="$emit('delete-collection', node.id)"
-        />
+        <!-- … 메뉴 버튼 -->
+        <div
+          v-if="!isEditing"
+          class="w-8 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          @click.stop
+        >
+          <CollectionMenu
+            :collection="node"
+            :editing-id="editingId"
+            :draft-name="draftName"
+            :is-renaming="isRenaming"
+            :disabled="disabled || isRenaming"
+            @open-all="$emit('open-all', $event)"
+            @add-collection="$emit('add-collection', $event)"
+            @start-rename="$emit('start-rename', $event)"
+            @update-emoji="$emit('update-emoji', $event)"
+            @delete="$emit('delete-collection', node.id)"
+          />
+        </div>
       </div>
 
       <!-- zone 하이라이트 오버레이 -->
@@ -187,7 +197,6 @@
 import {
   ComponentPublicInstance,
   computed,
-  onBeforeMount,
   onBeforeUnmount,
   ref,
   watchEffect,

@@ -17,7 +17,7 @@
     <main class="flex-1 min-h-0 flex">
       <!-- 좌측: 태그 사이드바 -->
       <TagSidebar
-        class="w-72 border-r border-border"
+        class="w-72 xl:w-80 border-r border-border"
         :selected-tag-id="selectedTagId"
         @select-tag="onSelectTag"
       />

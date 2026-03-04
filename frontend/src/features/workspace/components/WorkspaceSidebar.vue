@@ -2,7 +2,7 @@
   <aside
     id="workspace-sidebar"
     v-bind="$attrs"
-    class="relative w-64 border-r border-border flex flex-col bg-card text-card-foreground"
+    class="relative w-72 xl:w-80 border-r border-border flex flex-col bg-card text-card-foreground"
   >
     <!-- 상단 로고 영역 -->
     <header
@@ -107,7 +107,7 @@
     <div class="border-t border-border px-2 py-2">
       <button
         type="button"
-        class="w-full inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors"
+        class="w-full inline-flex items-center gap-2 rounded-md pl-2 pr-3 py-1 text-sm transition-colors"
         :class="
           viewMode === 'favorites'
             ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 ring-1 ring-blue-300'
@@ -117,7 +117,7 @@
         aria-label="즐겨찾기 보기"
         @click="handleSelectFavorites"
       >
-        <StarIcon :size="16" filled klass="text-amber-400" />
+        <StarIcon :size="15" filled klass="text-amber-400" />
         <span class="min-w-0 truncate">즐겨찾기</span>
       </button>
     </div>
