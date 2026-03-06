@@ -40,16 +40,50 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
 
     Optional<Collection> findByUserIdAndParentIsNullAndName(Long userId, String name);
 
+    // -------------------- Tree --------------------
+    @Query(value = "with recursive path as (" +
+            "   select id, parent_id, 1 as depth from collections " +
+            "   where user_id = :userId and id = :id and deleted_at is null " +
+            "   union all " +
+            "   select p.id, p.parent_id, path.depth + 1 from collections p " +
+            "       join path on p.id = path.parent_id " +
+            "   where p.user_id = :userId and p.deleted_at is null " +
+            ") " +
+            "select max(depth) from path", nativeQuery = true)
+    Integer findDepthByUserIdAndId(@Param("userId") Long userId, @Param("id") Long id);
+
+    @Query(value = "with recursive tree as (" +
+            "   select id, 1 as h from collections " +
+            "   where id = :rootId and user_id = :userId and deleted_at is null " +
+            "   union all " +
+            "   select c.id, tree.h + 1 from collections c " +
+            "       join tree on c.parent_id = tree.id " +
+            "   where c.user_id = :userId and c.deleted_at is null " +
+            ") " +
+            "select max(h) from tree", nativeQuery = true)
+    Integer findActiveSubtreeHeightByUserIdAndRootId(@Param("userId") Long userId, @Param("rootId") Long rootId);
+
+    @Query(value = "with recursive tree as (" +
+            "   select id, 1 as h from collections " +
+            "   where id = :rootId and user_id = :userId " +
+            "   union all " +
+            "   select c.id, tree.h + 1 from collections c " +
+            "       join tree on c.parent_id = tree.id " +
+            "   where c.user_id = :userId " +
+            ") " +
+            "select max(h) from tree", nativeQuery = true)
+    Integer findSubtreeHeightIncludingDeletedByUserIdAndRootId(@Param("userId") Long userId, @Param("rootId") Long rootId);
+
     // -------------------- Bulk Ops --------------------
     @Query(value =
-            "with recursive tree AS (" +
+            "with recursive tree as (" +
             "   select id from collections " +
             "   where id = :rootId and user_id = :userId " +
             "   union all " +
             "   select c.id from collections c " +
             "       join tree t on c.parent_id = t.id" +
             "   where c.user_id = :userId " +
-            ")" +
+            ") " +
             "select id from tree", nativeQuery = true)
     List<Long> findSubtreeIdsByUserIdAndRootId(@Param("userId") Long userId, @Param("rootId") Long rootId);
 
