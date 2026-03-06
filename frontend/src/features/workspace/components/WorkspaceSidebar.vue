@@ -214,6 +214,7 @@ import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import LogoIcon from "@/components/icons/LogoIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import StarIcon from "@/components/icons/StarIcon.vue";
+import { getErrorMessage, isHttpError } from "@/api/errors";
 
 defineOptions({ inheritAttrs: false });
 
@@ -374,6 +375,8 @@ async function handleAdd() {
       parentId: parentIdRef.value,
     });
     closeAddCollectionDialog();
+  } catch (e) {
+    toast.error(getErrorMessage(e, "컬렉션 추가에 실패했습니다."));
   } finally {
     isAdding.value = false;
   }
@@ -469,7 +472,7 @@ async function onDndDrop(payload: DndDropPayload) {
     try {
       await workspace.applyDropResultWithRollback(result);
     } catch (e) {
-      showDndError(result.type);
+      showDndError(result.type, e);
     }
     return;
   }
@@ -491,7 +494,7 @@ async function onDndDrop(payload: DndDropPayload) {
     try {
       await workspace.applyDropResultWithRollback(result);
     } catch (e) {
-      showDndError(result.type);
+      showDndError(result.type, e);
     }
     return;
   }
@@ -525,15 +528,18 @@ async function onDndDrop(payload: DndDropPayload) {
   try {
     await workspace.applyDropResultWithRollback(result);
   } catch (e) {
-    showDndError(result.type);
+    showDndError(result.type, e);
   }
 }
 
-function showDndError(type: DropResult["type"]) {
+function showDndError(type: DropResult["type"], e?: unknown) {
   toast.error(
-    type === "move"
-      ? "컬렉션 이동에 실패했습니다. 다시 시도해주세요."
-      : "컬렉션 순서 변경에 실패했습니다.",
+    getErrorMessage(
+      e,
+      type === "move"
+        ? "컬렉션 이동에 실패했습니다. 다시 시도해주세요."
+        : "컬렉션 순서 변경에 실패했습니다.",
+    ),
   );
 }
 
