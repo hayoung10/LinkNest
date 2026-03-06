@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CollectionService {
+    private static final int MAX_DEPTH = 5;
+
     private final Clock clock;
 
     private final CollectionRepository collectionRepository;
@@ -36,6 +38,8 @@ public class CollectionService {
     public CollectionRes create(Long userId, CollectionCreateReq req) {
         Collection parent = (req.parentId() == null)
                 ? null : requireOwnedCollection(userId, req.parentId());
+
+        validateDepthOrThrow(userId, parent, 1);
 
         int nextOrder = (parent == null)
                 ? nextOrderForRoot(userId)
@@ -137,6 +141,9 @@ public class CollectionService {
         Collection newParent = (targetParentId == null) ? null : requireOwnedCollection(userId, targetParentId);
         validateMoveTarget(collection, newParent);
 
+        int subtreeHeight = requireActiveSubtreeHeight(userId, collection.getId());
+        validateDepthOrThrow(userId, newParent, subtreeHeight);
+
         int nextOrder = (newParent == null)
                 ? nextOrderForRoot(userId)
                 : nextOrderForSiblings(userId, newParent.getId());
@@ -219,7 +226,6 @@ public class CollectionService {
     @Transactional
     public void restoreFromTrash(Long userId, Long id) {
         Collection c = requiredOwnedCollectionIncludingDeleted(userId, id);
-
         if(!c.isDeleted()) return;
 
         List<Long> ids = collectionRepository.findSubtreeIdsByUserIdAndRootId(userId, id);
@@ -235,6 +241,13 @@ public class CollectionService {
             if(p == null || p.isDeleted()) {
                 c.setParent(null);
             }
+        }
+
+        // depth 초과면 루트로 복구
+        int subtreeHeight = requireSubtreeHeightIncludingDeleted(userId, c.getId());
+        int parentDepth = (parent == null) ? 0 : requireDepth(userId, parent.getId());
+        if(parentDepth + subtreeHeight > MAX_DEPTH) {
+            c.setParent(null);
         }
 
         Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndDeletedBookmarksInCollectionIds(userId, ids);
@@ -397,5 +410,30 @@ public class CollectionService {
         if(maxIndex < 0) return 0;
         if(requestedOrder < 0) return 0;
         return Math.min(requestedOrder, maxIndex);
+    }
+
+    private int requireDepth(Long userId, Long id) {
+        Integer depth = collectionRepository.findDepthByUserIdAndId(userId, id);
+        if(depth == null) throw new BusinessException(ErrorCode.COLLECTION_NOT_FOUND);
+        return depth;
+    }
+
+    private void validateDepthOrThrow(Long userId, Collection parent, int subtreeHeight) {
+        int parentDepth = (parent == null) ? 0 : requireDepth(userId, parent.getId());
+        if(parentDepth + subtreeHeight > MAX_DEPTH) {
+            throw new BusinessException(ErrorCode.COLLECTION_MAX_DEPTH_EXCEEDED);
+        }
+    }
+
+    private int requireActiveSubtreeHeight(Long userId, Long rootId) {
+        Integer h = collectionRepository.findActiveSubtreeHeightByUserIdAndRootId(userId, rootId);
+        if(h == null) throw new BusinessException(ErrorCode.COLLECTION_NOT_FOUND);
+        return h;
+    }
+
+    private int requireSubtreeHeightIncludingDeleted(Long userId, Long rootId) {
+        Integer h = collectionRepository.findSubtreeHeightIncludingDeletedByUserIdAndRootId(userId, rootId);
+        if(h == null) throw new BusinessException(ErrorCode.COLLECTION_NOT_FOUND);
+        return h;
     }
 }
