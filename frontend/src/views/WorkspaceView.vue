@@ -246,7 +246,7 @@ async function onAddCollection(payload: { name: string; parentId: ID | null }) {
     });
     toast.success("컬렉션을 추가했습니다.");
   } catch (e) {
-    toast.error("컬렉션 추가에 실패했습니다.");
+    throw e;
   }
 }
 
