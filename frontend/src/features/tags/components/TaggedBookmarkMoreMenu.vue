@@ -123,7 +123,7 @@ import { storeToRefs } from "pinia";
 import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
 import { useTagsStore } from "@/stores/tags";
 import { useToastStore } from "@/stores/toast";
-import { getErrorMessage } from "@/utils/errorMessage";
+import { getErrorMessage } from "@/api/errors";
 
 const props = withDefaults(
   defineProps<{

@@ -232,8 +232,8 @@ import { useTagsStore } from "@/stores/tags";
 import { useToastStore } from "@/stores/toast";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
-import { getErrorMessage } from "@/utils/errorMessage";
 import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
+import { getErrorMessage } from "@/api/errors";
 
 defineOptions({ name: "TagSidebar" });
 

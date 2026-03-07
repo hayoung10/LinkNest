@@ -442,9 +442,9 @@ import { useTagsStore } from "@/stores/tags";
 import { useToastStore } from "@/stores/toast";
 import { BaseEmpty } from "@/components/ui";
 import TagIcon from "@/components/icons/TagIcon.vue";
-import { getErrorMessage } from "@/utils/errorMessage";
 import { TagHeader } from "@/features/tags";
 import * as TagApi from "@/api/tags";
+import { getErrorMessage } from "@/api/errors";
 
 defineOptions({ name: "TagDashboard" });
 

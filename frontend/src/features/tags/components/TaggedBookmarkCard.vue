@@ -435,11 +435,11 @@ import {
 import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
 import { useToastStore } from "@/stores/toast";
 import { useTagsStore } from "@/stores/tags";
-import { getErrorMessage } from "@/utils/errorMessage";
 import { useBookmarkItemHelpers } from "@/composables/useBookmarkItemHelpers";
 import { useFocusScroll } from "@/composables/useFocusScroll";
 import { useBookmarkFavorite } from "@/composables/useBookmarkFavorite";
 import { useTaggedBookmarkPagingScroll } from "@/composables/useTaggedBookmarkPagingScroll";
+import { getErrorMessage } from "@/api/errors";
 
 const props = defineProps<{
   tagId: ID | null;
