@@ -419,8 +419,14 @@ public class BookmarkService {
         bookmark.setImageMode(mode);
         bookmark.setCustomImageUrl(null);
 
-        if(mode == ImageMode.AUTO) {
-            bookmark.setAutoImageUrl(null);
+        switch(mode) {
+            case AUTO -> {
+                if(urlChanged) {
+                    bookmark.setAutoImageUrl(null);
+                }
+            }
+            case NONE -> bookmark.setAutoImageUrl(null);
+            default -> throw new BusinessException(ErrorCode.INVALID_IMAGE_MODE);
         }
     }
 
