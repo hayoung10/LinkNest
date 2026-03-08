@@ -192,12 +192,6 @@
       <section
         class="rounded-2xl border border-border/60 bg-zinc-50/60 dark:bg-zinc-900/20 p-5 relative"
       >
-        <div
-          v-if="isEditing"
-          class="absolute inset-0 rounded-2xl z-10 cursor-not-allowed"
-          aria-hidden="true"
-        />
-
         <div class="flex items-start gap-4">
           <!-- 좌: 미리보기 -->
           <div
@@ -817,10 +811,11 @@ async function setCoverMode(mode: Exclude<ImageMode, "CUSTOM">) {
 }
 
 function onClickChangeCover() {
+  if (isCoverMutating.value || isEditing.value) return;
   coverInputRef.value?.click();
 }
 async function onCoverFileChange(event: Event) {
-  if (isCoverMutating.value) return;
+  if (isCoverMutating.value || isEditing.value) return;
 
   const input = event.target as HTMLInputElement | null;
   const file = input?.files?.[0] ?? null;
@@ -854,7 +849,7 @@ async function onCoverFileChange(event: Event) {
   }
 }
 async function removeCustomCover() {
-  if (isCoverMutating.value) return;
+  if (isCoverMutating.value || isEditing.value) return;
   if (!currentBookmark.value.customImageUrl) return;
 
   try {
