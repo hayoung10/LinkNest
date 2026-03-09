@@ -1,5 +1,6 @@
 package com.linknest.backend.tag.dto;
 
+import com.linknest.backend.bookmark.Bookmark.AutoImageStatus;
 import com.linknest.backend.bookmark.Bookmark.ImageMode;
 
 import java.time.Instant;
@@ -20,6 +21,7 @@ public record TaggedBookmarkRow(
         String autoImageUrl,
         String customImageUrl,
         ImageMode imageMode,
+        AutoImageStatus autoImageStatus,
 
         boolean isFavorite,
 
@@ -32,7 +34,8 @@ public record TaggedBookmarkRow(
         return new TaggedBookmarkRow(
                 id, collectionId, collectionName, collectionEmoji,
                 url, title, description, emoji,
-                autoImageUrl, customImageUrl, imageMode, isFavorite,
+                autoImageUrl, customImageUrl, imageMode, autoImageStatus,
+                isFavorite,
                 tags, createdAt, updatedAt
         );
     }

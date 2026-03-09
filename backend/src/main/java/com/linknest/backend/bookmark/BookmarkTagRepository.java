@@ -71,8 +71,8 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
     // -------------------- Tagged Bookmarks (Paging) --------------------
     @Query(value = "select new com.linknest.backend.tag.dto.TaggedBookmarkRow(" +
             "   b.id, c.id, c.name, c.emoji, b.url, b.title, b.description, b.emoji, " +
-            "   b.autoImageUrl, b.customImageUrl, b.imageMode, b.isFavorite, " +
-            "   null, b.createdAt, b.updatedAt" +
+            "   b.autoImageUrl, b.customImageUrl, b.imageMode, b.autoImageStatus, " +
+            "   b.isFavorite, null, b.createdAt, b.updatedAt" +
             ") from BookmarkTag bt " +
             "   join bt.bookmark b " +
             "   join b.collection c " +
@@ -84,8 +84,8 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
 
     @Query(value = "select new com.linknest.backend.tag.dto.TaggedBookmarkRow(" +
             "   b.id, c.id, c.name, c.emoji, b.url, b.title, b.description, b.emoji, " +
-            "   b.autoImageUrl, b.customImageUrl, b.imageMode, b.isFavorite, " +
-            "   null, b.createdAt, b.updatedAt" +
+            "   b.autoImageUrl, b.customImageUrl, b.imageMode, b.autoImageStatus, " +
+            "   b.isFavorite, null, b.createdAt, b.updatedAt" +
             ") from BookmarkTag bt " +
             "   join bt.bookmark b " +
             "   join b.collection c " +
@@ -97,8 +97,8 @@ public interface BookmarkTagRepository extends JpaRepository<BookmarkTag, Bookma
 
     @Query(value = "select new com.linknest.backend.tag.dto.TaggedBookmarkRow(" +
             "   b.id, c.id, c.name, c.emoji, b.url, b.title, b.description, b.emoji, " +
-            "   b.autoImageUrl, b.customImageUrl, b.imageMode, b.isFavorite, " +
-            "   null, b.createdAt, b.updatedAt" +
+            "   b.autoImageUrl, b.customImageUrl, b.imageMode, b.autoImageStatus, " +
+            "   b.isFavorite, null, b.createdAt, b.updatedAt" +
             ") from BookmarkTag bt " +
             "   join bt.bookmark b " +
             "   join b.collection c " +
