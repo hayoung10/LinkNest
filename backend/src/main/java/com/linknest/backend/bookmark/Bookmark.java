@@ -60,6 +60,10 @@ public class Bookmark {
     @Column(name = "image_mode", length = 10, nullable = false)
     private ImageMode imageMode = ImageMode.AUTO;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "auto_image_status", length = 20)
+    private AutoImageStatus autoImageStatus;
+
     @Column(name = "is_favorite", nullable = false)
     private boolean isFavorite = false;
 
@@ -88,6 +92,10 @@ public class Bookmark {
 
     public enum ImageMode {
         AUTO, CUSTOM, NONE
+    }
+
+    public enum AutoImageStatus {
+        PENDING, SUCCESS, FAILED
     }
 
     public boolean isDeleted() {

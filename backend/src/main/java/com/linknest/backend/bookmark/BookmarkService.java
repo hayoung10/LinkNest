@@ -1,6 +1,7 @@
 package com.linknest.backend.bookmark;
 
 import com.linknest.backend.bookmark.Bookmark.ImageMode;
+import com.linknest.backend.bookmark.Bookmark.AutoImageStatus;
 import com.linknest.backend.bookmark.dto.BookmarkCreateReq;
 import com.linknest.backend.bookmark.dto.BookmarkRes;
 import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
@@ -66,9 +67,15 @@ public class BookmarkService {
         bookmark.setImageMode(mode);
 
         if(mode == ImageMode.CUSTOM) throw new BusinessException(ErrorCode.INVALID_IMAGE_MODE);
-        bookmark.setCustomImageUrl(null);
 
+        bookmark.setCustomImageUrl(null);
         bookmark.setAutoImageUrl(null);
+
+        if(mode == ImageMode.AUTO) {
+            bookmark.setAutoImageStatus(AutoImageStatus.PENDING);
+        } else {
+            bookmark.setAutoImageStatus(null);
+        }
 
         Bookmark saved = bookmarkRepository.save(bookmark);
         updateBookmarkTags(saved, req.tags());
@@ -111,6 +118,7 @@ public class BookmarkService {
         boolean autoUrlChanged = mode == ImageMode.AUTO && urlChanged;
 
         if(switchedToAuto || autoUrlChanged) {
+            bookmark.setAutoImageStatus(AutoImageStatus.PENDING);
             eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
         }
 
@@ -211,6 +219,7 @@ public class BookmarkService {
         String newImgUrl = storage.upload("bookmark-covers", coverImage);
         bookmark.setCustomImageUrl(newImgUrl);
         bookmark.setImageMode(ImageMode.CUSTOM);
+        bookmark.setAutoImageStatus(null);
 
         return mapper.toRes(bookmark);
     }
@@ -227,6 +236,7 @@ public class BookmarkService {
 
         applyImageMode(bookmark, ImageMode.AUTO, false);
 
+        bookmark.setAutoImageStatus(AutoImageStatus.PENDING);
         eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
 
         return mapper.toRes(bookmark);
@@ -246,6 +256,7 @@ public class BookmarkService {
         applyImageMode(bookmark, imageMode, false);
 
         if(beforeMode != ImageMode.AUTO && imageMode == ImageMode.AUTO) {
+            bookmark.setAutoImageStatus(AutoImageStatus.PENDING);
             eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
         }
 
@@ -423,9 +434,13 @@ public class BookmarkService {
             case AUTO -> {
                 if(urlChanged) {
                     bookmark.setAutoImageUrl(null);
+                    bookmark.setAutoImageStatus(AutoImageStatus.PENDING);
                 }
             }
-            case NONE -> bookmark.setAutoImageUrl(null);
+            case NONE -> {
+                bookmark.setAutoImageUrl(null);
+                bookmark.setAutoImageStatus(null);
+            }
             default -> throw new BusinessException(ErrorCode.INVALID_IMAGE_MODE);
         }
     }

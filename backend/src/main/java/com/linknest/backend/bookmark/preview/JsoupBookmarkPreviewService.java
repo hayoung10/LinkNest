@@ -16,7 +16,7 @@ public class JsoupBookmarkPreviewService implements BookmarkPreviewService {
     private static final int TIMEOUT_MS = (int) Duration.ofSeconds(3).toMillis();
 
     @Override
-    public Optional<String> extractAutoImageUrl(String url) {
+    public AutoImageResult extractAutoImage(String url) {
         try {
             // HTML 파싱
             Document doc = Jsoup.connect(url)
@@ -27,17 +27,20 @@ public class JsoupBookmarkPreviewService implements BookmarkPreviewService {
 
             // Open Graph 대표 이미지 확인
             Optional<String> ogImage = selectMetaAbsUrl(doc, "property", "og:image");
-            if(ogImage.isPresent()) return ogImage;
+            if(ogImage.isPresent()) return AutoImageResult.success(ogImage.get());
 
             // Twitter Card 이미지 확인
             Optional<String> twImage = selectMetaAbsUrl(doc, "name", "twitter:image");
-            if(twImage.isPresent()) return twImage;
+            if(twImage.isPresent()) return AutoImageResult.success(twImage.get());
 
             // 없으면 favicon 반환
-            return extractFavicon(url, doc);
+            Optional<String> favicon = extractFavicon(url, doc);
+            if(favicon.isPresent()) return AutoImageResult.success(favicon.get());
+
+            return AutoImageResult.failed();
         } catch (Exception e) {
             log.debug("BookmarkPreview: failed to extract auto image. url={}, reason={}", url, e.getMessage());
-            return Optional.empty();
+            return AutoImageResult.failed();
         }
     }
 
@@ -45,6 +48,7 @@ public class JsoupBookmarkPreviewService implements BookmarkPreviewService {
     private Optional<String> selectMetaAbsUrl(Document doc, String attrKey, String attrValue) {
         Element element = doc.selectFirst("meta[" + attrKey + "=" + attrValue + "]");
         if(element == null) return Optional.empty();
+
         String content = element.attr("content");
         if(content == null || content.isBlank()) return Optional.empty();
 

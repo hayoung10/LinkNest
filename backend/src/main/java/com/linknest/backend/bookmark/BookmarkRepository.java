@@ -183,12 +183,26 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
     // -------------------- AutoImage --------------------
     @Modifying
-    @Query("update Bookmark b set b.autoImageUrl = :autoImageUrl " +
+    @Query("update Bookmark b " +
+            "   set b.autoImageUrl = :autoImageUrl, " +
+            "       b.autoImageStatus = com.linknest.backend.bookmark.Bookmark$AutoImageStatus.SUCCESS " +
             "where b.id = :bookmarkId " +
             "   and b.user.id = :userId " +
-            "   and b.imageMode = com.linknest.backend.bookmark.Bookmark.ImageMode.AUTO " +
+            "   and b.imageMode = com.linknest.backend.bookmark.Bookmark$ImageMode.AUTO " +
             "   and b.url = :url " +
             "   and (b.autoImageUrl is null or b.autoImageUrl = '')")
-    int updateAutoImageUrlIfAutoMode(@Param("userId") Long userId, @Param("bookmarkId") Long bookmarkId,
+    int updateAutoImageSuccessIfAutoMode(@Param("userId") Long userId, @Param("bookmarkId") Long bookmarkId,
                                      @Param("url") String url, @Param("autoImageUrl") String autoImageUrl);
+
+    @Modifying
+    @Query("update Bookmark b " +
+            "   set b.autoImageUrl = null, " +
+            "       b.autoImageStatus = com.linknest.backend.bookmark.Bookmark$AutoImageStatus.FAILED " +
+            "where b.id = :bookmarkId " +
+            "   and b.user.id = :userId " +
+            "   and b.imageMode = com.linknest.backend.bookmark.Bookmark$ImageMode.AUTO " +
+            "   and b.url = :url " +
+            "   and (b.autoImageUrl is null or b.autoImageUrl = '')")
+    int updateAutoImageFailedIfAutoMode(@Param("userId") Long userId, @Param("bookmarkId") Long bookmarkId,
+                                     @Param("url") String url);
 }
