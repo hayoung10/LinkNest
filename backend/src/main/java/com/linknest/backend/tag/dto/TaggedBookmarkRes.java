@@ -1,5 +1,6 @@
 package com.linknest.backend.tag.dto;
 
+import com.linknest.backend.bookmark.Bookmark.AutoImageStatus;
 import com.linknest.backend.bookmark.Bookmark.ImageMode;
 
 import java.time.Instant;
@@ -20,6 +21,7 @@ public record TaggedBookmarkRes(
         String autoImageUrl,
         String customImageUrl,
         ImageMode imageMode,
+        AutoImageStatus autoImageStatus,
 
         boolean isFavorite,
 
