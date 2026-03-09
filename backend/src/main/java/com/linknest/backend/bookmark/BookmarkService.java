@@ -114,10 +114,8 @@ public class BookmarkService {
 
         applyImageMode(bookmark, mode, urlChanged);
 
-        boolean switchedToAuto = beforeMode != ImageMode.AUTO && mode == ImageMode.AUTO;
         boolean autoUrlChanged = mode == ImageMode.AUTO && urlChanged;
-
-        if(switchedToAuto || autoUrlChanged) {
+        if(autoUrlChanged) {
             bookmark.setAutoImageStatus(AutoImageStatus.PENDING);
             eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
         }
@@ -236,8 +234,14 @@ public class BookmarkService {
 
         applyImageMode(bookmark, ImageMode.AUTO, false);
 
-        bookmark.setAutoImageStatus(AutoImageStatus.PENDING);
-        eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
+        boolean hasAutoImage = bookmark.getAutoImageUrl() != null && !bookmark.getAutoImageUrl().isBlank();
+
+        if(hasAutoImage) {
+            bookmark.setAutoImageStatus(AutoImageStatus.SUCCESS);
+        } else {
+            bookmark.setAutoImageStatus(AutoImageStatus.PENDING);
+            eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
+        }
 
         return mapper.toRes(bookmark);
     }
@@ -256,8 +260,14 @@ public class BookmarkService {
         applyImageMode(bookmark, imageMode, false);
 
         if(beforeMode != ImageMode.AUTO && imageMode == ImageMode.AUTO) {
-            bookmark.setAutoImageStatus(AutoImageStatus.PENDING);
-            eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
+            boolean hasAutoImage = bookmark.getAutoImageUrl() != null && !bookmark.getAutoImageUrl().isBlank();
+
+            if(hasAutoImage) {
+                bookmark.setAutoImageStatus(AutoImageStatus.SUCCESS);
+            } else {
+                bookmark.setAutoImageStatus(AutoImageStatus.PENDING);
+                eventPublisher.publishEvent(new BookmarkAutoImageRequestedEvent(userId, bookmark.getId(), bookmark.getUrl()));
+            }
         }
 
         return mapper.toRes(bookmark);
