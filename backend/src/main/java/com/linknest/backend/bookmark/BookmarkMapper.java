@@ -39,6 +39,7 @@ public interface BookmarkMapper {
                 bookmark.getAutoImageUrl(),
                 bookmark.getCustomImageUrl(),
                 bookmark.getImageMode(),
+                bookmark.getAutoImageStatus(),
                 bookmark.isFavorite(),
                 tags,
                 bookmark.getCreatedAt(),
