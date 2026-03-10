@@ -338,6 +338,12 @@
             >
               편집 중에는 커버/모드를 변경할 수 없어요
             </p>
+            <p
+              v-else-if="isAutoImageFailed"
+              class="mt-2 text-xs text-muted-foreground"
+            >
+              자동 이미지를 불러오지 못했어요
+            </p>
           </div>
         </div>
       </section>
@@ -770,14 +776,33 @@ const coverPreviewUrl = computed(() => {
   const b = currentBookmark.value;
   if (!b) return null;
 
-  if (b.imageMode === "CUSTOM") return b.customImageUrl ?? null;
-  if (b.imageMode === "AUTO") return b.autoImageUrl ?? null;
+  if (b.imageMode === "CUSTOM") {
+    return b.customImageUrl?.trim() ? b.customImageUrl : null;
+  }
+
+  if (b.imageMode === "AUTO") {
+    return b.autoImageUrl?.trim() ? b.autoImageUrl : null;
+  }
+
   return null;
 });
 
 const isAutoGenerating = computed(() => {
   const b = currentBookmark.value;
-  return b.imageMode === "AUTO" && !b.autoImageUrl?.trim();
+  return (
+    b.imageMode === "AUTO" &&
+    b.autoImageStatus === "PENDING" &&
+    !b.autoImageUrl?.trim()
+  );
+});
+
+const isAutoImageFailed = computed(() => {
+  const b = currentBookmark.value;
+  return (
+    b.imageMode === "AUTO" &&
+    b.autoImageStatus === "FAILED" &&
+    !b.autoImageUrl?.trim()
+  );
 });
 
 const hasCustomCover = computed(() => {
@@ -797,7 +822,7 @@ async function setCoverMode(mode: Exclude<ImageMode, "CUSTOM">) {
     });
     emit("replace-bookmark", updated);
 
-    if (updated.imageMode === "AUTO" && !updated.autoImageUrl?.trim()) {
+    if (updated.imageMode === "AUTO" && updated.autoImageStatus === "PENDING") {
       refreshBookmarkAutoImage(updated.id, BookmarkApi.getBookmark, (latest) =>
         emit("replace-bookmark", latest),
       );
@@ -856,7 +881,7 @@ async function removeCustomCover() {
     const updated = await BookmarkApi.removeCover(props.bookmark.id);
     emit("replace-bookmark", updated);
 
-    if (updated.imageMode === "AUTO" && !updated.autoImageUrl?.trim()) {
+    if (updated.imageMode === "AUTO" && updated.autoImageStatus === "PENDING") {
       refreshBookmarkAutoImage(updated.id, BookmarkApi.getBookmark, (latest) =>
         emit("replace-bookmark", latest),
       );
