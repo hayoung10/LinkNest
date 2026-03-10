@@ -810,6 +810,18 @@ const hasCustomCover = computed(() => {
   return b.imageMode === "CUSTOM" && !!b.customImageUrl;
 });
 
+const autoImagePollingSeq = ref(0);
+
+function startAutoImagePolling(bookmarkId: ID) {
+  autoImagePollingSeq.value += 1;
+  const seq = autoImagePollingSeq.value;
+
+  refreshBookmarkAutoImage(bookmarkId, BookmarkApi.getBookmark, (latest) => {
+    if (seq !== autoImagePollingSeq.value) return;
+    emit("replace-bookmark", latest);
+  });
+}
+
 async function setCoverMode(mode: Exclude<ImageMode, "CUSTOM">) {
   if (isModeUpdating.value) return;
   if (currentBookmark.value.imageMode === mode) return;
@@ -823,9 +835,7 @@ async function setCoverMode(mode: Exclude<ImageMode, "CUSTOM">) {
     emit("replace-bookmark", updated);
 
     if (updated.imageMode === "AUTO" && updated.autoImageStatus === "PENDING") {
-      refreshBookmarkAutoImage(updated.id, BookmarkApi.getBookmark, (latest) =>
-        emit("replace-bookmark", latest),
-      );
+      startAutoImagePolling(updated.id);
     }
   } catch (e) {
     console.error("ImageMode 업데이트 실패:", e);
@@ -882,9 +892,7 @@ async function removeCustomCover() {
     emit("replace-bookmark", updated);
 
     if (updated.imageMode === "AUTO" && updated.autoImageStatus === "PENDING") {
-      refreshBookmarkAutoImage(updated.id, BookmarkApi.getBookmark, (latest) =>
-        emit("replace-bookmark", latest),
-      );
+      startAutoImagePolling(updated.id);
     }
   } catch (e) {
     console.error("커버 이미지 삭제 실패:", e);
