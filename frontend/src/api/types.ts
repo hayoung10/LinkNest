@@ -1,4 +1,5 @@
 import type {
+  AutoImageStatus,
   BookmarkSortOption,
   ID,
   ImageMode,
@@ -32,6 +33,7 @@ export interface BookmarkRes {
   autoImageUrl: string | null;
   customImageUrl: string | null;
   imageMode: ImageMode;
+  autoImageStatus: AutoImageStatus | null;
 
   isFavorite: boolean;
   tags: string[];
@@ -107,6 +109,7 @@ export interface TaggedBookmarkRes {
   autoImageUrl: string | null;
   customImageUrl: string | null;
   imageMode: ImageMode;
+  autoImageStatus: AutoImageStatus | null;
 
   isFavorite: boolean;
   tags: string[];

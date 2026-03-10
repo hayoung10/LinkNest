@@ -32,6 +32,7 @@ export interface User {
 }
 
 export type ImageMode = "AUTO" | "CUSTOM" | "NONE";
+export type AutoImageStatus = "PENDING" | "SUCCESS" | "FAILED";
 
 export interface Bookmark {
   id: ID;
@@ -44,6 +45,7 @@ export interface Bookmark {
   autoImageUrl: string | null;
   customImageUrl: string | null;
   imageMode: ImageMode;
+  autoImageStatus: AutoImageStatus | null;
 
   isFavorite: boolean;
   tags: string[];
@@ -67,6 +69,7 @@ export interface TaggedBookmark {
   autoImageUrl: string | null;
   customImageUrl: string | null;
   imageMode: ImageMode;
+  autoImageStatus: AutoImageStatus | null;
 
   isFavorite: boolean;
   tags: string[];
