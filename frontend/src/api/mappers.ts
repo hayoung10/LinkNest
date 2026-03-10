@@ -45,6 +45,7 @@ export function mapBookmarkRes(dto: BookmarkRes): Bookmark {
     autoImageUrl: dto.autoImageUrl ?? null,
     customImageUrl: dto.customImageUrl ?? null,
     imageMode: dto.imageMode ?? "AUTO",
+    autoImageStatus: dto.autoImageStatus ?? null,
 
     isFavorite: dto.isFavorite ?? false,
     tags: dto.tags ?? [],
@@ -131,6 +132,7 @@ export function mapTaggedBookmarkRes(dto: TaggedBookmarkRes): TaggedBookmark {
     autoImageUrl: dto.autoImageUrl ?? null,
     customImageUrl: dto.customImageUrl ?? null,
     imageMode: dto.imageMode ?? "AUTO",
+    autoImageStatus: dto.autoImageStatus ?? null,
 
     isFavorite: dto.isFavorite ?? false,
     tags: dto.tags ?? [],
@@ -172,6 +174,7 @@ export function toBookmarkFromTagged(b: TaggedBookmark): Bookmark {
     autoImageUrl: b.autoImageUrl,
     customImageUrl: b.customImageUrl,
     imageMode: b.imageMode,
+    autoImageStatus: b.autoImageStatus ?? null,
     isFavorite: b.isFavorite,
     tags: b.tags ?? [],
     createdAt: b.createdAt,

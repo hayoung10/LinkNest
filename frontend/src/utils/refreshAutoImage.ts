@@ -5,7 +5,7 @@ type FetchBookmark = (id: ID) => Promise<Bookmark>;
 export function refreshBookmarkAutoImage(
   id: ID,
   fetchBookmark: FetchBookmark,
-  onReady: (latest: Bookmark) => void,
+  onResolved: (latest: Bookmark) => void,
   options?: {
     delays?: number[];
   },
@@ -19,14 +19,29 @@ export function refreshBookmarkAutoImage(
 
       try {
         const latest = await fetchBookmark(id);
+        if (done) return;
 
-        const ready =
-          latest.imageMode === "AUTO" && !!latest.autoImageUrl?.trim();
+        if (latest.imageMode !== "AUTO") {
+          done = true;
+          onResolved(latest);
+          return;
+        }
 
-        if (!ready) return;
+        // 생성 성공
+        if (latest.autoImageStatus === "SUCCESS") {
+          done = true;
+          onResolved(latest);
+          return;
+        }
 
-        done = true;
-        onReady(latest);
+        // 생성 실패
+        if (latest.autoImageStatus === "FAILED") {
+          done = true;
+          onResolved(latest);
+          return;
+        }
+
+        // PENDING이면 다음 타이머까지 대기
       } catch {
         // 조용히 무시
       }

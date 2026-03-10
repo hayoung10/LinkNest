@@ -42,13 +42,23 @@ export function useBookmarkItemHelpers(options: Options = {}) {
   }
 
   function coverUrl(b: BookmarkLike): string | null {
-    if (b.imageMode === "CUSTOM") return b.customImageUrl ?? null;
-    if (b.imageMode === "AUTO") return b.autoImageUrl ?? null;
+    if (b.imageMode === "CUSTOM") {
+      return b.customImageUrl?.trim() ? b.customImageUrl : null;
+    }
+
+    if (b.imageMode === "AUTO") {
+      return b.autoImageUrl?.trim() ? b.autoImageUrl : null;
+    }
+
     return null;
   }
 
   function isAutoPending(b: BookmarkLike): boolean {
-    return b.imageMode === "AUTO" && !b.autoImageUrl;
+    return (
+      b.imageMode === "AUTO" &&
+      b.autoImageStatus === "PENDING" &&
+      !b.autoImageUrl?.trim()
+    );
   }
 
   function tagCount(b: BookmarkLike) {
