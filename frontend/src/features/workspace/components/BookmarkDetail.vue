@@ -99,35 +99,25 @@
               <button
                 ref="emojiTriggerEl"
                 type="button"
+                :disabled="isEmojiDisabled"
                 :class="[
                   'flex items-center justify-center size-9 rounded-md transition-colors',
-                  isEditing
-                    ? 'hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer'
-                    : 'cursor-default',
+                  isEmojiDisabled
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer',
                 ]"
                 @click="onEmojiTriggerClick"
                 :aria-label="
-                  currentBookmark.emoji ? '이모지 변경' : '이모지 상태'
+                  props.bookmark.emoji ? '이모지 변경' : '이모지 추가'
                 "
                 title="이모지"
               >
                 <span
-                  v-if="currentBookmark.emoji"
+                  v-if="props.bookmark.emoji"
                   class="text-2xl leading-none"
-                  >{{ currentBookmark.emoji }}</span
+                  >{{ props.bookmark.emoji }}</span
                 >
-                <span
-                  v-else-if="isEditing"
-                  class="text-lg leading-none opacity-20"
-                  >+</span
-                >
-                <span
-                  v-else
-                  class="text-xl leading-none text-zinc-400/60 dark:text-zinc-500/60 select-none"
-                  aria-hidden="true"
-                >
-                  •
-                </span>
+                <span v-else class="text-lg leading-none opacity-20">+</span>
               </button>
 
               <!-- EmojiPicker popover -->
@@ -139,9 +129,10 @@
                 <EmojiPicker :native="true" @select="onEmojiSelected" />
 
                 <button
-                  v-if="isEditing && editedBookmark?.emoji"
+                  v-if="props.bookmark.emoji"
                   type="button"
-                  class="mt-2 w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-red-600 shadow-[0_10px_30px_rgba(0,0,0,0.20)] hover:bg-red-50 transition-colors dark:text-red-400 dark:hover:bg-red-950/30"
+                  :disabled="isEmojiDisabled"
+                  class="mt-2 w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-red-600 shadow-[0_10px_30px_rgba(0,0,0,0.20)] hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:text-red-400 dark:hover:bg-red-950/30"
                   @click="removeEmoji"
                 >
                   이모지 제거
@@ -183,6 +174,13 @@
             {{ updatedAtText }}
           </p>
         </div>
+
+        <p
+          v-if="isEditing"
+          class="mt-1 ml-12 text-xs text-zinc-500 dark:text-zinc-400"
+        >
+          편집 중에는 이모지를 변경할 수 없어요
+        </p>
       </div>
     </header>
 
@@ -719,6 +717,10 @@ function openUrl() {
 // ------------------------
 const isEmojiMutating = ref(false);
 
+const isEmojiDisabled = computed(
+  () => isBookmarkMutating.value || isEmojiMutating.value || isEditing.value,
+);
+
 const emojiPickerOpen = ref(false);
 const emojiPopoverRef = ref<HTMLElement | null>(null);
 const emojiTriggerEl = ref<HTMLElement | null>(null);
@@ -727,17 +729,16 @@ function closeEmojiPicker() {
   emojiPickerOpen.value = false;
 }
 function toggleEmojiPicker() {
-  if (!isEditing.value) return;
+  if (isEmojiDisabled.value) return;
   emojiPickerOpen.value = !emojiPickerOpen.value;
 }
 function onEmojiTriggerClick() {
-  if (!isEditing.value) return;
   toggleEmojiPicker();
 }
 async function onEmojiSelected(emoji: any) {
   const picked = emoji?.i ?? null;
   if (!picked) return;
-  if (isEmojiMutating.value || isEditing.value) return;
+  if (isEmojiDisabled.value || isEmojiMutating.value) return;
 
   try {
     isEmojiMutating.value = true;
@@ -753,7 +754,7 @@ async function onEmojiSelected(emoji: any) {
   }
 }
 async function removeEmoji() {
-  if (isEmojiMutating.value || isEditing.value) return;
+  if (isEmojiDisabled.value || isEmojiMutating.value) return;
   if (!props.bookmark.emoji) return;
 
   try {
@@ -895,7 +896,6 @@ async function onCoverFileChange(event: Event) {
     const updated = await BookmarkApi.uploadCover(props.bookmark.id, file);
     updated.imageMode = "CUSTOM";
     emit("replace-bookmark", updated);
-    toast.success("커버 이미지가 변경되었습니다.");
   } catch (e) {
     console.error("커버 이미지 업로드 실패:", e);
     toast.error("커버 이미지 업로드에 실패했습니다.");
