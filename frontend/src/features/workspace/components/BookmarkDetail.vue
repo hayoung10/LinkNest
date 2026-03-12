@@ -93,7 +93,7 @@
 
         <div class="flex items-end justify-between gap-3">
           <!-- 좌: 이모지 + 제목 -->
-          <div class="min-w-0 flex items-center gap-3">
+          <div class="min-w-0 flex flex-1 items-center gap-3">
             <!-- 이모지 + popover -->
             <div class="relative shrink-0">
               <button
@@ -141,7 +141,7 @@
             </div>
 
             <!-- 제목 -->
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
               <template v-if="isEditing">
                 <input
                   ref="titleRef"
