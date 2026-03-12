@@ -99,7 +99,6 @@ public class BookmarkService {
         Bookmark bookmark = requireOwnedBookmark(userId, id);
 
         final String beforeUrl = bookmark.getUrl();
-        final ImageMode beforeMode = bookmark.getImageMode();
 
         mapper.updateFromDto(req, bookmark);
 
@@ -191,6 +190,21 @@ public class BookmarkService {
         // 같은 컬렉션으로 이동인 경우 무시
         if(!bookmark.getCollection().getId().equals(collection.getId()))
             bookmark.setCollection(collection);
+    }
+
+    // ---------- 이모지 수정 ----------
+    @Transactional
+    public BookmarkRes updateEmoji(Long userId, Long id, String emoji) {
+        Bookmark bookmark = requireOwnedBookmark(userId, id);
+        bookmark.setEmoji(emoji);
+        return mapper.toRes(bookmark);
+    }
+
+    // ---------- 이모지 삭제 ----------
+    @Transactional
+    public void removeEmoji(Long userId, Long id) {
+        Bookmark bookmark = requireOwnedBookmark(userId, id);
+        bookmark.setEmoji(null);
     }
 
     // ---------- 북마크 커버 업로드 ----------
