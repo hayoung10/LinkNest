@@ -574,7 +574,6 @@ const emit = defineEmits<{
       title: string;
       url: string;
       description: string;
-      emoji?: string | null;
       tags: string[];
     },
   ): void;
@@ -699,7 +698,6 @@ function handleSave() {
     title,
     url: editedBookmark.value.url.trim(),
     description,
-    emoji: editedBookmark.value.emoji ?? null,
     tags,
   });
 
@@ -719,6 +717,8 @@ function openUrl() {
 // ------------------------
 // Emoji Picker
 // ------------------------
+const isEmojiMutating = ref(false);
+
 const emojiPickerOpen = ref(false);
 const emojiPopoverRef = ref<HTMLElement | null>(null);
 const emojiTriggerEl = ref<HTMLElement | null>(null);
@@ -734,18 +734,38 @@ function onEmojiTriggerClick() {
   if (!isEditing.value) return;
   toggleEmojiPicker();
 }
-function onEmojiSelected(emoji: any) {
+async function onEmojiSelected(emoji: any) {
   const picked = emoji?.i ?? null;
   if (!picked) return;
-  if (!editedBookmark.value) return;
+  if (isEmojiMutating.value || isEditing.value) return;
 
-  editedBookmark.value.emoji = picked;
-  closeEmojiPicker();
+  try {
+    isEmojiMutating.value = true;
+    const updated = await BookmarkApi.updateEmoji(props.bookmark.id, {
+      emoji: picked,
+    });
+    emit("replace-bookmark", updated);
+    closeEmojiPicker();
+  } catch (e) {
+    toast.error("이모지 변경에 실패했습니다.");
+  } finally {
+    isEmojiMutating.value = false;
+  }
 }
-function removeEmoji() {
-  if (!editedBookmark.value) return;
-  editedBookmark.value.emoji = null;
-  closeEmojiPicker();
+async function removeEmoji() {
+  if (isEmojiMutating.value || isEditing.value) return;
+  if (!props.bookmark.emoji) return;
+
+  try {
+    isEmojiMutating.value = true;
+    await BookmarkApi.removeEmoji(props.bookmark.id);
+    emit("replace-bookmark", { ...props.bookmark, emoji: null });
+    closeEmojiPicker();
+  } catch (e) {
+    toast.error("이모지 삭제에 실패했습니다.");
+  } finally {
+    isEmojiMutating.value = false;
+  }
 }
 
 function onDocPointerDown(e: PointerEvent) {

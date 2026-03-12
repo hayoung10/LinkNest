@@ -141,7 +141,6 @@ import { Settings } from "@/features/settings";
 import SidePanel from "@/components/overlays/SidePanel.vue";
 import type { Bookmark, CollectionNode, ID, ImageMode } from "@/types/common";
 import { useWorkspaceStore } from "@/stores/workspace";
-import * as BookmarkApi from "@/api/bookmarks";
 import { storeToRefs } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { usePreferencesStore } from "@/stores/preferences";
@@ -370,7 +369,6 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
       url: payload.url,
       title: payload.title,
       description: payload.description,
-      emoji: payload.emoji ?? null,
       tags: payload.tags ?? [],
     });
 
