@@ -20,12 +20,15 @@ export interface BookmarkUpdateReq {
   url?: string;
   title?: string | null;
   description?: string | null;
-  emoji?: string | null;
   tags?: string[];
 }
 
 export interface BookmarkMoveReq {
   targetCollectionId: ID;
+}
+
+export interface BookmarkEmojiUpdateReq {
+  emoji: string;
 }
 
 export interface BookmarkImageModeUpdateReq {
@@ -95,6 +98,22 @@ export async function moveBookmark(
   payload: BookmarkMoveReq,
 ): Promise<void> {
   await unwrap<void>(http.patch(`/bookmarks/${id}/move`, payload));
+}
+
+/** 북마크 이모지 수정 */
+export async function updateEmoji(
+  id: ID,
+  payload: BookmarkEmojiUpdateReq,
+): Promise<Bookmark> {
+  const data = await unwrap<BookmarkRes>(
+    http.patch(`/bookmarks/${id}/emoji`, payload),
+  );
+  return mapBookmarkRes(data);
+}
+
+/** 북마크 이모지 삭제 */
+export async function removeEmoji(id: ID): Promise<void> {
+  await unwrap<void>(http.delete(`/bookmarks/${id}/emoji`));
 }
 
 /** 북마크 커버 업로드 */
