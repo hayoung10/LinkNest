@@ -77,6 +77,21 @@ public class BookmarkController {
         return ResponseEntity.ok(ApiResponse.ok("북마크 이동 완료"));
     }
 
+    @PatchMapping("/{id}/emoji")
+    public ResponseEntity<ApiResponse<BookmarkRes>> updateEmoji(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                                @PathVariable @Min(1) Long id,
+                                                                @RequestBody @Valid BookmarkEmojiUpdateReq req) {
+        BookmarkRes data = service.updateEmoji(userId, id, req.emoji());
+        return ResponseEntity.ok(ApiResponse.ok("북마크 이모지 변경", data));
+    }
+
+    @DeleteMapping("/{id}/emoji")
+    public ResponseEntity<ApiResponse<Void>> removeEmoji(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                         @PathVariable @Min(1) Long id) {
+        service.removeEmoji(userId, id);
+        return ResponseEntity.ok(ApiResponse.ok("북마크 이모지 삭제"));
+    }
+
     @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<BookmarkRes>> uploadCover(@AuthenticationPrincipal(expression = "id") Long userId,
                                                    @PathVariable @Min(1) Long id,

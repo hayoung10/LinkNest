@@ -16,9 +16,6 @@ public record BookmarkUpdateReq(
         @Size(max = 1000)
         String description,
 
-        @Size(max = 16)
-        String emoji,
-
         @Size(max = 3, message = "태그는 최대 3개까지 가능합니다.")
         List<@Size(max = 50) String> tags
 ) {}
