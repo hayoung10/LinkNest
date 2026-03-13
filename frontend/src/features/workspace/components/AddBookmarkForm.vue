@@ -47,62 +47,52 @@
     <div class="flex-1 overflow-auto px-5 py-4 space-y-6">
       <!-- 제목 -->
       <div class="space-y-2">
-        <!-- 이모지 -->
-        <div class="relative flex items-end gap-2">
-          <button
-            ref="emojiTriggerEl"
-            type="button"
-            :class="[
-              'relative flex items-center justify-center size-9 rounded-md transition-colors',
-              form.emoji
-                ? 'hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer'
-                : 'cursor-default',
-            ]"
-            @click="onEmojiStateClick"
-            :aria-label="form.emoji ? '이모지 변경' : '이모지 상태'"
-            title="이모지"
-          >
-            <span v-if="form.emoji" class="text-2xl leading-none">{{
-              form.emoji
-            }}</span>
-            <span v-else class="text-lg leading-none opacity-20">+</span>
-          </button>
+        <div class="flex items-end gap-3">
+          <!-- 이모지 -->
+          <div class="relative shrink-0">
+            <button
+              ref="emojiTriggerEl"
+              type="button"
+              class="flex items-center justify-center size-9 rounded-md transition-colors hover:bg-zinc-200 dark:hover:bg-zinc-800 cursor-pointer"
+              @click="toggleEmojiPicker"
+              :aria-label="form.emoji ? '이모지 변경' : '이모지 추가'"
+              title="이모지"
+            >
+              <span v-if="form.emoji" class="text-2xl leading-none">{{
+                form.emoji
+              }}</span>
+              <span v-else class="text-lg leading-none opacity-20">+</span>
+            </button>
 
-          <button
-            v-if="!form.emoji"
-            type="button"
-            class="mb-1.5 rounded-md px-2 py-1 text-xs leading-none text-muted-foreground/60 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-foreground transition-colors"
-            @click="toggleEmojiPicker"
-          >
-            이모지 추가
-          </button>
-          <button
-            v-else
-            type="button"
-            class="mb-1.5 rounded-md px-2 py-1 text-xs leading-none text-red-600/80 hover:text-red-700 dark:text-red-400/80 dark:hover:text-red-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
-            @click="removeEmoji"
-          >
-            이모지 제거
-          </button>
+            <div
+              v-if="emojiPickerOpen"
+              ref="emojiPopoverRef"
+              class="absolute left-0 top-full mt-2 z-50"
+            >
+              <EmojiPicker :native="true" @select="onEmojiSelected" />
 
-          <!-- EmojiPicker popover -->
-          <div
-            v-if="emojiPickerOpen"
-            ref="emojiPopoverRef"
-            class="absolute left-0 top-[34px] mt-2 z-50"
-          >
-            <EmojiPicker :native="true" @select="onEmojiSelected" />
+              <button
+                v-if="form.emoji"
+                type="button"
+                class="mt-2 w-full rounded-lg border border-border/70 bg-background px-3 py-2 text-sm text-red-600 shadow-[0_10px_30px_rgba(0,0,0,0.20)] hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:text-red-400 dark:hover:bg-red-950/30"
+                @click="removeEmoji"
+              >
+                이모지 제거
+              </button>
+            </div>
+          </div>
+
+          <!-- 제목 입력 -->
+          <div class="min-w-0 flex-1">
+            <input
+              :id="titleId"
+              v-model="form.title"
+              type="text"
+              class="w-full border-0 border-b border-border/70 bg-transparent px-3 py-2.5 text-xl font-semibold placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/40"
+              placeholder="(제목 없음)"
+            />
           </div>
         </div>
-
-        <!-- 제목 입력 -->
-        <input
-          :id="titleId"
-          v-model="form.title"
-          type="text"
-          class="w-full border-0 border-b border-border/70 bg-transparent px-3 py-2.5 text-xl font-semibold placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/40"
-          placeholder="(제목 없음)"
-        />
       </div>
 
       <!-- 링크 -->
@@ -211,7 +201,7 @@ const emit = defineEmits<{
       imageMode?: ImageMode;
       collectionId: ID;
       tags?: string[];
-    }
+    },
   ): void;
 }>();
 
@@ -248,7 +238,7 @@ const isUrlValid = computed(() => {
   }
 });
 const canSave = computed(
-  () => isUrlValid.value && props.collectionId !== null && !isSaving.value
+  () => isUrlValid.value && props.collectionId !== null && !isSaving.value,
 );
 
 const normalize = (s?: string | null) => {
@@ -304,10 +294,6 @@ function closeEmojiPicker() {
 }
 function toggleEmojiPicker() {
   emojiPickerOpen.value = !emojiPickerOpen.value;
-}
-function onEmojiStateClick() {
-  if (!form.value.emoji) return;
-  toggleEmojiPicker();
 }
 function onEmojiSelected(emoji: any) {
   const picked = emoji?.i ?? null;
