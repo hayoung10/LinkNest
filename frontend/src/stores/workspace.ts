@@ -794,14 +794,26 @@ export const useWorkspaceStore = defineStore("workspace", {
     async moveBookmark(id: ID, targetCollectionId: ID) {
       this.mutateError.moveBookmark = null;
       setMutating(this.isMutating, "moveBookmark", true);
+
+      const target = this.bookmarks.find((b) => b.id === id);
+      const originCollectionId = target?.collectionId ?? null;
+
       try {
         await BookmarkApi.moveBookmark(id, { targetCollectionId });
-        // TODO: 북마크 이동 시 카운트 변경
+
+        if (
+          originCollectionId != null &&
+          originCollectionId !== targetCollectionId
+        ) {
+          this.updateBookmarkCount(originCollectionId, -1);
+          this.updateBookmarkCount(targetCollectionId, +1);
+        }
 
         if (this.selectedCollectionId != null) {
           await this.fetchBookmarks(this.selectedCollectionId);
         } else {
           this.bookmarks = [];
+          this.resetBookmarksPage();
         }
       } catch (e) {
         fail(
