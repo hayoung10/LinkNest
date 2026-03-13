@@ -350,7 +350,7 @@ async function onAddBookmark(payload: {
       imageMode: payload.imageMode ?? "AUTO",
       tags: payload.tags ?? [],
     });
-    await workspace.fetchBookmarks(payload.collectionId);
+    await workspace.reloadBookmarks(payload.collectionId);
     isAddOpen.value = false;
   } catch (e) {
     toast.error("북마크 추가에 실패했습니다.");

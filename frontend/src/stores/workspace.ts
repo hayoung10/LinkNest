@@ -644,9 +644,6 @@ export const useWorkspaceStore = defineStore("workspace", {
       setMutating(this.isMutating, "createBookmark", true);
       try {
         const created = await BookmarkApi.createBookmark(payload);
-        if (this.selectedCollectionId === created.collectionId) {
-          this.bookmarks = [...this.bookmarks, created];
-        }
         this.updateBookmarkCount(created.collectionId, +1);
 
         const needsAutoRefresh =
