@@ -361,6 +361,7 @@ import SidePanel from "@/components/overlays/SidePanel.vue";
 import Settings from "@/features/settings/Settings.vue";
 import { ID, TrashItem, TrashType } from "@/types/common";
 import { useTrashPagingScroll } from "@/composables/useTrashPagingScroll";
+import { useTabActivationRefresh } from "@/composables/useTabActivationRefresh";
 
 const router = useRouter();
 
@@ -416,6 +417,22 @@ async function onLogout() {
     toast.error("로그아웃에 실패했습니다.");
   }
 }
+
+async function refreshOnTabActivated() {
+  try {
+    clearSelection();
+    isSettingsOpen.value = false;
+
+    trash.setQuery({ type: trash.type, page: 0 });
+    await trash.load(true).catch(() => {});
+
+    await reconnect();
+  } catch (e) {
+    console.error("[TrashView] tab activation refresh failed", e);
+  }
+}
+
+useTabActivationRefresh(refreshOnTabActivated, { minIntervalMs: 500 });
 
 // ------------------------
 // Tabs

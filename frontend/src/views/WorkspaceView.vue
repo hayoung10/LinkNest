@@ -146,6 +146,7 @@ import { useAuthStore } from "@/stores/auth";
 import { usePreferencesStore } from "@/stores/preferences";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import { useToastStore } from "@/stores/toast";
+import { useTabActivationRefresh } from "@/composables/useTabActivationRefresh";
 
 type UpdateBookmarkPayload = {
   id: ID;
@@ -514,6 +515,34 @@ async function ensureBookmarkVisible(collectionId: ID, bookmarkId: ID) {
     tries++;
   }
 }
+
+async function refreshOnTabActivated() {
+  try {
+    await workspace.fetchCollectionTree();
+
+    if (viewMode.value === "favorites") {
+      await workspace.reloadBookmarks();
+      return;
+    }
+
+    const cid = selectedCollectionId.value;
+    if (cid != null) {
+      const exists = !!workspace.collectionById[cid];
+
+      if (!exists) {
+        workspace.selectCollection(null);
+        selectedBookmarkId.value = null;
+        return;
+      }
+
+      await workspace.reloadBookmarks(cid);
+    }
+  } catch (e) {
+    console.error("[WorkspaceView] tab activation refresh failed", e);
+  }
+}
+
+useTabActivationRefresh(refreshOnTabActivated, { minIntervalMs: 500 });
 
 // ------------------------
 // Watchers
