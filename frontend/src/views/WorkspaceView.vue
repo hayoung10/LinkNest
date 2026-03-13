@@ -350,7 +350,7 @@ async function onAddBookmark(payload: {
       imageMode: payload.imageMode ?? "AUTO",
       tags: payload.tags ?? [],
     });
-    await workspace.fetchBookmarks(payload.collectionId);
+    await workspace.reloadBookmarks(payload.collectionId);
     isAddOpen.value = false;
   } catch (e) {
     toast.error("북마크 추가에 실패했습니다.");
@@ -364,6 +364,13 @@ function onUnfavoriteFromDetail(id: ID) {
 }
 
 async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
+  const before = selectedBookmark.value;
+  const beforeTitle = (before?.title ?? "").trim();
+  const nextTitle = (payload.title ?? "").trim();
+
+  const shouldReload =
+    defaultBookmarkSort.value === "TITLE" && beforeTitle !== nextTitle;
+
   try {
     await workspace.updateBookmark(payload.id, {
       url: payload.url,
@@ -372,8 +379,14 @@ async function onUpdateBookmark(payload: UpdateBookmarkPayload) {
       tags: payload.tags ?? [],
     });
 
-    const cid = selectedCollectionId.value;
-    if (cid != null) await workspace.fetchBookmarks(cid);
+    if (shouldReload) {
+      const cid = selectedCollectionId.value;
+      if (cid != null) {
+        await workspace.reloadBookmarks(cid);
+      } else if (viewMode.value === "favorites") {
+        await workspace.reloadBookmarks();
+      }
+    }
   } catch (e) {
     toast.error("북마크 수정에 실패했습니다.");
   }
