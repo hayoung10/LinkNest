@@ -13,10 +13,10 @@
       </div>
 
       <nav class="hidden md:flex items-center gap-8">
+        <a href="#about" class="hover:text-primary transition-colors">소개</a>
         <a href="#features" class="hover:text-primary transition-colors"
           >기능</a
         >
-        <a href="#about" class="hover:text-primary transition-colors">소개</a>
       </nav>
 
       <button
