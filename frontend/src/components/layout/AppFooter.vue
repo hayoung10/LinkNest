@@ -31,7 +31,7 @@
       <div
         class="pt-8 border-t border-border text-center text-sm text-muted-foreground"
       >
-        © 2025 LinkNest. All rights reserved.
+        © 2026 LinkNest. All rights reserved.
       </div>
     </div>
   </footer>
