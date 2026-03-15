@@ -7,7 +7,7 @@ import com.linknest.backend.tag.Tag;
 import com.linknest.backend.tag.TagService;
 import com.linknest.backend.trash.domain.TrashType;
 import com.linknest.backend.trash.dto.TrashBookmarkRow;
-import com.linknest.backend.trash.dto.TrashBulkItemReq;
+import com.linknest.backend.trash.dto.TrashBulkItem;
 import com.linknest.backend.trash.dto.TrashCollectionRow;
 import com.linknest.backend.trash.dto.TrashItemRes;
 import lombok.RequiredArgsConstructor;
@@ -112,7 +112,7 @@ public class TrashService {
     }
 
     @Transactional
-    public void restoreMixedBulk(Long userId, List<TrashBulkItemReq> items) {
+    public void restoreMixedBulk(Long userId, List<TrashBulkItem> items) {
         if(items == null || items.isEmpty()) return;
 
         Map<TrashType, List<Long>> grouped = groupItemsByType(items);
@@ -130,7 +130,7 @@ public class TrashService {
     }
 
     @Transactional
-    public void deleteMixedBulk(Long userId, List<TrashBulkItemReq> items) {
+    public void deleteMixedBulk(Long userId, List<TrashBulkItem> items) {
         if(items == null || items.isEmpty()) return;
 
         Map<TrashType, List<Long>> grouped = groupItemsByType(items);
@@ -255,11 +255,11 @@ public class TrashService {
         return result;
     }
 
-    private Map<TrashType, List<Long>> groupItemsByType(List<TrashBulkItemReq> items) {
+    private Map<TrashType, List<Long>> groupItemsByType(List<TrashBulkItem> items) {
         return items.stream()
                 .collect(Collectors.groupingBy(
-                        TrashBulkItemReq::type,
-                        Collectors.mapping(TrashBulkItemReq::id, Collectors.toList())
+                        TrashBulkItem::type,
+                        Collectors.mapping(TrashBulkItem::id, Collectors.toList())
                 ));
     }
 }

@@ -64,7 +64,7 @@ public class TrashController {
         return ResponseEntity.ok(ApiResponse.ok("선택 항목 복구 완료", null));
     }
 
-    @DeleteMapping
+    @PostMapping("/delete")
     public ResponseEntity<ApiResponse<Void>> deleteMixedBulk(@AuthenticationPrincipal(expression = "id") Long userId,
                                                              @RequestBody @Valid TrashMixedBulkReq req) {
         service.deleteMixedBulk(userId, req.items());
@@ -79,7 +79,7 @@ public class TrashController {
         return ResponseEntity.ok(ApiResponse.ok("선택 항목 복구 완료", null));
     }
 
-    @PostMapping("/{type}")
+    @PostMapping("/{type}/delete")
     public ResponseEntity<ApiResponse<Void>> deleteBulk(@AuthenticationPrincipal(expression = "id") Long userId,
                                                     @PathVariable TrashType type,
                                                     @RequestBody @Valid TrashBulkReq req) {
