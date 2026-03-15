@@ -128,6 +128,7 @@ public class BookmarkService {
     @Transactional
     public void delete(Long userId, Long id) {
         Bookmark bookmark = requireOwnedBookmark(userId, id);
+        if(bookmark.isDeleted()) return;
 
         Set<Long> tagIds = bookmark.getBookmarkTags().stream()
                 .map(BookmarkTag::getTag)
@@ -135,11 +136,11 @@ public class BookmarkService {
                 .map(Tag::getId)
                 .collect(Collectors.toSet());
 
-        bookmarkRepository.delete(bookmark);
+        Instant now = Instant.now(clock);
+        bookmark.softDelete(now);
 
         // 태그 제거
         if(!tagIds.isEmpty()) {
-            Instant now = Instant.now(clock);
             tagService.onTagsDetached(tagIds, now);
         }
     }
