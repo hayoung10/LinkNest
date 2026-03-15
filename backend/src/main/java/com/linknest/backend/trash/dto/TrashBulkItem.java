@@ -2,7 +2,7 @@ package com.linknest.backend.trash.dto;
 
 import com.linknest.backend.trash.domain.TrashType;
 
-public record TrashBulkItemReq(
+public record TrashBulkItem(
    TrashType type,
    Long id
 ) {}
