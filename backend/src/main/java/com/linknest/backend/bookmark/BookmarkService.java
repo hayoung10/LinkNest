@@ -338,9 +338,14 @@ public class BookmarkService {
 
         if(!b.isDeleted()) return;
 
+        boolean needsDefaultCollection = b.getCollection() != null && b.getCollection().isDeleted();
+
         // 부모 컬렉션이 없으면 디폴트 컬렉션으로 이동
-        Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
-        bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, List.of(id), defaultC.getId());
+        if(needsDefaultCollection) {
+            Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
+            bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, List.of(id), defaultC.getId());
+        }
+
         bookmarkRepository.restoreDeletedByUserIdAndIdIn(userId, List.of(id));
 
         // 태그 orphanedAt 해제
@@ -354,9 +359,14 @@ public class BookmarkService {
     public void restoreFromTrashBulk(Long userId, List<Long> ids) {
         if(ids == null || ids.isEmpty()) return;
 
-        Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
+        boolean needsDefaultCollection =
+                bookmarkRepository.existsDeletedParentCollectionByUserIdAndIds(userId, ids);
 
-        bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, ids, defaultC.getId());
+        if(needsDefaultCollection) {
+            Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
+            bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, ids, defaultC.getId());
+        }
+
         bookmarkRepository.restoreDeletedByUserIdAndIdIn(userId, ids);
 
         // 태그 orphanedAt 해제
