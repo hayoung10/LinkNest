@@ -99,12 +99,18 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
     @Query(value = "select distinct bt.tag_id from bookmark_tags bt " +
             "   join bookmarks b on b.id = bt.bookmark_id " +
-            "where b.user_id = :userId" +
+            "where b.user_id = :userId " +
             "   and b.deleted_at is null " +
             "   and b.collection_id in (:collectionIds)", nativeQuery = true)
     Set<Long> findTagIdsByUserIdAndCollectionIds(@Param("userId") Long userId, @Param("collectionIds") List<Long> collectionIds);
 
     // -------------------- Trash --------------------
+    @Query("select count(b) > 0 from Bookmark b " +
+            "   join b.collection c " +
+            "where b.user.id = :userId and b.id in :ids " +
+            "   and b.deletedAt is not null and c.deletedAt is not null")
+    boolean existsDeletedParentCollectionByUserIdAndIds(@Param("userId") Long userId, @Param("ids") List<Long> ids);
+
     @Modifying
     @Query(value = "update bookmarks set deleted_at = null " +
             "where user_id = :userId and deleted_at is not null and id in (:ids)", nativeQuery = true)
