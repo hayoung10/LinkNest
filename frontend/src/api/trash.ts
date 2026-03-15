@@ -30,7 +30,7 @@ export async function getTrash(
 /** 휴지통 비우기 */
 export async function emptyTrash(type?: TrashType): Promise<void> {
   await unwrap<void>(
-    http.delete<ApiSuccess<void>>(`/trash`, {
+    http.delete<ApiSuccess<void>>(`/trash/empty`, {
       params: type ? { type } : undefined,
     }),
   );
