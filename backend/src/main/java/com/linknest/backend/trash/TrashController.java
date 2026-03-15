@@ -5,6 +5,7 @@ import com.linknest.backend.common.response.ApiResponse;
 import com.linknest.backend.trash.domain.TrashType;
 import com.linknest.backend.trash.dto.TrashBulkReq;
 import com.linknest.backend.trash.dto.TrashItemRes;
+import com.linknest.backend.trash.dto.TrashMixedBulkReq;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class TrashController {
         return ResponseEntity.ok(ApiResponse.ok("휴지통 목록 조회", data));
     }
 
-    @DeleteMapping
+    @DeleteMapping("/empty")
     public ResponseEntity<ApiResponse<Void>> empty(@AuthenticationPrincipal(expression = "id") Long userId,
                                                    @RequestParam(required = false) TrashType type) {
         service.empty(userId, type);
@@ -56,6 +57,20 @@ public class TrashController {
     // =============================
     // Bulk
     // =============================
+    @PostMapping("/restore")
+    public ResponseEntity<ApiResponse<Void>> restoreMixedBulk(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                              @RequestBody @Valid TrashMixedBulkReq req) {
+        service.restoreMixedBulk(userId, req.items());
+        return ResponseEntity.ok(ApiResponse.ok("선택 항목 복구 완료", null));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteMixedBulk(@AuthenticationPrincipal(expression = "id") Long userId,
+                                                             @RequestBody @Valid TrashMixedBulkReq req) {
+        service.deleteMixedBulk(userId, req.items());
+        return ResponseEntity.ok(ApiResponse.ok("선택 항목 영구 삭제 완료", null));
+    }
+
     @PostMapping("/{type}/restore")
     public ResponseEntity<ApiResponse<Void>> restoreBulk(@AuthenticationPrincipal(expression = "id") Long userId,
                                                      @PathVariable TrashType type,

@@ -7,6 +7,7 @@ import com.linknest.backend.tag.Tag;
 import com.linknest.backend.tag.TagService;
 import com.linknest.backend.trash.domain.TrashType;
 import com.linknest.backend.trash.dto.TrashBookmarkRow;
+import com.linknest.backend.trash.dto.TrashBulkItemReq;
 import com.linknest.backend.trash.dto.TrashCollectionRow;
 import com.linknest.backend.trash.dto.TrashItemRes;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -107,6 +109,40 @@ public class TrashService {
             case BOOKMARK -> bookmarkService.deleteFromTrash(userId, id);
             case TAG -> tagService.deleteFromTrash(userId, id);
         }
+    }
+
+    @Transactional
+    public void restoreMixedBulk(Long userId, List<TrashBulkItemReq> items) {
+        if(items == null || items.isEmpty()) return;
+
+        Map<TrashType, List<Long>> grouped = groupItemsByType(items);
+
+        List<Long> collectionIds = grouped.getOrDefault(TrashType.COLLECTION, List.of());
+        for(Long id : collectionIds) {
+            collectionService.restoreFromTrash(userId, id);
+        }
+
+        List<Long> bookmarkIds = grouped.getOrDefault(TrashType.BOOKMARK, List.of());
+        bookmarkService.restoreFromTrashBulk(userId, bookmarkIds);
+
+        List<Long> tagIds = grouped.getOrDefault(TrashType.TAG, List.of());
+        tagService.restoreFromTrashBulk(userId, tagIds);
+    }
+
+    @Transactional
+    public void deleteMixedBulk(Long userId, List<TrashBulkItemReq> items) {
+        if(items == null || items.isEmpty()) return;
+
+        Map<TrashType, List<Long>> grouped = groupItemsByType(items);
+
+        List<Long> collectionIds = grouped.getOrDefault(TrashType.COLLECTION, List.of());
+        collectionService.deleteFromTrashBulk(userId, collectionIds);
+
+        List<Long> bookmarkIds = grouped.getOrDefault(TrashType.BOOKMARK, List.of());
+        bookmarkService.deleteFromTrashBulk(userId, bookmarkIds);
+
+        List<Long> tagIds = grouped.getOrDefault(TrashType.TAG, List.of());
+        tagService.deleteFromTrashBulk(userId, tagIds);
     }
 
     @Transactional
@@ -217,5 +253,13 @@ public class TrashService {
         }
 
         return result;
+    }
+
+    private Map<TrashType, List<Long>> groupItemsByType(List<TrashBulkItemReq> items) {
+        return items.stream()
+                .collect(Collectors.groupingBy(
+                        TrashBulkItemReq::type,
+                        Collectors.mapping(TrashBulkItemReq::id, Collectors.toList())
+                ));
     }
 }
