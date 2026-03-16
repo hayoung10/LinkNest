@@ -287,7 +287,7 @@ public class TagService {
         List<String> keys = tagRepository.findDeletedNameKeysByUserIdAndIdIn(userId, ids);
         if(keys.isEmpty()) return;
 
-        boolean hasConflict = tagRepository.existsByUserIdAndDeletedAtIsNullAndNameKeyIn(userId, keys);
+        boolean hasConflict = tagRepository.existsByUser_IdAndDeletedAtIsNullAndNameKeyIn(userId, keys);
         if(hasConflict) {
             throw new BusinessException(ErrorCode.TAG_NAME_DUPLICATED);
         }
