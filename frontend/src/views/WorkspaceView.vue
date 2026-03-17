@@ -218,7 +218,6 @@ const queryFocusBookmarkId = computed<ID | null>(() =>
 );
 
 const focusBookmarkId = ref<ID | null>(null);
-const skipNextRefresh = ref(false);
 const openingFromQuery = ref(false);
 const isTreeReady = computed(
   () => Object.keys(collectionById.value ?? {}).length > 0,
@@ -566,7 +565,6 @@ async function cancelQueryOpening() {
   queryOpenSeq.value += 1;
 
   openingFromQuery.value = false;
-  skipNextRefresh.value = false;
   focusBookmarkId.value = null;
 
   if (focusTimer !== null) {
@@ -610,11 +608,6 @@ watch(
     }
 
     if (openingFromQuery.value) return;
-
-    if (skipNextRefresh.value) {
-      skipNextRefresh.value = false;
-      return;
-    }
 
     if (sort !== prevSort) {
       workspace.resetBookmarksPage(); // 정렬 변경은 페이지 리셋
