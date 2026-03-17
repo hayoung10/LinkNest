@@ -183,6 +183,52 @@ export const useTrashStore = defineStore("trash", {
       }
     },
 
+    async restoreMixedBulk(payload: TrashApi.TrashMixedBulkReq) {
+      if (!payload.items?.length) return;
+
+      this.isMutating.restore = true;
+      try {
+        await TrashApi.restoreMixedBulk(payload);
+
+        const selectedKeys = new Set(
+          payload.items.map((item) => `${item.type}:${item.id}`),
+        );
+
+        this.items = this.items.filter(
+          (i) => !selectedKeys.has(`${i.type}:${i.id}`),
+        );
+
+        await this.safeReload();
+      } catch (e) {
+        throw e;
+      } finally {
+        this.isMutating.restore = false;
+      }
+    },
+
+    async deleteMixedBulk(payload: TrashApi.TrashMixedBulkReq) {
+      if (!payload.items?.length) return;
+
+      this.isMutating.delete = true;
+      try {
+        await TrashApi.deleteMixedBulk(payload);
+
+        const selectedKeys = new Set(
+          payload.items.map((item) => `${item.type}:${item.id}`),
+        );
+
+        this.items = this.items.filter(
+          (i) => !selectedKeys.has(`${i.type}:${i.id}`),
+        );
+
+        await this.safeReload();
+      } catch (e) {
+        throw e;
+      } finally {
+        this.isMutating.delete = false;
+      }
+    },
+
     async restoreBulk(type: TrashType, ids: ID[]) {
       if (!ids?.length) return;
 

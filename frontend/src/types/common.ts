@@ -142,3 +142,8 @@ export interface TrashItem {
   bookmarkCount: number | null; // COLLECTION only
   taggedCount: number | null; // TAG only
 }
+
+export interface TrashBulkItem {
+  type: TrashType;
+  id: ID;
+}

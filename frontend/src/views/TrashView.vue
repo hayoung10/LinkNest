@@ -593,26 +593,25 @@ function selectedItems(): TrashItem[] {
   return trash.items.filter((i) => set.has(keyOf(i)));
 }
 
-function groupSelectedByType(items: TrashItem[]): Map<TrashType, ID[]> {
-  const byType = new Map<TrashType, ID[]>();
-  for (const it of items) {
-    const arr = byType.get(it.type) ?? [];
-    arr.push(it.id);
-    byType.set(it.type, arr);
-  }
-  return byType;
+function toMixedBulkItems(items: TrashItem[]) {
+  return items.map((item) => ({
+    type: item.type,
+    id: item.id,
+  }));
 }
 
 async function onRestoreSelected() {
   const items = selectedItems();
   if (items.length === 0) return;
 
-  const byType = groupSelectedByType(items);
-
   try {
-    for (const [type, ids] of byType) {
-      await trash.restoreBulk(type, ids);
+    if (trash.type === null) {
+      await trash.restoreMixedBulk({ items: toMixedBulkItems(items) });
+    } else {
+      const ids = items.map((item) => item.id);
+      await trash.restoreBulk(trash.type, ids);
     }
+
     toast.info("선택 항목을 복원했습니다.");
     clearSelection();
   } catch {
@@ -754,8 +753,13 @@ async function onConfirm() {
     }
 
     if (action.kind === "DELETE_SELECTED") {
-      const byType = groupSelectedByType(action.items);
-      for (const [type, ids] of byType) await trash.deleteBulk(type, ids);
+      if (trash.type === null) {
+        await trash.deleteMixedBulk({ items: toMixedBulkItems(action.items) });
+      } else {
+        const ids = action.items.map((item) => item.id);
+        await trash.deleteBulk(trash.type, ids);
+      }
+
       toast.info("선택 항목을 영구 삭제했습니다.");
       closeConfirm();
       await afterMutation();
