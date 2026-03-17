@@ -335,43 +335,16 @@ public class BookmarkService {
     @Transactional
     public void restoreFromTrash(Long userId, Long id) {
         Bookmark b = requiredOwnedBookmarkIncludingDeleted(userId, id);
-
         if(!b.isDeleted()) return;
 
-        boolean needsDefaultCollection = b.getCollection() != null && b.getCollection().isDeleted();
-
-        // 부모 컬렉션이 없으면 디폴트 컬렉션으로 이동
-        if(needsDefaultCollection) {
-            Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
-            bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, List.of(id), defaultC.getId());
-        }
-
-        bookmarkRepository.restoreDeletedByUserIdAndIdIn(userId, List.of(id));
-
-        // 태그 orphanedAt 해제
-        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndBookmarkIds(userId, List.of(id));
-        if(!tagIds.isEmpty()) {
-            tagService.onTagsAttached(tagIds);
-        }
+        restoreDeletedBookmarks(userId, List.of(id));
     }
 
     @Transactional
     public void restoreFromTrashBulk(Long userId, List<Long> ids) {
         if(ids == null || ids.isEmpty()) return;
 
-        boolean needsDefaultCollection =
-                bookmarkRepository.existsDeletedParentCollectionByUserIdAndIds(userId, ids);
-
-        if(needsDefaultCollection) {
-            Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
-            bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, ids, defaultC.getId());
-        }
-
-        bookmarkRepository.restoreDeletedByUserIdAndIdIn(userId, ids);
-
-        // 태그 orphanedAt 해제
-        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndBookmarkIds(userId, ids);
-        tagService.onTagsAttached(tagIds);
+        restoreDeletedBookmarks(userId, ids);
     }
 
     @Transactional
@@ -387,8 +360,8 @@ public class BookmarkService {
 
         int deleted = bookmarkRepository.deleteDeletedByUserIdAndId(userId, id);
 
-        if(deleted > 0 && !tagIds.isEmpty()) {
-            tagService.onTagsDetached(tagIds, Instant.now(clock));
+        if(deleted > 0) {
+            detachTagsIfNeeded(tagIds, Instant.now());
         }
     }
 
@@ -396,12 +369,10 @@ public class BookmarkService {
     public void deleteAllFromTrash(Long userId) {
         Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndDeletedBookmarks(userId);
 
-        bookmarkRepository.deleteAllDeletedByUserId(userId);
+        int deleted = bookmarkRepository.deleteAllDeletedByUserId(userId);
 
-        // orphanedAt 갱신
-        if(!tagIds.isEmpty()) {
-            Instant now = Instant.now(clock);
-            tagService.onTagsDetached(tagIds, now);
+        if(deleted > 0) {
+            detachTagsIfNeeded(tagIds, Instant.now());
         }
     }
 
@@ -411,10 +382,11 @@ public class BookmarkService {
 
         Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndBookmarkIds(userId, ids);
 
-        bookmarkRepository.deleteDeletedByUserIdAndIdIn(userId, ids);
+        int deleted = bookmarkRepository.deleteDeletedByUserIdAndIdIn(userId, ids);
 
-        // orphanedAt 갱신
-        tagService.onTagsDetached(tagIds, Instant.now(clock));
+        if(deleted > 0) {
+            detachTagsIfNeeded(tagIds, Instant.now());
+        }
     }
 
     // ==========================================================
@@ -543,5 +515,29 @@ public class BookmarkService {
         if(!attachedTagIds.isEmpty()) {
             tagService.onTagsAttached(attachedTagIds);
         }
+    }
+
+    private void restoreDeletedBookmarks(Long userId, List<Long> ids) {
+        boolean needsDefaultCollection =
+                bookmarkRepository.countDeletedParentCollectionByUserIdAndIds(userId, ids) > 0;
+
+        // 부모 컬렉션이 없으면 디폴트 컬렉션으로 이동
+        if(needsDefaultCollection) {
+            Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
+            bookmarkRepository.moveDeletedToDefaultIfParentDeleted(userId, ids, defaultC.getId());
+        }
+
+        bookmarkRepository.restoreDeletedByUserIdAndIdIn(userId, ids);
+
+        // 태그 orphanedAt 해제
+        Set<Long> tagIds = bookmarkRepository.findTagIdsByUserIdAndBookmarkIds(userId, ids);
+        if(!tagIds.isEmpty()) {
+            tagService.onTagsAttached(tagIds);
+        }
+    }
+
+    private void detachTagsIfNeeded(Set<Long> tagIds, Instant now) {
+        if(tagIds == null || tagIds.isEmpty()) return;
+        tagService.onTagsDetached(tagIds, now);
     }
 }

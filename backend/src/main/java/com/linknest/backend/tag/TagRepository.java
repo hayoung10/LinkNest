@@ -145,13 +145,7 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
             "   and t.id in (:ids)", nativeQuery = true)
     List<String> findDeletedNameKeysByUserIdAndIdIn(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 
-    @Query(value = "select exists(" +
-            "   select 1 from tags t " +
-            "   where t.user_id = :userId " +
-            "       and t.deleted_at is null " +
-            "       and t.name_key in (:keys)" +
-            ")", nativeQuery = true)
-    boolean existsByUserIdAndDeletedAtIsNullAndNameKeyIn(@Param("userId") Long userId, @Param("keys") List<String> keys);
+    boolean existsByUser_IdAndDeletedAtIsNullAndNameKeyIn(@Param("userId") Long userId, @Param("keys") List<String> keys);
 
     @Query(value = "select t.id from tags t " +
             "where t.user_id = :userId " +
