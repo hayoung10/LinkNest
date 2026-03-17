@@ -544,6 +544,39 @@ async function refreshOnTabActivated() {
 
 useTabActivationRefresh(refreshOnTabActivated, { minIntervalMs: 500 });
 
+const queryOpenSeq = ref(0);
+
+function closeWorkspacePanels() {
+  selectedBookmarkId.value = null;
+  isAddOpen.value = false;
+  isSettingsOpen.value = false;
+}
+
+async function clearWorkspaceOpenQuery() {
+  await router.replace({
+    query: {
+      ...route.query,
+      focusBookmarkId: undefined,
+      collectionId: undefined,
+    },
+  });
+}
+
+async function cancelQueryOpening() {
+  queryOpenSeq.value += 1;
+
+  openingFromQuery.value = false;
+  skipNextRefresh.value = false;
+  focusBookmarkId.value = null;
+
+  if (focusTimer !== null) {
+    window.clearTimeout(focusTimer);
+    focusTimer = null;
+  }
+
+  await clearWorkspaceOpenQuery();
+}
+
 // ------------------------
 // Watchers
 // ------------------------
@@ -557,14 +590,26 @@ watch(
       defaultBookmarkSort.value,
     ] as const,
   async ([mode, cid, sort], prev) => {
-    if (openingFromQuery.value) return;
-
     const [prevMode, prevCid, prevSort] = prev ?? [
       undefined,
       undefined,
       undefined,
     ];
     if (mode === prevMode && cid === prevCid && sort === prevSort) return;
+
+    const openingCid = queryCollectionId.value;
+
+    // query로 열린 상태에서 사용자가 다른 컬렉션을 클릭한 경우
+    if (
+      openingFromQuery.value &&
+      cid != null &&
+      openingCid != null &&
+      cid !== openingCid
+    ) {
+      await cancelQueryOpening();
+    }
+
+    if (openingFromQuery.value) return;
 
     if (skipNextRefresh.value) {
       skipNextRefresh.value = false;
@@ -575,10 +620,7 @@ watch(
       workspace.resetBookmarksPage(); // 정렬 변경은 페이지 리셋
     }
 
-    selectedBookmarkId.value = null;
-    isAddOpen.value = false;
-    isSettingsOpen.value = false;
-
+    closeWorkspacePanels();
     await refreshBookmarks();
   },
   { immediate: true },
@@ -619,30 +661,29 @@ watch(
 
     const exists = !!collectionById.value[cid];
     if (!exists) {
-      router.replace({
-        query: {
-          ...route.query,
-          collectionId: undefined,
-          focusBookmarkId: undefined,
-        },
-      });
+      await clearWorkspaceOpenQuery();
       return;
     }
 
-    openingFromQuery.value = true;
-    skipNextRefresh.value = true;
+    const seq = ++queryOpenSeq.value;
 
-    selectedBookmarkId.value = null;
-    isAddOpen.value = false;
-    isSettingsOpen.value = false;
+    openingFromQuery.value = true;
+    closeWorkspacePanels();
 
     workspace.selectCollection(cid);
     await workspace.reloadBookmarks(cid);
+    if (seq !== queryOpenSeq.value) return;
 
-    if (bid != null) await ensureBookmarkVisible(cid, bid);
+    if (bid != null) {
+      await ensureBookmarkVisible(cid, bid);
+      if (seq !== queryOpenSeq.value) return;
+    }
 
     focusBookmarkId.value = bid ?? null;
+    openingFromQuery.value = false;
+
     await nextTick();
+    if (seq !== queryOpenSeq.value) return;
   },
   { immediate: true },
 );
