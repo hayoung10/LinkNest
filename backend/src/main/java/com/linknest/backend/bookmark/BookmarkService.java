@@ -338,7 +338,8 @@ public class BookmarkService {
 
         if(!b.isDeleted()) return;
 
-        boolean needsDefaultCollection = b.getCollection() != null && b.getCollection().isDeleted();
+        boolean needsDefaultCollection =
+                bookmarkRepository.countDeletedParentCollectionByUserIdAndIds(userId, List.of(id)) > 0;
 
         // 부모 컬렉션이 없으면 디폴트 컬렉션으로 이동
         if(needsDefaultCollection) {
@@ -360,7 +361,7 @@ public class BookmarkService {
         if(ids == null || ids.isEmpty()) return;
 
         boolean needsDefaultCollection =
-                bookmarkRepository.existsDeletedParentCollectionByUserIdAndIds(userId, ids);
+                bookmarkRepository.countDeletedParentCollectionByUserIdAndIds(userId, ids) > 0;
 
         if(needsDefaultCollection) {
             Collection defaultC = collectionService.getOrCreateDefaultCollection(userId);
