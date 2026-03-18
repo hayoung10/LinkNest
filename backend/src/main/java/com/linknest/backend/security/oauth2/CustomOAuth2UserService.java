@@ -83,6 +83,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private User findOrCreateUser(OAuth2UserInfo info, String providerId) {
         return userRepository.findByProviderAndProviderId(info.getProvider(), providerId)
+                .map(user -> {
+                    user.setProviderProfileImageUrl(info.getPicture());
+                    return user;
+                })
                 .orElseGet(() -> userRepository.save(
                         User.oauthSignup(info.getEmail(), info.getName(), info.getPicture(),
                                 info.getProvider(), providerId)
