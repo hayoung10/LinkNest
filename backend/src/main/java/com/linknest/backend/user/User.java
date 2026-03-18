@@ -34,7 +34,10 @@ public class User {
     private String name;
 
     @Column(length = 512)
-    private String profileImageUrl;
+    private String profileImageUrl; // 사용자 업로드 이미지
+
+    @Column(length = 512)
+    private String providerProfileImageUrl; // OAuth 기본 이미지
 
     // OAuth2 필드
     @Enumerated(EnumType.STRING)
@@ -67,11 +70,15 @@ public class User {
         return User.builder()
                 .email(email)
                 .name(name)
-                .profileImageUrl(picture)
+                .providerProfileImageUrl(picture)
                 .provider(provider)
                 .providerId(providerId)
                 .role(Role.ROLE_USER)
                 .build();
+    }
+
+    public String getResolvedProfileImageUrl() {
+        return profileImageUrl != null ? profileImageUrl : providerProfileImageUrl;
     }
 
     public void addBookmark(Bookmark b) {

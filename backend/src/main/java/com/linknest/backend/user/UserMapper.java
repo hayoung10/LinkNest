@@ -12,5 +12,6 @@ public interface UserMapper {
     void updateFromDto(UserUpdateReq updateReq, @MappingTarget User user);
 
     // Entity -> Res
+    @Mapping(target = "profileImageUrl", expression = "java(user.getResolvedProfileImageUrl())")
     UserRes toRes(User user);
 }
