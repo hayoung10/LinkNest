@@ -78,7 +78,15 @@ public class User {
     }
 
     public String getResolvedProfileImageUrl() {
-        return profileImageUrl != null ? profileImageUrl : providerProfileImageUrl;
+        if(hasCustomProfileImage()) return profileImageUrl;
+        if(providerProfileImageUrl != null && !providerProfileImageUrl.isBlank()) {
+            return providerProfileImageUrl;
+        }
+        return null;
+    }
+
+    public boolean hasCustomProfileImage() {
+        return profileImageUrl != null && !profileImageUrl.isBlank();
     }
 
     public void addBookmark(Bookmark b) {
