@@ -13,5 +13,6 @@ public interface UserMapper {
 
     // Entity -> Res
     @Mapping(target = "profileImageUrl", expression = "java(user.getResolvedProfileImageUrl())")
+    @Mapping(target = "hasCustomProfileImage", expression = "java(user.hasCustomProfileImage())")
     UserRes toRes(User user);
 }

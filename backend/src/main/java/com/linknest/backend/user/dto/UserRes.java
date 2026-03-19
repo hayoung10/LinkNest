@@ -10,6 +10,7 @@ public record UserRes(
         String email,
         String name,
         String profileImageUrl,
+        boolean hasCustomProfileImage,
         Role role,
         AuthProvider provider,
         Instant createdAt,
