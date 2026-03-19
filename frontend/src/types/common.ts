@@ -25,6 +25,7 @@ export interface User {
   email: string | null;
   name: string | null;
   profileImageUrl: string | null;
+  hasCustomProfileImage: boolean;
   role: Role;
   provider: Provider;
   createdAt: ISODateTime;

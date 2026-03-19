@@ -15,13 +15,14 @@
         <!-- 아바타 / 프로필 이미지 -->
         <div class="relative">
           <div
-            v-if="profileImageUrl"
+            v-if="profileImageUrl && !avatarLoadFailed"
             class="h-24 w-24 overflow-hidden rounded-full bg-zinc-100"
           >
             <img
               :src="profileImageUrl"
               alt="프로필 이미지"
               class="h-full w-full object-cover"
+              @error="avatarLoadFailed = true"
             />
           </div>
 
@@ -59,9 +60,9 @@
             </button>
 
             <button
-              v-if="profileImageUrl"
+              v-if="hasCustomProfileImage"
               type="button"
-              class="text-xs text-zinc-400 hover:text-zinc-600 underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              class="text-xs text-zinc-400 hover:text-red-500 hover:underline transition-colors underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               @click="onDeletePhoto"
               :disabled="isPhotoUpdating"
             >
@@ -181,20 +182,17 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
-import { computed, onMounted, ref, watch } from "vue";
+import { useToastStore } from "@/stores/toast";
 import * as UserApi from "@/api/users";
 import type { Provider } from "@/types/common";
 import ProviderIcon from "@/components/common/ProviderIcon.vue";
-import { useToastStore } from "@/stores/toast";
 
 const toast = useToastStore();
 const auth = useAuthStore();
 
-// 이름 편집 상태
 const editableName = ref("");
-
-// 로딩 상태
 const isSavingName = ref(false);
 const isPhotoUpdating = ref(false);
 
@@ -202,9 +200,23 @@ const isPhotoUpdating = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
 const profileImageUrl = computed(() => auth.user?.profileImageUrl ?? null);
-const email = computed(() => auth.user?.email ?? "");
+const hasCustomProfileImage = computed(
+  () => auth.user?.hasCustomProfileImage ?? false,
+);
 
+const email = computed(() => auth.user?.email ?? "");
 const provider = computed<Provider | null>(() => auth.user?.provider ?? null);
+
+const avatar = computed(() => {
+  const n = editableName.value?.trim() || auth.user?.name || "";
+  return n ? n[0] : "U";
+});
+const avatarLoadFailed = ref(false);
+
+const isNameChanged = computed(() => {
+  const current = auth.user?.name ?? "";
+  return editableName.value.trim() !== current.trim();
+});
 
 const providerLabel = computed(() => {
   if (!provider.value) return "이메일";
@@ -218,26 +230,11 @@ const providerLabel = computed(() => {
   }
 });
 
-// 아바타 이니셜
-const avatar = computed(() => {
-  const n = editableName.value?.trim() || auth.user?.name || "";
-  return n ? n[0] : "U";
-});
-
-watch(
-  () => auth.user?.name,
-  (newName) => {
-    if (newName && !isSavingName.value) {
-      editableName.value = newName ?? "";
-    }
-  },
-  { immediate: true },
-);
-
-// 이름 변경 여부
-const isNameChanged = computed(() => {
-  const current = auth.user?.name ?? "";
-  return editableName.value.trim() !== current.trim();
+const providerIconBgClass = computed(() => {
+  if (provider.value === "KAKAO") {
+    return "bg-[#F2DD4C] text-gray-900";
+  }
+  return "bg-zinc-100 text-zinc-700";
 });
 
 // 이름 저장
@@ -303,7 +300,7 @@ const onFileChange = async (event: Event) => {
 
 // 프로필 이미지 삭제
 const onDeletePhoto = async () => {
-  if (!profileImageUrl.value) return;
+  if (!hasCustomProfileImage.value) return;
 
   isPhotoUpdating.value = true;
   try {
@@ -318,10 +315,22 @@ const onDeletePhoto = async () => {
   }
 };
 
-const providerIconBgClass = computed(() => {
-  if (provider.value === "KAKAO") {
-    return "bg-[#F2DD4C] text-gray-900";
-  }
-  return "bg-zinc-100 text-zinc-700";
-});
+// watch
+watch(
+  () => auth.user?.name,
+  (newName) => {
+    if (newName != null && !isSavingName.value) {
+      editableName.value = newName;
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => auth.user?.profileImageUrl,
+  () => {
+    avatarLoadFailed.value = false;
+  },
+  { immediate: true },
+);
 </script>

@@ -26,6 +26,7 @@ export function mapUserRes(dto: UserRes): User {
     email: dto.email,
     name: dto.name ?? null,
     profileImageUrl: dto.profileImageUrl,
+    hasCustomProfileImage: dto.hasCustomProfileImage,
     role: dto.role,
     provider: dto.provider,
     createdAt: dto.createdAt,

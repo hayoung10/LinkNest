@@ -13,10 +13,11 @@
         class="size-8 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white grid place-items-center overflow-hidden"
       >
         <img
-          v-if="user?.profileImageUrl"
+          v-if="user?.profileImageUrl && !avatarLoadFailed"
           :src="user?.profileImageUrl"
           :alt="user?.name ?? ''"
           class="w-full h-full object-cover"
+          @error="avatarLoadFailed = true"
         />
         <span v-else class="text-sm font-medium">{{ initials }}</span>
       </div>
@@ -131,15 +132,20 @@
 
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import type { CSSProperties } from "vue";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
 import SettingsIcon from "@/components/icons/SettingsIcon.vue";
 import TagIcon from "@/components/icons/TagIcon.vue";
 import { useAuthStore } from "@/stores/auth";
 import TrashIcon from "@/components/icons/TrashIcon.vue";
-
-type Placement = "top" | "bottom";
 
 const props = withDefaults(
   defineProps<{
@@ -244,13 +250,6 @@ function onDocClick(e: MouseEvent) {
   closeMenu();
 }
 
-onMounted(() =>
-  document.addEventListener("click", onDocClick, { capture: true }),
-);
-onBeforeUnmount(() =>
-  document.removeEventListener("click", onDocClick, { capture: true }),
-);
-
 // 액션 핸들러
 function handleOpenSettings() {
   closeMenu();
@@ -271,6 +270,25 @@ function handleLogout() {
   closeMenu();
   emit("logout");
 }
+
+// 프로필 이미지
+const avatarLoadFailed = ref(false);
+
+watch(
+  () => user.value?.profileImageUrl,
+  () => {
+    avatarLoadFailed.value = false;
+  },
+  { immediate: true },
+);
+
+onMounted(() => {
+  document.addEventListener("click", onDocClick, { capture: true });
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("click", onDocClick, { capture: true });
+});
 </script>
 
 <style scoped>
