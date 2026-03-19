@@ -16,6 +16,7 @@ export interface UserRes {
   name: string | null;
   email: string;
   profileImageUrl: string | null;
+  hasCustomProfileImage: boolean;
   role: Role;
   provider: Provider;
   createdAt: string;
