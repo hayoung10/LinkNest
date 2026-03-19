@@ -62,7 +62,7 @@
             <button
               v-if="hasCustomProfileImage"
               type="button"
-              class="text-xs text-zinc-400 hover:text-zinc-600 underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              class="text-xs text-zinc-400 hover:text-red-500 hover:underline transition-colors underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               @click="onDeletePhoto"
               :disabled="isPhotoUpdating"
             >
