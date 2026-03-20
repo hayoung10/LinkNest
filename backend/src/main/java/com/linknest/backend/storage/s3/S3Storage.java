@@ -5,6 +5,8 @@ import com.linknest.backend.storage.StorageProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
+
 @Slf4j
 public class S3Storage implements Storage {
     private final String bucket;
@@ -19,6 +21,12 @@ public class S3Storage implements Storage {
 
     @Override
     public String upload(String directory, MultipartFile file) {
+        // TODO: S3 업로드 구현
+        throw new UnsupportedOperationException("S3 upload not implemented yet.");
+    }
+
+    @Override
+    public String upload(String directory, InputStream inputStream, String contentType) {
         // TODO: S3 업로드 구현
         throw new UnsupportedOperationException("S3 upload not implemented yet.");
     }
