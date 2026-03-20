@@ -6,9 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Locale;
 import java.util.UUID;
 
 @Slf4j
@@ -61,6 +64,37 @@ public class LocalStorage implements Storage {
     }
 
     @Override
+    public String upload(String directory, InputStream inputStream, String contentType) {
+        if(inputStream == null) {
+            log.warn("Storage: stream upload called with null inputStream. directory={}", directory);
+            throw new IllegalArgumentException("업로드할 파일이 비어있습니다.");
+        }
+
+        String extension = extractExtension(contentType);
+        String filename = UUID.randomUUID() + extension;
+
+        try {
+            Path dirPath = Paths.get(basePath, directory).toAbsolutePath().normalize();
+            Files.createDirectories(dirPath);
+
+            Path target = dirPath.resolve(filename);
+            Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
+
+            // URL용 경로: {baseUrl}/{directory}/{filename}
+            String urlPath = directory + "/" + filename;
+            String url = baseUrl.endsWith("/") ? baseUrl + urlPath : baseUrl + "/" + urlPath;
+
+            log.info("Storage: local stream upload success. directory={}, storeFilename={}, url={}",
+                    directory, filename, url);
+            return url;
+        } catch (IOException e) {
+            log.error("Storage: local stream upload failed. directory={}, reason={}",
+                    directory, e.getMessage(), e);
+            throw new RuntimeException("파일 업로드에 실패했습니다.", e);
+        }
+    }
+
+    @Override
     public void delete(String url) {
         if(url == null || url.isBlank()) return;
 
@@ -80,5 +114,19 @@ public class LocalStorage implements Storage {
         } catch (IOException e) {
             log.warn("Storage: local file delete failed, reason={}", url, e.getMessage(), e);
         }
+    }
+
+    private String extractExtension(String contentType) {
+        if(contentType == null || contentType.isBlank()) {
+            return "";
+        }
+
+        return switch (contentType.toLowerCase(Locale.ROOT)) {
+            case "image/jpeg", "image/jpg" -> ".jpg";
+            case "image/png" -> ".png";
+            case "image/gif" -> ".gif";
+            case "image/webp" -> ".webp";
+            default -> "";
+        };
     }
 }
