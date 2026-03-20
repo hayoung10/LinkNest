@@ -65,12 +65,12 @@ public class User {
     @Column(nullable = false)
     private Instant updatedAt;
 
-    public static User oauthSignup(String email, String name, String picture,
+    public static User oauthSignup(String email, String name, String providerProfileImageUrl,
                                    AuthProvider provider, String providerId) {
         return User.builder()
                 .email(email)
                 .name(name)
-                .providerProfileImageUrl(picture)
+                .providerProfileImageUrl(providerProfileImageUrl)
                 .provider(provider)
                 .providerId(providerId)
                 .role(Role.ROLE_USER)

@@ -1,5 +1,6 @@
 package com.linknest.backend.security.oauth2;
 
+import com.linknest.backend.user.ProviderProfileImageService;
 import com.linknest.backend.user.User;
 import com.linknest.backend.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.*;
 @Transactional
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
+    private final ProviderProfileImageService providerProfileImageService;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -84,12 +86,26 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private User findOrCreateUser(OAuth2UserInfo info, String providerId) {
         return userRepository.findByProviderAndProviderId(info.getProvider(), providerId)
                 .map(user -> {
-                    user.setProviderProfileImageUrl(info.getPicture());
+                    String syncedUrl = providerProfileImageService.syncProviderProfileImage(
+                            info.getProvider(),
+                            providerId,
+                            info.getPicture(),
+                            user.getProviderProfileImageUrl()
+                    );
+                    user.setProviderProfileImageUrl(syncedUrl);
                     return user;
                 })
-                .orElseGet(() -> userRepository.save(
-                        User.oauthSignup(info.getEmail(), info.getName(), info.getPicture(),
-                                info.getProvider(), providerId)
-                ));
+                .orElseGet(() -> {
+                    String syncedUrl = providerProfileImageService.syncProviderProfileImage(
+                            info.getProvider(),
+                            providerId,
+                            info.getPicture(),
+                            null
+                    );
+
+                    User user = User.oauthSignup(info.getEmail(), info.getName(), syncedUrl,
+                            info.getProvider(), providerId);
+                    return userRepository.save(user);
+                });
     }
 }
