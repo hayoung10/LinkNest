@@ -426,6 +426,11 @@ const nodeHandlers = computed(() => {
       e.stopPropagation();
       emit("select-collection", props.node);
     },
+    dblclick: (e: MouseEvent) => {
+      e.stopPropagation();
+      if (!hasChildren.value) return;
+      emit("toggle", props.node.id);
+    },
     keydown: (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         e.stopPropagation();
