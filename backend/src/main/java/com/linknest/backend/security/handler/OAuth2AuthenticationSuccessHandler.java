@@ -69,7 +69,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
         // 리다이렉트 대상 구성
         String target = successRedirectUri;
-        if(appState != null && appState.isBlank()) {
+        if(appState != null && !appState.isBlank()) {
             target = successRedirectUri + "?state=" + appState;
         }
 
