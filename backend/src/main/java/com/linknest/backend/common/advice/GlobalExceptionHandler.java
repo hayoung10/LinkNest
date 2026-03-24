@@ -65,7 +65,7 @@ public class GlobalExceptionHandler {
         log.warn("Type mismatch: {}", e.getMessage());
         ErrorResponse.FieldError error = new ErrorResponse.FieldError(
                 e.getName(),
-                e.getValue() == null ? "" : String.valueOf(e.getValue()),
+                String.valueOf(e.getValue()),
                 "타입이 올바르지 않습니다."
         );
         Instant now = Instant.now(clock);
@@ -165,7 +165,7 @@ public class GlobalExceptionHandler {
     }
 
     private ErrorResponse.FieldError toFieldError(FieldError fe) {
-        String rejected = fe.getRejectedValue() == null ? "" : String.valueOf(fe.getRejectedValue());
+        String rejected = String.valueOf(fe.getRejectedValue());
         return new ErrorResponse.FieldError(fe.getField(), rejected, fe.getDefaultMessage());
     }
 
