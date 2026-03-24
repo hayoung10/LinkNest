@@ -50,7 +50,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
         // 사용자 조회
         OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
-        OAuth2User principal = (OAuth2User) authToken.getPrincipal();
+        OAuth2User principal = authToken.getPrincipal();
         Map<String, Object> attributes = principal.getAttributes();
 
         Long userId = (Long) attributes.get("userId");
