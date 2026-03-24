@@ -6,7 +6,6 @@ import com.linknest.backend.config.props.JwtProperties;
 import com.linknest.backend.security.jwt.JwtTokenizer;
 import com.linknest.backend.user.User;
 import com.linknest.backend.user.UserRepository;
-import io.jsonwebtoken.lang.Maps;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
