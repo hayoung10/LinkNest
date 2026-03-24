@@ -43,7 +43,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException {
+                                        Authentication authentication) throws IOException {
         // AuthorizationRequest 복원
         OAuth2AuthorizationRequest authReq = authRequestRepository.removeAuthorizationRequest(request, response);
         String appState = authReq != null ? (String) authReq.getAttributes().get("returnTo") : null;

@@ -22,7 +22,7 @@ public class UserAccessDeniedHandler implements AccessDeniedHandler {
 
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
-                       AccessDeniedException accessDeniedException) throws IOException, ServletException {
+                       AccessDeniedException accessDeniedException) throws IOException {
         errorResponder.send(
                 request, response,
                 ErrorCode.ACCESS_DENIED.getStatus(),
