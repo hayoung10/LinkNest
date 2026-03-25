@@ -5,6 +5,7 @@ spring:
     group:
       dev: [dev-config, commons, secret]
       prod: [prod-config, commons, secret]
+      test: [test-config, commons]
 
 --- #commons 공통 설정
 server:
@@ -89,7 +90,7 @@ logging:
     org.springframework.security: debug
     org.hibernate.SQL: warn
     org.hibernate.type: warn
-    com.example: debug
+    com.linknest: debug
 
 --- #prod-config
 spring:
@@ -112,7 +113,7 @@ logging:
     org.springframework.security: warn
     org.hibernate.SQL: warn
     org.hibernate.type: warn
-    com.example: info
+    com.linknest: info
 
 storage:
   s3:
