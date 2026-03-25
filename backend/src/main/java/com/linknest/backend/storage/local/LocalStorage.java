@@ -112,7 +112,7 @@ public class LocalStorage implements Storage {
                 log.info("Storage: local file not found for delete. url={}, path={}", url, filePath);
             }
         } catch (IOException e) {
-            log.warn("Storage: local file delete failed, reason={}", url, e.getMessage(), e);
+            log.warn("Storage: local file delete failed, url={}, reason={}", url, e.getMessage(), e);
         }
     }
 

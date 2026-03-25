@@ -62,7 +62,7 @@ public class TokenController {
         TokenRefreshRes body = new TokenRefreshRes(
                 newAt,
                 "Bearer",
-                jwtProperties.getAccessExpMinutes() * 60
+                jwtProperties.getAccessExpMinutes() * 60L
         );
 
         return ResponseEntity.ok(ApiResponse.ok("액세스 토큰 재발급", body));
@@ -71,10 +71,8 @@ public class TokenController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
         // 쿠키에서 RT 추출
-        String refreshToken = CookieUtils.getCookieValue(request, RT_COOKIE).orElse(null);
-        if(refreshToken != null) {
-            tokenService.revokeToken(refreshToken);
-        }
+        CookieUtils.getCookieValue(request, RT_COOKIE)
+                .ifPresent(tokenService::revokeToken);
 
         // 쿠키 삭제
         ResponseCookie delCookie = CookieUtils.deleteCookie(RT_COOKIE);

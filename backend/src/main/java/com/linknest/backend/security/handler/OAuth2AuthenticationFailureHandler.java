@@ -19,7 +19,7 @@ public class OAuth2AuthenticationFailureHandler implements AuthenticationFailure
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
-                                        AuthenticationException exception) throws IOException, ServletException {
+                                        AuthenticationException exception) throws IOException {
         errorResponder.send(
                 request, response,
                 ErrorCode.OAUTH2_AUTHENTICATION_FAILED.getStatus(),

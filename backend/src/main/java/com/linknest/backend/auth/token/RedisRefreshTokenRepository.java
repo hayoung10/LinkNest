@@ -1,6 +1,5 @@
 package com.linknest.backend.auth.token;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -12,14 +11,22 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-@RequiredArgsConstructor
 public class RedisRefreshTokenRepository implements RefreshTokenRepository {
-    @Qualifier("refreshTokenRedisTemplate")
+
     private final RedisTemplate<String, RefreshTokenEntity> redisTemplate;
     private final StringRedisTemplate stringRedisTemplate;
 
     private static final String RT_PREFIX = "rt:"; // 개별 rt
     private static final String USER_RT_PREFIX = "user-rt:"; // user별 jti set
+
+    public RedisRefreshTokenRepository(
+            @Qualifier("refreshTokenRedisTemplate")
+            RedisTemplate<String, RefreshTokenEntity> redisTemplate,
+            StringRedisTemplate stringRedisTemplate
+    ) {
+        this.redisTemplate = redisTemplate;
+        this.stringRedisTemplate = stringRedisTemplate;
+    }
 
     private String rtKey(String jti) {
         return RT_PREFIX + jti;

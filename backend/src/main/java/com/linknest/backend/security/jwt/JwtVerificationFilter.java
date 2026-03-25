@@ -34,7 +34,7 @@ public class JwtVerificationFilter extends OncePerRequestFilter {
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         for(String p: EXCLUDE_PATTERNS) {
             if(PATH_MATCHER.match(p, path)) return true;

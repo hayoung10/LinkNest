@@ -43,14 +43,14 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException {
+                                        Authentication authentication) throws IOException {
         // AuthorizationRequest 복원
         OAuth2AuthorizationRequest authReq = authRequestRepository.removeAuthorizationRequest(request, response);
         String appState = authReq != null ? (String) authReq.getAttributes().get("returnTo") : null;
 
         // 사용자 조회
         OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
-        OAuth2User principal = (OAuth2User) authToken.getPrincipal();
+        OAuth2User principal = authToken.getPrincipal();
         Map<String, Object> attributes = principal.getAttributes();
 
         Long userId = (Long) attributes.get("userId");
@@ -69,7 +69,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
         // 리다이렉트 대상 구성
         String target = successRedirectUri;
-        if(appState != null && appState.isBlank()) {
+        if(appState != null && !appState.isBlank()) {
             target = successRedirectUri + "?state=" + appState;
         }
 
