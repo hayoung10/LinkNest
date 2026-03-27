@@ -167,6 +167,78 @@ public class CustomOidcUserServiceTest {
                 () -> customOidcUserService.loadUser(userRequest));
     }
 
+    @Test
+    @DisplayName("providerId가 없으면 OIDC subject를 fallback으로 사용한다")
+    void loadUser_uses_subject_when_providerId_missing() {
+        OidcUserRequest userRequest = oidcUserRequest("google", "sub");
+        OidcUser loadedUser = org.mockito.Mockito.mock(OidcUser.class);
+
+        Map<String, Object> claims = Map.of(
+                "sub", "",
+                "email", "test@example.com",
+                "name", "honggildong",
+                "picture", "https://image.example.com/profile.jpg"
+        );
+
+        OidcIdToken idToken = new OidcIdToken(
+                "id-token",
+                Instant.now(),
+                Instant.now().plusSeconds(300),
+                claims
+        );
+
+        User savedUser = User.builder()
+                .id(1L)
+                .email("test@example.com")
+                .name("honggildong")
+                .provider(AuthProvider.GOOGLE)
+                .providerId("fallback-sub")
+                .providerProfileImageUrl("synced-image")
+                .role(User.Role.ROLE_USER)
+                .build();
+
+        given(oidcUserLoader.load(userRequest)).willReturn(loadedUser);
+        given(loadedUser.getClaims()).willReturn(claims);
+
+        given(loadedUser.getSubject()).willReturn("fallback-sub");
+
+        given(loadedUser.getIdToken()).willReturn(idToken);
+        given(userRepository.findByProviderAndProviderId(AuthProvider.GOOGLE, "fallback-sub"))
+                .willReturn(Optional.empty());
+
+        given(providerProfileImageService.syncProviderProfileImage(
+                AuthProvider.GOOGLE,
+                "fallback-sub",
+                "https://image.example.com/profile.jpg",
+                null
+        )).willReturn("synced-image");
+        given(userRepository.save(any(User.class))).willReturn(savedUser);
+
+        OidcUser result = customOidcUserService.loadUser(userRequest);
+
+        assertThat(result.getClaims().get("providerId")).isEqualTo("fallback-sub");
+        assertThat(result.getClaims().get("userId")).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("providerId와 subject가 모두 없으면 예외가 발생한다")
+    void loadUser_throws_when_providerId_and_subject_missing() {
+        OidcUserRequest userRequest = oidcUserRequest("google", "sub");
+        OidcUser loadedUser = org.mockito.Mockito.mock(OidcUser.class);
+
+        Map<String, Object> claims = Map.of(
+                "email", "test@example.com"
+        );
+
+        given(oidcUserLoader.load(userRequest)).willReturn(loadedUser);
+        given(loadedUser.getClaims()).willReturn(claims);
+
+        given(loadedUser.getSubject()).willReturn(null);
+
+        assertThrows(OAuth2AuthenticationException.class,
+                () -> customOidcUserService.loadUser(userRequest));
+    }
+
     private OidcUserRequest oidcUserRequest(String registrationId, String userNameAttributeName) {
         ClientRegistration clientRegistration = ClientRegistration.withRegistrationId(registrationId)
                 .clientId("test-client-id")
