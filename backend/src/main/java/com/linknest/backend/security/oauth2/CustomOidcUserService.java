@@ -22,12 +22,13 @@ import java.util.*;
 @RequiredArgsConstructor
 @Transactional
 public class CustomOidcUserService extends OidcUserService {
+    private final OidcUserLoader oidcUserLoader;
     private final UserRepository userRepository;
     private final ProviderProfileImageService providerProfileImageService;
 
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
-        OidcUser oidcUser = super.loadUser(userRequest);
+        OidcUser oidcUser = oidcUserLoader.load(userRequest);
 
         // provider 식별
         String registrationId = userRequest.getClientRegistration().getRegistrationId();

@@ -21,13 +21,14 @@ import java.util.*;
 @RequiredArgsConstructor
 @Transactional
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
+    private final OAuth2UserLoader oAuth2UserLoader;
     private final UserRepository userRepository;
     private final ProviderProfileImageService providerProfileImageService;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         // 원본 사용자 정보 조회
-        OAuth2User oAuth2User = super.loadUser(userRequest);
+        OAuth2User oAuth2User = oAuth2UserLoader.load(userRequest);
 
         // provider 식별
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
