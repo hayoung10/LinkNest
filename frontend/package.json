@@ -13,11 +13,11 @@
   },
   "dependencies": {
     "@vue-dnd-kit/core": "^1.7.0",
-    "axios": "^1.13.5",
+    "axios": "^1.14.0",
     "clsx": "^2.1.1",
-    "pinia": "^3.0.3",
-    "tailwind-merge": "^3.4.0",
-    "vue": "^3.5.18",
+    "pinia": "^3.0.4",
+    "tailwind-merge": "^3.5.0",
+    "vue": "^3.5.31",
     "vue-router": "^4.5.1",
     "vue3-emoji-picker": "^1.1.8"
   },
