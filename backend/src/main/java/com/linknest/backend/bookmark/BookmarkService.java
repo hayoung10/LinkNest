@@ -245,6 +245,7 @@ public class BookmarkService {
         String oldImgUrl = bookmark.getCustomImageUrl();
         if(oldImgUrl != null && !oldImgUrl.isBlank()) {
             deleteStoredCover(id, oldImgUrl);
+            bookmark.setCustomImageUrl(null);
         }
 
         applyImageMode(bookmark, ImageMode.AUTO, false);
