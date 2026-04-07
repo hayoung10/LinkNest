@@ -30,6 +30,32 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-name: Google
+            scope: [openid, email, profile]
+          kakao:
+            client-name: Kakao
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            scope: [openid, profile_nickname, account_email]
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            user-name-attribute: sub
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v1/oidc/userinfo
+            issuer-uri: https://kauth.kakao.com
+            jwk-set-uri: https://kauth.kakao.com/.well-known/jwks.json
+            user-name-attribute: sub
+
 app:
   jwt:
     issuer: linknest
@@ -52,25 +78,31 @@ app:
     batch-size: 300
     ttl-days: 15
 
-storage:
-  provider: local
-
 --- #dev-config
 spring:
   config:
     activate:
       on-profile: dev-config
   datasource:
-    url: jdbc:mysql://localhost:3310/linknest?characterEncoding=UTF-8&sessionVariables=time_zone=UTC
+    url: ${DB_URL}
   data:
     redis:
-      host: localhost
-      port: 6380
-      timeout: 5000
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      timeout: ${REDIS_TIMEOUT}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+          kakao:
+            redirect-uri: ${KAKAO_REDIRECT_URI}
 
 app:
   frontend:
-    oauth2-success-redirect: "http://localhost:5173/redirect"
+    oauth2-success-redirect: ${OAUTH2_SUCCESS_REDIRECT_URL}
   tag-unused:
     enabled: false
     # cron: "0 */1 * * * *" #테스트용
@@ -79,9 +111,10 @@ app:
     # cron: "0 */1 * * * *" #테스트용
 
 storage:
+  provider: local
   local:
-    base-path: /home/hayoung/dev-storage/linknest
-    base-url: http://localhost:8080/files
+    base-path: ${LOCAL_STORAGE_BASE_PATH}
+    base-url: ${LOCAL_STORAGE_BASE_URL}
 
 logging:
   level:
@@ -97,14 +130,39 @@ spring:
   config:
     activate:
       on-profile: prod-config
+  datasource:
+    url: ${DB_URL}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      timeout: ${REDIS_TIMEOUT}
   flyway:
     clean-disabled: true
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+          kakao:
+            redirect-uri: ${KAKAO_REDIRECT_URI}
+
 app:
+  frontend:
+    oauth2-success-redirect: ${OAUTH2_SUCCESS_REDIRECT_URL}
   tag-unused:
     enabled: true
   trash:
     enabled: true
+
+storage:
+  provider: s3
+  s3:
+    bucket: ${S3_BUCKET}
+    base-url: ${S3_BASE_URL}
+    region: ${AWS_REGION}
 
 logging:
   level:
@@ -114,9 +172,3 @@ logging:
     org.hibernate.SQL: warn
     org.hibernate.type: warn
     com.linknest: info
-
-storage:
-  s3:
-    bucket: linknest-profile-bucket
-    base-url: https://cdn.example.com # TODO: prod에서 실제 CDN 도메인으로 교체
-    region: ap-northeast-2
