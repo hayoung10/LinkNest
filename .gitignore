@@ -30,6 +30,9 @@ backend/out/
 *.nar
 *.ear
 
+# Gradle wrapper는 버전 관리
+!backend/gradle/wrapper/gradle-wrapper.jar
+
 # 환경 설정
 backend/src/main/resources/application-secret.yml
 
