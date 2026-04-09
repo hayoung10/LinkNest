@@ -8,7 +8,7 @@ on:
       - '.github/workflows/backend-ci.yml'
 
 jobs:
-  build-test:
+  backend-build-test:
     runs-on: ubuntu-latest
 
     services:
