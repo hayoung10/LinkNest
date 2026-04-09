@@ -8,7 +8,7 @@ on:
       - '.github/workflows/frontend-ci.yml'
 
 jobs:
-  build-test:
+  frontend-build:
     runs-on: ubuntu-latest
     
     defaults:
