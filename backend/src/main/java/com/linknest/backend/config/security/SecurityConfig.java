@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(userAccessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/files/**").permitAll()
                         .requestMatchers("/api/v1/auth/refresh").permitAll()

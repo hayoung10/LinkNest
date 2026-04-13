@@ -3,8 +3,8 @@ spring:
     name: linknest-backend
   profiles:
     group:
-      dev: [dev-config, commons, secret]
-      prod: [prod-config, commons, secret]
+      dev: [dev-config, commons]
+      prod: [prod-config, commons]
       test: [test-config, commons]
 
 --- #commons 공통 설정
@@ -77,6 +77,15 @@ app:
     zone: "Asia/Seoul"
     batch-size: 300
     ttl-days: 15
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
 
 --- #dev-config
 spring:
