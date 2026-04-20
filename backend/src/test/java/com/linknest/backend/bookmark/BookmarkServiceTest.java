@@ -419,7 +419,7 @@ class BookmarkServiceTest {
             BookmarkRes expected = bookmarkRes(bookmarkId, 10L, "https://example.com", ImageMode.CUSTOM, null);
 
             when(bookmarkRepository.findByIdAndUserId(bookmarkId, USER_ID)).thenReturn(Optional.of(bookmark));
-            when(storage.upload("bookmark-covers", file)).thenReturn("https://new-cover.com");
+            when(storage.upload("uploads/bookmark-covers", file)).thenReturn("https://new-cover.com");
             when(bookmarkMapper.toRes(bookmark)).thenReturn(expected);
 
             BookmarkRes result = bookmarkService.uploadCover(USER_ID, bookmarkId, file);
@@ -430,7 +430,7 @@ class BookmarkServiceTest {
             assertThat(bookmark.getAutoImageStatus()).isNull();
 
             verify(storage).delete("https://old-cover.com");
-            verify(storage).upload("bookmark-covers", file);
+            verify(storage).upload("uploads/bookmark-covers", file);
         }
     }
 

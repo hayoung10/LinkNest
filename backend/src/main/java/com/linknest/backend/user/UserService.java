@@ -54,7 +54,7 @@ public class UserService {
         }
 
         // 새 이미지 업로드
-        String newUrl = storage.upload("profiles", profileImage);
+        String newUrl = storage.upload("uploads/profiles", profileImage);
         user.setProfileImageUrl(newUrl);
 
         return mapper.toRes(user);

@@ -229,7 +229,7 @@ public class BookmarkService {
         }
 
         // 새 커버 업로드
-        String newImgUrl = storage.upload("bookmark-covers", coverImage);
+        String newImgUrl = storage.upload("uploads/bookmark-covers", coverImage);
         bookmark.setCustomImageUrl(newImgUrl);
         bookmark.setImageMode(ImageMode.CUSTOM);
         bookmark.setAutoImageStatus(null);

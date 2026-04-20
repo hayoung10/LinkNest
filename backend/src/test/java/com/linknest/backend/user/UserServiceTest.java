@@ -148,7 +148,7 @@ class UserServiceTest {
             );
 
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(storage.upload("profiles", file)).thenReturn("https://cdn.example.com/new-profile.png");
+            when(storage.upload("uploads/profiles", file)).thenReturn("https://cdn.example.com/new-profile.png");
             when(userMapper.toRes(user)).thenReturn(expected);
 
             UserRes result = userService.updateProfileImage(USER_ID, file);
@@ -157,7 +157,7 @@ class UserServiceTest {
             assertThat(user.getProfileImageUrl()).isEqualTo("https://cdn.example.com/new-profile.png");
 
             verify(storage, never()).delete(any());
-            verify(storage).upload("profiles", file);
+            verify(storage).upload("uploads/profiles", file);
         }
 
         @Test
@@ -182,7 +182,7 @@ class UserServiceTest {
             );
 
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(storage.upload("profiles", file)).thenReturn("https://cdn.example.com/new-profile.png");
+            when(storage.upload("uploads/profiles", file)).thenReturn("https://cdn.example.com/new-profile.png");
             when(userMapper.toRes(user)).thenReturn(expected);
 
             UserRes result = userService.updateProfileImage(USER_ID, file);
@@ -191,7 +191,7 @@ class UserServiceTest {
             assertThat(user.getProfileImageUrl()).isEqualTo("https://cdn.example.com/new-profile.png");
 
             verify(storage).delete("https://cdn.example.com/old-profile.png");
-            verify(storage).upload("profiles", file);
+            verify(storage).upload("uploads/profiles", file);
         }
 
         @Test
@@ -218,7 +218,7 @@ class UserServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             doThrow(new RuntimeException("delete failed"))
                     .when(storage).delete("https://cdn.example.com/old-profile.png");
-            when(storage.upload("profiles", file)).thenReturn("https://cdn.example.com/new-profile.png");
+            when(storage.upload("uploads/profiles", file)).thenReturn("https://cdn.example.com/new-profile.png");
             when(userMapper.toRes(user)).thenReturn(expected);
 
             UserRes result = userService.updateProfileImage(USER_ID, file);
@@ -227,7 +227,7 @@ class UserServiceTest {
             assertThat(user.getProfileImageUrl()).isEqualTo("https://cdn.example.com/new-profile.png");
 
             verify(storage).delete("https://cdn.example.com/old-profile.png");
-            verify(storage).upload("profiles", file);
+            verify(storage).upload("uploads/profiles", file);
         }
 
         @Test
