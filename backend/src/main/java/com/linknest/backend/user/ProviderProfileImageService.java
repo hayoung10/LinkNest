@@ -103,7 +103,7 @@ public class ProviderProfileImageService {
     }
 
     private String buildDirectory(AuthProvider provider) {
-        return "profiles/providers/" + provider.name().toLowerCase(Locale.ROOT);
+        return "uploads/profiles/providers/" + provider.name().toLowerCase(Locale.ROOT);
     }
 
     private void deletePreviousProviderImage(
