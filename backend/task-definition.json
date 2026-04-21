@@ -1,0 +1,119 @@
+{
+    "containerDefinitions": [
+        {
+            "name": "linknest-backend",
+            "image": "161457899532.dkr.ecr.ap-northeast-2.amazonaws.com/linknest/backend-staging:df63554eb885182d58ba3ef37af89401fe87a872",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 8080,
+                    "hostPort": 8080,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "S3_BUCKET",
+                    "value": "staging.linknest.io.kr"
+                },
+                {
+                    "name": "REDIS_HOST",
+                    "value": "linknest-staging-redis.rje7dg.ng.0001.apn2.cache.amazonaws.com"
+                },
+                {
+                    "name": "AWS_REGION",
+                    "value": "ap-northeast-2"
+                },
+                {
+                    "name": "KAKAO_REDIRECT_URI",
+                    "value": "https://api-staging.linknest.io.kr/login/oauth2/code/kakao"
+                },
+                {
+                    "name": "S3_REGION",
+                    "value": "ap-northeast-2"
+                },
+                {
+                    "name": "SPRING_PROFILES_ACTIVE",
+                    "value": "prod"
+                },
+                {
+                    "name": "SPRING_DATASOURCE_USERNAME",
+                    "value": "admin"
+                },
+                {
+                    "name": "S3_BASE_URL",
+                    "value": "https://staging.linknest.io.kr"
+                },
+                {
+                    "name": "OAUTH2_SUCCESS_REDIRECT_URL",
+                    "value": "https://staging.linknest.io.kr/redirect"
+                },
+                {
+                    "name": "REDIS_PORT",
+                    "value": "6379"
+                },
+                {
+                    "name": "DB_URL",
+                    "value": "jdbc:mysql://linknest-staging-db.cr8ciocoa1ck.ap-northeast-2.rds.amazonaws.com:3306/linknest?characterEncoding=UTF-8&sessionVariables=time_zone=UTC"
+                },
+                {
+                    "name": "REDIS_TIMEOUT",
+                    "value": "5000"
+                },
+                {
+                    "name": "GOOGLE_REDIRECT_URI",
+                    "value": "https://api-staging.linknest.io.kr/login/oauth2/code/google"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "secrets": [
+                {
+                    "name": "APP_JWT_SECRET",
+                    "valueFrom": "/linknest/staging/app-jwt-secret"
+                },
+                {
+                    "name": "SPRING_DATASOURCE_PASSWORD",
+                    "valueFrom": "/linknest/staging/db-password"
+                },
+                {
+                    "name": "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID",
+                    "valueFrom": "/linknest/staging/google-client-id"
+                },
+                {
+                    "name": "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET",
+                    "valueFrom": "/linknest/staging/google-client-secret"
+                },
+                {
+                    "name": "SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID",
+                    "valueFrom": "/linknest/staging/kakao-client-id"
+                }
+            ],
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/linknest-backend-staging",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "ap-northeast-2",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            },
+            "systemControls": []
+        }
+    ],
+    "family": "linknest-backend-staging",
+    "taskRoleArn": "arn:aws:iam::161457899532:role/linknest-staging-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::161457899532:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "3072"
+}
