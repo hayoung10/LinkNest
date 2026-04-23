@@ -858,8 +858,7 @@ async function setCoverMode(mode: Exclude<ImageMode, "CUSTOM">) {
     if (updated.imageMode === "AUTO" && updated.autoImageStatus === "PENDING") {
       startAutoImagePolling(updated.id);
     }
-  } catch (e) {
-    console.error("ImageMode 업데이트 실패:", e);
+  } catch {
     toast.error("커버 설정 변경에 실패했습니다.");
   } finally {
     isModeUpdating.value = false;
@@ -896,8 +895,7 @@ async function onCoverFileChange(event: Event) {
     const updated = await BookmarkApi.uploadCover(props.bookmark.id, file);
     updated.imageMode = "CUSTOM";
     emit("replace-bookmark", updated);
-  } catch (e) {
-    console.error("커버 이미지 업로드 실패:", e);
+  } catch {
     toast.error("커버 이미지 업로드에 실패했습니다.");
   } finally {
     if (input) input.value = "";
@@ -914,8 +912,7 @@ async function removeCustomCover() {
     if (updated.imageMode === "AUTO" && updated.autoImageStatus === "PENDING") {
       startAutoImagePolling(updated.id);
     }
-  } catch (e) {
-    console.error("커버 이미지 삭제 실패:", e);
+  } catch {
     toast.error("커버 이미지 삭제에 실패했습니다.");
   }
 }

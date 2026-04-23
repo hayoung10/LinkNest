@@ -190,8 +190,7 @@ const onToggleKeepSignedIn = async () => {
     toast.success(
       next ? "로그인 상태 유지를 켰습니다." : "로그인 상태 유지를 껐습니다.",
     );
-  } catch (e) {
-    console.error("로그인 상태 유지 설정 변경 실패:", e);
+  } catch {
     keepSignedIn.value = prev;
     toast.error("로그인 설정 변경에 실패했습니다.");
   } finally {
@@ -220,8 +219,7 @@ const onLogoutAllDevices = async () => {
         },
       },
     });
-  } catch (e) {
-    console.error("모든 기기에서 로그아웃 실패:", e);
+  } catch {
     toast.error("전체 로그아웃에 실패했습니다.");
   } finally {
     isProcessingAllSessions.value = false;
@@ -247,8 +245,7 @@ const onDeleteAccount = async () => {
       path: "/",
       state: { toast: { type: "success", message: "계정이 삭제되었습니다." } },
     });
-  } catch (e) {
-    console.error("계정 삭제 실패:", e);
+  } catch {
     toast.error("계정 삭제에 실패했습니다.");
   } finally {
     isDeletingAccount.value = false;

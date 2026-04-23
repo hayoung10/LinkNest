@@ -284,19 +284,14 @@ async function onLogout() {
     await auth.logout();
     toast.info("로그아웃 되었습니다.");
     await router.replace({ path: "/login" });
-  } catch (e) {
-    console.error("[TagManagementView] 로그아웃 실패:", e);
+  } catch {
     toast.error("로그아웃에 실패했습니다.");
   }
 }
 
 async function refreshOnTabActivated() {
-  try {
-    await refreshTagsOnEnter();
-    await refreshTaggedBookmarks();
-  } catch (e) {
-    console.error("[TagManagementView] tab activation refresh failed", e);
-  }
+  await refreshTagsOnEnter();
+  await refreshTaggedBookmarks();
 }
 
 useTabActivationRefresh(refreshOnTabActivated, { minIntervalMs: 500 });
