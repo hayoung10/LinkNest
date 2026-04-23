@@ -223,8 +223,8 @@ public class BookmarkService {
             try {
                 storage.delete(oldImgUrl);
             } catch (Exception e) {
-                log.warn("Bookmark cover upload: failed to delete old cover. userId={}, bookmarkId={}, url={}, reason={}",
-                        userId, id, oldImgUrl, e.getMessage(), e);
+                log.warn("Bookmark cover upload: failed to delete old cover. userId={}, bookmarkId={}, url={}",
+                        userId, id, oldImgUrl, e);
             }
         }
 
@@ -459,8 +459,8 @@ public class BookmarkService {
         try {
             storage.delete(url);
         } catch (Exception e) {
-            log.warn("Bookmark cover delete: failed to delete old cover. bookmarkId={}, url={}, reason={}",
-                    id, url, e.getMessage(), e);
+            log.warn("Bookmark cover delete: failed to delete old cover. bookmarkId={}, url={}",
+                    id, url, e);
         }
     }
 

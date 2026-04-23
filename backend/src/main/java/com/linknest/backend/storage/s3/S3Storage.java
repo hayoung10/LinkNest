@@ -50,12 +50,11 @@ public class S3Storage implements Storage {
             s3Client.putObject(request, RequestBody.fromInputStream(inputStream, file.getSize()));
 
             String url = buildUrl(key);
-            log.info("Storage: S3 upload success. directory={}, filename={}, key={}, url={}",
-                    directory, originalFilename, key, url);
+            log.debug("Storage: S3 upload success. directory={}, key={}", directory, key);
             return url;
         } catch (IOException e) {
-            log.error("Storage: S3 upload failed. directory={}, originalFilename={}, reason={}",
-                    directory, originalFilename, e.getMessage(), e);
+            log.error("Storage: S3 upload failed. directory={}, originalFilename={}",
+                    directory, originalFilename, e);
             throw new RuntimeException("파일 업로드에 실패했습니다.", e);
         }
     }
@@ -83,12 +82,10 @@ public class S3Storage implements Storage {
             s3Client.putObject(request, RequestBody.fromBytes(bytes));
 
             String url = buildUrl(key);
-            log.info("Storage: S3 stream upload success. directory={}, key={}, url={}",
-                    directory, key, url);
+            log.debug("Storage: S3 stream upload success. directory={}, key={}", directory, key);
             return url;
         } catch (IOException e) {
-            log.error("Storage: S3 stream upload failed. directory={}, reason={}",
-                    directory, e.getMessage(), e);
+            log.error("Storage: S3 stream upload failed. directory={}", directory, e);
             throw new RuntimeException("파일 업로드에 실패했습니다.", e);
         }
     }
@@ -97,18 +94,17 @@ public class S3Storage implements Storage {
     public void delete(String url) {
         if(url == null || url.isBlank()) return;
 
+        String key = extractKeyFromUrl(url);
         try {
-            String key = extractKeyFromUrl(url);
-
             DeleteObjectRequest request = DeleteObjectRequest.builder()
                     .bucket(bucket)
                     .key(key)
                     .build();
 
             s3Client.deleteObject(request);
-            log.info("Storage: S3 delete success. url={}, path={}", url, key);
+            log.info("Storage: S3 delete success. key={}", key);
         } catch (Exception e) {
-            log.warn("Storage: local file delete failed, url={}, reason={}", url, e.getMessage(), e);
+            log.warn("Storage: S3 delete failed, key={}", key, e);
         }
     }
 

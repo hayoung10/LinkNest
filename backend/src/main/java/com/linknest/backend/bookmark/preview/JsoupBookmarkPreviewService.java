@@ -39,7 +39,7 @@ public class JsoupBookmarkPreviewService implements BookmarkPreviewService {
 
             return AutoImageResult.failed();
         } catch (Exception e) {
-            log.debug("BookmarkPreview: failed to extract auto image. url={}, reason={}", url, e.getMessage());
+            log.debug("BookmarkPreview: failed to extract auto image. url={}", url, e);
             return AutoImageResult.failed();
         }
     }

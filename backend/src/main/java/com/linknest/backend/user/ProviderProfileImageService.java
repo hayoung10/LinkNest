@@ -77,12 +77,11 @@ public class ProviderProfileImageService {
 
             deletePreviousProviderImage(currentStoredUrl, newStoredUrl, provider, providerId);
 
-            log.debug("Provider profile image sync: success. provider={}, providerId={}, storedUrl={}",
-                    provider, providerId, newStoredUrl);
+            log.debug("Provider profile image sync: success. provider={}, providerId={}", provider, providerId);
             return newStoredUrl;
         } catch (Exception e) {
-            log.warn("Provider profile image sync: failed. provider={}, providerId={}, sourceUrl={}, reason={}",
-                    provider, providerId, sourceImageUrl, e.getMessage(), e);
+            log.warn("Provider profile image sync: failed. provider={}, providerId={}, sourceUrl={}",
+                    provider, providerId, sourceImageUrl, e);
             return currentStoredUrl;
         } finally {
             if(connection != null) {
@@ -123,8 +122,8 @@ public class ProviderProfileImageService {
         try {
             storage.delete(currentStoredUrl);
         } catch (Exception e) {
-            log.warn("Provider profile image sync: failed to delete previous image. provider={}, providerId={}, url={}, reason={}",
-                    provider, providerId, currentStoredUrl, e.getMessage(), e);
+            log.warn("Provider profile image sync: failed to delete previous image. provider={}, providerId={}, url={}",
+                    provider, providerId, currentStoredUrl, e);
         }
     }
 }

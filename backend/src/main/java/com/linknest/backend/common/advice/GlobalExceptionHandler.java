@@ -30,7 +30,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidException(MethodArgumentNotValidException e,
                                                               HttpServletRequest request) {
-        log.warn("Validation: {}", e.getMessage());
+        log.warn("Validation failed. path={}", request.getRequestURI());
         return buildValidationResponse(e.getBindingResult(), request, ErrorCode.INVALID_INPUT_VALUE);
     }
 
@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(jakarta.validation.ConstraintViolationException e,
                                                                    HttpServletRequest request) {
-        log.warn("Constraint violation: {}", e.getMessage());
+        log.warn("Constraint violation. path={}", request.getRequestURI());
         List<ErrorResponse.FieldError> errors = e.getConstraintViolations().stream()
                 .map(v -> new ErrorResponse.FieldError(
                         v.getPropertyPath() == null ? "" : v.getPropertyPath().toString(),
@@ -58,11 +58,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus()).body(body);
     }
 
-    // 쿼리파라미터/경로변수 타임 불일치
+    // 쿼리파라미터/경로변수 타입 불일치
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e,
                                                             HttpServletRequest request) {
-        log.warn("Type mismatch: {}", e.getMessage());
+        log.warn("Type mismatch. param={}, value={}, path={}", e.getName(), e.getValue(), request.getRequestURI());
         ErrorResponse.FieldError error = new ErrorResponse.FieldError(
                 e.getName(),
                 String.valueOf(e.getValue()),
@@ -84,7 +84,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingParam(MissingServletRequestParameterException e,
                                                             HttpServletRequest request) {
-        log.warn("Missing request parameter: {}", e.getParameterName());
+        log.warn("Missing request parameter. param={}, path={}", e.getParameterName(), request.getRequestURI());
         ErrorResponse.FieldError error = new ErrorResponse.FieldError(
                 e.getParameterName(), "", "필수 파라미터가 누락되었습니다."
         );
@@ -104,7 +104,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMethodNotAllowed(HttpRequestMethodNotSupportedException e,
                                                                 HttpServletRequest request) {
-        log.error("Unhandled exception");
+        log.warn("Method not allowed: method={}, path={}", e.getMethod(), request.getRequestURI());
         return buildSimple(ErrorCode.METHOD_NOT_ALLOWED, request);
     }
 
@@ -113,7 +113,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e,
                                                         HttpServletRequest request) {
         ErrorCode code = e.getErrorCode();
-        log.warn("Business error [{}]: {}", code.name(), e.getMessage());
+        log.warn("Business error [{}]. path={}, message={}", code.name(), request.getRequestURI(), e.getMessage());
         Instant now = Instant.now(clock);
         ErrorResponse body = ErrorResponse.of(
                 now,
@@ -162,11 +162,6 @@ public class GlobalExceptionHandler {
                 errors
         );
         return ResponseEntity.status(code.getStatus()).body(body);
-    }
-
-    private ErrorResponse.FieldError toFieldError(FieldError fe) {
-        String rejected = String.valueOf(fe.getRejectedValue());
-        return new ErrorResponse.FieldError(fe.getField(), rejected, fe.getDefaultMessage());
     }
 
     private ResponseEntity<ErrorResponse> buildSimple(ErrorCode code, HttpServletRequest request) {
