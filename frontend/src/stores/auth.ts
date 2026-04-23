@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import http, { unwrap } from "@/api/http";
 import type { User } from "@/types/common";
 import * as UserApi from "@/api/users";
+import { toHttpError } from "@/api/errors";
 
 type OAuthProvider = "google" | "kakao";
 
@@ -71,7 +72,12 @@ export const useAuthStore = defineStore("auth", {
       try {
         await unwrap<void>(http.post("/auth/logout"));
       } catch (e) {
-        console.warn("logout request failed:", e);
+        const err = toHttpError(e);
+        console.warn("logout request failed", {
+          message: err.message,
+          status: err.status,
+          type: err.type,
+        });
       } finally {
         this.clearSession();
       }
@@ -82,7 +88,12 @@ export const useAuthStore = defineStore("auth", {
       try {
         await unwrap<void>(http.delete("/auth/sessions"));
       } catch (e) {
-        console.warn("logout all sessions request failed:", e);
+        const err = toHttpError(e);
+        console.warn("logout all sessions request failed", {
+          message: err.message,
+          status: err.status,
+          type: err.type,
+        });
       } finally {
         this.clearSession();
       }

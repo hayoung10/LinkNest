@@ -5,6 +5,7 @@ import * as CollectionApi from "@/api/collections";
 import * as BookmarkApi from "@/api/bookmarks";
 import { DropResult } from "@/types/dnd";
 import { refreshBookmarkAutoImage } from "@/utils/refreshAutoImage";
+import { toHttpError } from "@/api/errors";
 
 type ViewMode = "collection" | "favorites";
 type LoadKey = "collectionTree" | "bookmarks";
@@ -525,7 +526,13 @@ export const useWorkspaceStore = defineStore("workspace", {
           targetIndex: result.targetIndex,
         });
       } catch (e) {
-        console.error("[collectionDnd] move/reorder failed:", e);
+        const err = toHttpError(e);
+        console.error("[collectionDnd] move/reorder failed", {
+          message: err.message,
+          status: err.status,
+          type: err.type,
+        });
+
         rollback();
         throw e;
       } finally {
