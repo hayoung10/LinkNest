@@ -36,7 +36,7 @@ public class UnusedTagService {
         // 휴지통 이동
         int moved = tagRepository.moveToTrashByIds(ids, now);
 
-        log.info("[UnusedTag] moved orphan tags to trash. moved={}, scanned={}, cutoff={}, batchSize={}, ttlDays={}",
+        log.debug("[UnusedTag] moved orphan tags to trash. moved={}, scanned={}, cutoff={}, batchSize={}, ttlDays={}",
                 moved, scanned, cutoff, batchSize, ttlDays);
 
         return new UnusedTagResult(moved, scanned, cutoff);

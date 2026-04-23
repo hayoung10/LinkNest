@@ -25,7 +25,6 @@ public class BookmarkAutoImageListener {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(BookmarkAutoImageRequestedEvent e) {
-        log.info("AutoImageListener thread = {}", Thread.currentThread().getName());
         try {
             AutoImageResult result = previewService.extractAutoImage(e.url());
 
@@ -46,8 +45,7 @@ public class BookmarkAutoImageListener {
                 log.debug("AutoImage skipped. userId={}, bookmarkId={}", e.userId(), e.bookmarkId());
             }
         } catch(Exception ex) {
-            log.debug("AutoImage async failed. userId={}, bookmarkId={}, reason={}",
-                    e.userId(), e.bookmarkId(), ex.getMessage(), ex);
+            log.debug("AutoImage async failed. userId={}, bookmarkId={}", e.userId(), e.bookmarkId(), ex);
 
             int updated = bookmarkRepository.updateAutoImageFailedIfAutoMode(
                     e.userId(), e.bookmarkId(), e.url()

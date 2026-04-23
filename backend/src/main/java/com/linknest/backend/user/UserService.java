@@ -48,8 +48,8 @@ public class UserService {
             try {
                 storage.delete(oldUrl);
             } catch (Exception e) {
-                log.warn("User profile image update: failed to delete profile image. userId={}, url={}, reason={}",
-                        userId, oldUrl, e.getMessage(), e);
+                log.warn("User profile image update: failed to delete profile image. userId={}, url={}",
+                        userId, oldUrl, e);
             }
         }
 
@@ -69,8 +69,8 @@ public class UserService {
             try {
                 storage.delete(oldUrl);
             } catch (Exception e) {
-                log.warn("User profile image delete: failed to delete profile image. userId={}, url={}, reason={}",
-                        userId, oldUrl, e.getMessage(), e);
+                log.warn("User profile image delete: failed to delete profile image. userId={}, url={}",
+                        userId, oldUrl, e);
             }
         }
         user.setProfileImageUrl(null);
@@ -91,8 +91,8 @@ public class UserService {
             try {
                 storage.delete(profileImageUrl);
             } catch (Exception e) {
-                log.warn("User delete: failed to delete profile image. userId={}, url={}, reason={}",
-                        userId, profileImageUrl, e.getMessage(), e);
+                log.warn("User delete: failed to delete profile image. userId={}, url={}",
+                        userId, profileImageUrl, e);
             }
         }
 

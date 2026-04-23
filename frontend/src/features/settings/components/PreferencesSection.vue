@@ -140,8 +140,7 @@ const changeDefaultSort = async (value: BookmarkSortOption) => {
   isSaving.value = true;
   try {
     await preferences.update({ defaultBookmarkSort: value });
-  } catch (e) {
-    console.error("기본 정렬 업데이트 실패:", e);
+  } catch {
     toast.error("기본 북마크 정렬 설정에 실패했습니다.");
   } finally {
     isSaving.value = false;
@@ -155,8 +154,7 @@ const changeDefaultLayout = async (value: LayoutOption) => {
   isSaving.value = true;
   try {
     await preferences.update({ defaultLayout: value });
-  } catch (e) {
-    console.error("기본 레이아웃 업데이트 실패:", e);
+  } catch {
     toast.error("기본 레이아웃 설정에 실패했습니다.");
   } finally {
     isSaving.value = false;
@@ -171,8 +169,7 @@ const updateOpenInNewTab = async () => {
   isSaving.value = true;
   try {
     await preferences.update({ openInNewTab: next });
-  } catch (e) {
-    console.error("새 탭 열기 설정 업데이트 실패:", e);
+  } catch {
     toast.error("새 탭 열기 설정에 실패했습니다.");
   } finally {
     isSaving.value = false;

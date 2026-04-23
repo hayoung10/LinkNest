@@ -53,12 +53,11 @@ public class LocalStorage implements Storage {
             String urlPath = directory + "/" + filename;
             String url = baseUrl.endsWith("/") ? baseUrl + urlPath : baseUrl + "/" + urlPath;
 
-            log.info("Storage: local upload success. directory={}, filename={}, url={}",
-                    directory, originalFilename, url);
+            log.debug("Storage: local upload success. directory={}, url={}", directory, url);
             return url;
         } catch (IOException e) {
-            log.error("Storage: local upload failed. directory={}, originalFilename={}, reason={}",
-                    directory, originalFilename, e.getMessage(), e);
+            log.error("Storage: local upload failed. directory={}, originalFilename={}",
+                    directory, originalFilename, e);
             throw new RuntimeException("파일 업로드에 실패했습니다.", e);
         }
     }
@@ -84,12 +83,10 @@ public class LocalStorage implements Storage {
             String urlPath = directory + "/" + filename;
             String url = baseUrl.endsWith("/") ? baseUrl + urlPath : baseUrl + "/" + urlPath;
 
-            log.info("Storage: local stream upload success. directory={}, storeFilename={}, url={}",
-                    directory, filename, url);
+            log.debug("Storage: local stream upload success. directory={}, url={}", directory, url);
             return url;
         } catch (IOException e) {
-            log.error("Storage: local stream upload failed. directory={}, reason={}",
-                    directory, e.getMessage(), e);
+            log.error("Storage: local stream upload failed. directory={}", directory, e);
             throw new RuntimeException("파일 업로드에 실패했습니다.", e);
         }
     }
@@ -107,12 +104,12 @@ public class LocalStorage implements Storage {
             boolean deleted = Files.deleteIfExists(filePath);
 
             if(deleted) {
-                log.info("Storage: local file deleted. url={}, path={}", url, filePath);
+                log.debug("Storage: local file deleted. path={}", filePath);
             } else {
-                log.info("Storage: local file not found for delete. url={}, path={}", url, filePath);
+                log.debug("Storage: local file not found for delete. path={}", filePath);
             }
         } catch (IOException e) {
-            log.warn("Storage: local file delete failed, url={}, reason={}", url, e.getMessage(), e);
+            log.warn("Storage: local file delete failed, url={}", url, e);
         }
     }
 

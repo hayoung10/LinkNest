@@ -66,7 +66,7 @@ public class TrashPurgeService {
                 tagService.onTagsDetached(affectedTagIds, now);
             }
 
-            log.info("[TrashPurge] round {} done. collections={}, bookmarks={}, tags={}",
+            log.debug("[TrashPurge] round {} done. collections={}, bookmarks={}, tags={}",
                     round, collections.deleted(), bookmarks.deleted(), tags.deleted());
 
             if(collections.deleted == 0 && bookmarks.deleted() == 0 && tags.deleted() == 0) {
@@ -74,7 +74,7 @@ public class TrashPurgeService {
             }
         }
 
-        log.info("[TrashPurge] finished. cutoff={}, totalDeletedCollections={}, totalDeletedBookmarks={}, totalDeletedTags={}",
+        log.debug("[TrashPurge] finished. cutoff={}, totalDeletedCollections={}, totalDeletedBookmarks={}, totalDeletedTags={}",
                 cutoff, totalDeletedCollections, totalDeletedBookmarks, totalDeletedTags);
 
         return new TrashPurgeResult(

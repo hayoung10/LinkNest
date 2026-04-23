@@ -248,8 +248,7 @@ const onSubmit = async () => {
     const updated = await UserApi.updateUser({ name: nextName });
     auth.setUser(updated);
     toast.success("이름이 변경되었습니다.");
-  } catch (e) {
-    console.error("이름 변경 실패:", e);
+  } catch {
     toast.error("이름 변경에 실패했습니다.");
   } finally {
     isSavingName.value = false;
@@ -278,7 +277,6 @@ const onFileChange = async (event: Event) => {
   // 파일 크기 체크
   const maxSize = 5 * 1024 * 1024; // 5MB 제한
   if (file.size > maxSize) {
-    console.error("파일 크기 제한 초과 (최대 5MB)");
     toast.error("파일이 너무 큽니다. (최대 5MB)");
     target.value = "";
     return;
@@ -289,8 +287,7 @@ const onFileChange = async (event: Event) => {
     const updated = await UserApi.updateProfileImage(file);
     auth.setUser(updated);
     toast.success("프로필 이미지가 변경되었습니다.");
-  } catch (e) {
-    console.error("프로필 이미지 업로드 실패:", e);
+  } catch {
     toast.error("프로필 이미지 업로드에 실패했습니다.");
   } finally {
     isPhotoUpdating.value = false;
@@ -307,8 +304,7 @@ const onDeletePhoto = async () => {
     const updated = await UserApi.deleteProfileImage();
     auth.setUser(updated);
     toast.success("프로필 이미지가 삭제되었습니다.");
-  } catch (e) {
-    console.error("프로필 이미지 삭제 실패:", e);
+  } catch {
     toast.error("프로필 이미지 삭제에 실패했습니다.");
   } finally {
     isPhotoUpdating.value = false;

@@ -312,8 +312,7 @@ async function onOpenAllBookmarks(collectionId: ID) {
     // 탭 열기 시도 + 차단된 개수 카운트
     let blockedCount = 0;
     for (const url of urls) window.open(url, "_blank", "noopener,noreferrer");
-  } catch (e) {
-    console.error("[WorkspaceView] failed to open all bookmarks", e);
+  } catch {
     toast.error("북마크를 여는 중 오류가 발생했습니다.");
   }
 }
@@ -428,8 +427,7 @@ async function onLogout() {
       state: { type: "info", message: "로그아웃되었습니다." },
     });
     toast.info("로그아웃 되었습니다.");
-  } catch (e) {
-    console.error("[WorkspaceView] 로그아웃 실패:", e);
+  } catch {
     toast.error("로그아웃에 실패했습니다.");
   }
 }
@@ -516,28 +514,24 @@ async function ensureBookmarkVisible(collectionId: ID, bookmarkId: ID) {
 }
 
 async function refreshOnTabActivated() {
-  try {
-    await workspace.fetchCollectionTree();
+  await workspace.fetchCollectionTree();
 
-    if (viewMode.value === "favorites") {
-      await workspace.reloadBookmarks();
+  if (viewMode.value === "favorites") {
+    await workspace.reloadBookmarks();
+    return;
+  }
+
+  const cid = selectedCollectionId.value;
+  if (cid != null) {
+    const exists = !!workspace.collectionById[cid];
+
+    if (!exists) {
+      workspace.selectCollection(null);
+      selectedBookmarkId.value = null;
       return;
     }
 
-    const cid = selectedCollectionId.value;
-    if (cid != null) {
-      const exists = !!workspace.collectionById[cid];
-
-      if (!exists) {
-        workspace.selectCollection(null);
-        selectedBookmarkId.value = null;
-        return;
-      }
-
-      await workspace.reloadBookmarks(cid);
-    }
-  } catch (e) {
-    console.error("[WorkspaceView] tab activation refresh failed", e);
+    await workspace.reloadBookmarks(cid);
   }
 }
 
