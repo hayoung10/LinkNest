@@ -15,7 +15,8 @@ public class CorsConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "https://staging.linknest.io.kr"
+                "https://staging.linknest.io.kr",
+                "https://linknest.io.kr"
         ));
         configuration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
