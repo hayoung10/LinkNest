@@ -1,0 +1,150 @@
+export type ISODateTime = string;
+export type ID = number;
+
+// API 성공/실패 응답 규약
+export type ApiSuccess<T> = {
+  status: number;
+  code: string;
+  message: string;
+  data: T;
+};
+
+export type ApiError = {
+  status: number;
+  code: string;
+  message: string;
+  path?: string;
+  timestamp?: ISODateTime;
+};
+
+export type Role = "ROLE_USER" | "ROLE_ADMIN";
+export type Provider = "GOOGLE" | "KAKAO";
+
+export interface User {
+  id: ID;
+  email: string | null;
+  name: string | null;
+  profileImageUrl: string | null;
+  hasCustomProfileImage: boolean;
+  role: Role;
+  provider: Provider;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
+export type ImageMode = "AUTO" | "CUSTOM" | "NONE";
+export type AutoImageStatus = "PENDING" | "SUCCESS" | "FAILED";
+
+export interface Bookmark {
+  id: ID;
+  collectionId: ID;
+  url: string;
+  title: string | null;
+  description: string | null;
+
+  emoji: string | null;
+  autoImageUrl: string | null;
+  customImageUrl: string | null;
+  imageMode: ImageMode;
+  autoImageStatus: AutoImageStatus | null;
+
+  isFavorite: boolean;
+  tags: string[];
+
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
+export interface TaggedBookmark {
+  id: ID;
+
+  collectionId: ID;
+  collectionName: string;
+  collectionEmoji: string | null;
+
+  url: string;
+  title: string | null;
+  description: string | null;
+
+  emoji: string | null;
+  autoImageUrl: string | null;
+  customImageUrl: string | null;
+  imageMode: ImageMode;
+  autoImageStatus: AutoImageStatus | null;
+
+  isFavorite: boolean;
+  tags: string[];
+
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+}
+
+export interface Collection {
+  id: ID;
+  name: string;
+  emoji: string | null;
+  parentId: ID | null;
+  sortOrder: number;
+
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+
+  bookmarkCount?: number;
+  childCount?: number;
+  children?: Collection[];
+  bookmarks?: Bookmark[];
+}
+
+export interface CollectionNode {
+  id: ID;
+  name: string;
+  emoji: string | null;
+  parentId: ID | null;
+  sortOrder: number;
+
+  bookmarkCount: number;
+  childCount: number;
+}
+
+export type BookmarkSortOption = "NEWEST" | "OLDEST" | "TITLE";
+export type LayoutOption = "CARD" | "LIST";
+
+export interface UserPreferences {
+  defaultBookmarkSort: BookmarkSortOption;
+  defaultLayout: LayoutOption;
+  openInNewTab: boolean;
+  keepSignedIn: boolean;
+}
+
+export interface Tag {
+  id: ID;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  bookmarkCount: number;
+}
+
+export type TrashType = "COLLECTION" | "BOOKMARK" | "TAG";
+
+export interface TrashItem {
+  type: TrashType;
+
+  id: ID;
+  title: string;
+  subtitle: string | null;
+  emoji: string | null;
+
+  parentName: string | null;
+  parentEmoji: string | null;
+
+  deletedAt: ISODateTime;
+
+  childCount: number | null; // COLLECTION only
+  bookmarkCount: number | null; // COLLECTION only
+  taggedCount: number | null; // TAG only
+}
+
+export interface TrashBulkItem {
+  type: TrashType;
+  id: ID;
+}

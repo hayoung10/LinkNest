@@ -3,20 +3,47 @@ package com.linknest.backend.bookmark;
 import com.linknest.backend.bookmark.dto.BookmarkCreateReq;
 import com.linknest.backend.bookmark.dto.BookmarkRes;
 import com.linknest.backend.bookmark.dto.BookmarkUpdateReq;
-import org.mapstruct.BeanMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import com.linknest.backend.tag.Tag;
+import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+import java.util.List;
+import java.util.Objects;
+
+@Mapper(componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface BookmarkMapper {
     // CreateReq -> Entity
     Bookmark toEntity(BookmarkCreateReq createReq);
 
-    // UpdateReq -> Entity (null 값은 무시)
+    // UpdateReq -> Entity
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateFromDto(BookmarkUpdateReq updateReq, @MappingTarget Bookmark target);
 
     // Entity -> Res
-    BookmarkRes toRes(Bookmark bookmark);
+    default  BookmarkRes toRes(Bookmark bookmark) {
+        if(bookmark == null) return null;
+
+        List<String> tags = bookmark.getBookmarkTags().stream()
+                .map(BookmarkTag::getTag)
+                .filter(Objects::nonNull)
+                .map(Tag::getName)
+                .toList();
+
+        return new BookmarkRes(
+                bookmark.getId(),
+                bookmark.getCollection().getId(),
+                bookmark.getUrl(),
+                bookmark.getTitle(),
+                bookmark.getDescription(),
+                bookmark.getEmoji(),
+                bookmark.getAutoImageUrl(),
+                bookmark.getCustomImageUrl(),
+                bookmark.getImageMode(),
+                bookmark.getAutoImageStatus(),
+                bookmark.isFavorite(),
+                tags,
+                bookmark.getCreatedAt(),
+                bookmark.getUpdatedAt()
+        );
+    }
 }

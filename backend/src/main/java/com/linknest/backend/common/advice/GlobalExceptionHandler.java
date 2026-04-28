@@ -4,6 +4,7 @@ import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.common.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -15,34 +16,64 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 
 @Slf4j
+@RequiredArgsConstructor
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private final Clock clock;
 
     // Bean Validation: @Valid 본문 검증 실패 (DTO)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidException(MethodArgumentNotValidException e,
                                                               HttpServletRequest request) {
-        log.warn("Validation: {}", e.getMessage());
+        log.warn("Validation failed. path={}", request.getRequestURI());
         return buildValidationResponse(e.getBindingResult(), request, ErrorCode.INVALID_INPUT_VALUE);
     }
 
-    // 쿼리파라미터/경로변수 타임 불일치
+    // @RequestParam, @PathVariable 등 제약 조건 위반
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(jakarta.validation.ConstraintViolationException e,
+                                                                   HttpServletRequest request) {
+        log.warn("Constraint violation. path={}", request.getRequestURI());
+        List<ErrorResponse.FieldError> errors = e.getConstraintViolations().stream()
+                .map(v -> new ErrorResponse.FieldError(
+                        v.getPropertyPath() == null ? "" : v.getPropertyPath().toString(),
+                        java.util.Objects.toString(v.getInvalidValue(), ""),
+                        v.getMessage()
+                ))
+                .toList();
+        Instant now = Instant.now(clock);
+        ErrorResponse body = ErrorResponse.of(
+                now,
+                ErrorCode.INVALID_INPUT_VALUE.getStatus().value(),
+                ErrorCode.INVALID_INPUT_VALUE.name(),
+                ErrorCode.INVALID_INPUT_VALUE.getMessage(),
+                request.getRequestURI(),
+                errors
+        );
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus()).body(body);
+    }
+
+    // 쿼리파라미터/경로변수 타입 불일치
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e,
                                                             HttpServletRequest request) {
-        log.warn("Type mismatch: {}", e.getMessage());
+        log.warn("Type mismatch. param={}, value={}, path={}", e.getName(), e.getValue(), request.getRequestURI());
         ErrorResponse.FieldError error = new ErrorResponse.FieldError(
                 e.getName(),
-                e.getValue() == null ? "" : String.valueOf(e.getValue()),
+                String.valueOf(e.getValue()),
                 "타입이 올바르지 않습니다."
         );
+        Instant now = Instant.now(clock);
         ErrorResponse body = ErrorResponse.of(
+                now,
                 ErrorCode.INVALID_INPUT_VALUE.getStatus().value(),
                 ErrorCode.INVALID_INPUT_VALUE.name(),
-                ErrorCode.INVALID_INPUT_VALUE.getDefaultMessage(),
+                ErrorCode.INVALID_INPUT_VALUE.getMessage(),
                 request.getRequestURI(),
                 List.of(error)
         );
@@ -53,14 +84,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingParam(MissingServletRequestParameterException e,
                                                             HttpServletRequest request) {
-        log.warn("Missing request parameter: {}", e.getParameterName());
+        log.warn("Missing request parameter. param={}, path={}", e.getParameterName(), request.getRequestURI());
         ErrorResponse.FieldError error = new ErrorResponse.FieldError(
                 e.getParameterName(), "", "필수 파라미터가 누락되었습니다."
         );
+        Instant now = Instant.now(clock);
         ErrorResponse body = ErrorResponse.of(
+                now,
                 ErrorCode.INVALID_INPUT_VALUE.getStatus().value(),
                 ErrorCode.INVALID_INPUT_VALUE.name(),
-                ErrorCode.INVALID_INPUT_VALUE.getDefaultMessage(),
+                ErrorCode.INVALID_INPUT_VALUE.getMessage(),
                 request.getRequestURI(),
                 List.of(error)
         );
@@ -71,7 +104,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleMethodNotAllowed(HttpRequestMethodNotSupportedException e,
                                                                 HttpServletRequest request) {
-        log.error("Unhandled exception");
+        log.warn("Method not allowed: method={}, path={}", e.getMethod(), request.getRequestURI());
         return buildSimple(ErrorCode.METHOD_NOT_ALLOWED, request);
     }
 
@@ -80,8 +113,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBusiness(BusinessException e,
                                                         HttpServletRequest request) {
         ErrorCode code = e.getErrorCode();
-        log.warn("Business error [{}]: {}", code.name(), e.getMessage());
+        log.warn("Business error [{}]. path={}, message={}", code.name(), request.getRequestURI(), e.getMessage());
+        Instant now = Instant.now(clock);
         ErrorResponse body = ErrorResponse.of(
+                now,
                 code.getStatus().value(),
                 code.name(),
                 e.getMessage(),                 // 커스텀 메시지 허용
@@ -95,10 +130,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleException(Exception e,
                                                          HttpServletRequest request) {
         log.error("Unhandled exception", e);
+        Instant now = Instant.now(clock);
         ErrorResponse body = ErrorResponse.of(
+                now,
                 ErrorCode.INTERNAL_ERROR.getStatus().value(),
                 ErrorCode.INTERNAL_ERROR.name(),
-                ErrorCode.INTERNAL_ERROR.getDefaultMessage(),
+                ErrorCode.INTERNAL_ERROR.getMessage(),
                 request.getRequestURI()
         );
         return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.getStatus()).body(body);
@@ -115,24 +152,22 @@ public class GlobalExceptionHandler {
                         fe.getDefaultMessage()
                 ))
                 .toList();
+        Instant now = Instant.now(clock);
         ErrorResponse body = ErrorResponse.of(
+                now,
                 code.getStatus().value(),
                 code.name(),
-                code.getDefaultMessage(),
+                code.getMessage(),
                 request.getRequestURI(),
                 errors
         );
         return ResponseEntity.status(code.getStatus()).body(body);
     }
 
-    private ErrorResponse.FieldError toFieldError(FieldError fe) {
-        String rejected = fe.getRejectedValue() == null ? "" : String.valueOf(fe.getRejectedValue());
-        return new ErrorResponse.FieldError(fe.getField(), rejected, fe.getDefaultMessage());
-    }
-
     private ResponseEntity<ErrorResponse> buildSimple(ErrorCode code, HttpServletRequest request) {
+        Instant now = Instant.now(clock);
         ErrorResponse body = ErrorResponse.of(
-                code.getStatus().value(), code.name(), code.getDefaultMessage(), request.getRequestURI()
+                now, code.getStatus().value(), code.name(), code.getMessage(), request.getRequestURI()
         );
         return ResponseEntity.status(code.getStatus()).body(body);
     }

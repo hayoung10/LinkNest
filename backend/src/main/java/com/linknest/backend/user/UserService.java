@@ -1,53 +1,106 @@
 package com.linknest.backend.user;
 
+import com.linknest.backend.auth.token.TokenService;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
-import com.linknest.backend.user.dto.UserCreateReq;
+import com.linknest.backend.storage.Storage;
 import com.linknest.backend.user.dto.UserRes;
 import com.linknest.backend.user.dto.UserUpdateReq;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService {
-    private final UserRepository repository;
+    private final UserRepository userRepository;
     private final UserMapper mapper;
-
-    @Transactional
-    public UserRes create(UserCreateReq req) {
-        if(repository.existsByEmail(req.email())) {
-            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
-        }
-
-        User user = mapper.toEntity(req);
-        user.setRole(User.Role.ROLE_USER);
-
-        return mapper.toRes(repository.save(user));
-    }
+    private final Storage storage;
+    private final TokenService tokenService;
 
     public UserRes get(Long id) {
         return mapper.toRes(findVerifiedUser(id));
     }
 
     @Transactional
-    public UserRes update(Long id, UserUpdateReq req) {
-        User user = findVerifiedUser(id);
+    public UserRes update(Long userId, UserUpdateReq req) {
+        User user = findVerifiedUser(userId);
         mapper.updateFromDto(req, user);
 
         return mapper.toRes(user);
     }
 
     @Transactional
-    public void delete(Long id) {
-        User user = findVerifiedUser(id);
-        repository.delete(user);
+    public UserRes updateProfileImage(Long userId, MultipartFile profileImage) {
+        if(profileImage == null || profileImage.isEmpty()) {
+            throw new BusinessException(ErrorCode.FILE_EMPTY);
+        }
+
+        User user = findVerifiedUser(userId);
+
+        // 기존 프로필 이미지 삭제
+        String oldUrl = user.getProfileImageUrl();
+        if(oldUrl != null && !oldUrl.isBlank()) {
+            try {
+                storage.delete(oldUrl);
+            } catch (Exception e) {
+                log.warn("User profile image update: failed to delete profile image. userId={}, url={}",
+                        userId, oldUrl, e);
+            }
+        }
+
+        // 새 이미지 업로드
+        String newUrl = storage.upload("uploads/profiles", profileImage);
+        user.setProfileImageUrl(newUrl);
+
+        return mapper.toRes(user);
     }
 
-    private User findVerifiedUser(Long id) {
-        return repository.findById(id)
+    @Transactional
+    public UserRes deleteProfileImage(Long userId) {
+        User user = findVerifiedUser(userId);
+
+        String oldUrl = user.getProfileImageUrl();
+        if(oldUrl != null && !oldUrl.isBlank()) {
+            try {
+                storage.delete(oldUrl);
+            } catch (Exception e) {
+                log.warn("User profile image delete: failed to delete profile image. userId={}, url={}",
+                        userId, oldUrl, e);
+            }
+        }
+        user.setProfileImageUrl(null);
+
+        return mapper.toRes(user);
+    }
+
+    @Transactional
+    public void delete(Long userId) {
+        User user = findVerifiedUser(userId);
+
+        // 모든 RT 삭제
+        tokenService.revokeAllTokens(userId);
+
+        // 프로필 이미지 삭제
+        String profileImageUrl = user.getProfileImageUrl();
+        if(profileImageUrl != null && !profileImageUrl.isBlank()) {
+            try {
+                storage.delete(profileImageUrl);
+            } catch (Exception e) {
+                log.warn("User delete: failed to delete profile image. userId={}, url={}",
+                        userId, profileImageUrl, e);
+            }
+        }
+
+        userRepository.delete(user);
+    }
+
+    private User findVerifiedUser(Long userId) {
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 }

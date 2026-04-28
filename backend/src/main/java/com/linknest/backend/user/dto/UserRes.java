@@ -1,6 +1,7 @@
 package com.linknest.backend.user.dto;
 
 import com.linknest.backend.user.User.Role;
+import com.linknest.backend.user.domain.AuthProvider;
 
 import java.time.Instant;
 
@@ -9,7 +10,9 @@ public record UserRes(
         String email,
         String name,
         String profileImageUrl,
+        boolean hasCustomProfileImage,
         Role role,
+        AuthProvider provider,
         Instant createdAt,
         Instant updatedAt
 ) {}
