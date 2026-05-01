@@ -3,7 +3,7 @@ spring:
     name: linknest-backend
   profiles:
     group:
-      dev: [dev-config, commons]
+      dev: [dev-config, commons, secret]
       prod: [prod-config, commons]
       test: [test-config, commons]
 
