@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -95,11 +96,15 @@ public class LocalStorage implements Storage {
     public void delete(String url) {
         if(url == null || url.isBlank()) return;
 
-        try {
-            String prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
-            // 상대 경로 추출 (URL에서 baseUrl 제거)
-            String relativePath = url.replaceFirst("^" + java.util.regex.Pattern.quote(prefix), "");
+        // 상대 경로 추출 (URL에서 baseUrl 제거)
+        Optional<String> relativePathOptional = extractRelativePathFromUrl(url);
+        if(relativePathOptional.isEmpty()) {
+            log.info("Storage: skip local delete because url is not managed by current storage. url={}", url);
+            return;
+        }
 
+        String relativePath = relativePathOptional.get();
+        try {
             Path filePath = Paths.get(basePath, relativePath).toAbsolutePath().normalize();
             boolean deleted = Files.deleteIfExists(filePath);
 
@@ -125,5 +130,15 @@ public class LocalStorage implements Storage {
             case "image/webp" -> ".webp";
             default -> "";
         };
+    }
+
+    private Optional<String> extractRelativePathFromUrl(String url) {
+        String prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+
+        if(!url.startsWith(prefix)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(url.substring(prefix.length()));
     }
 }
