@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -94,7 +95,13 @@ public class S3Storage implements Storage {
     public void delete(String url) {
         if(url == null || url.isBlank()) return;
 
-        String key = extractKeyFromUrl(url);
+        Optional<String> keyOptional = extractKeyFromUrl(url);
+        if(keyOptional.isEmpty()) {
+            log.info("Storage: skip S3 delete because url is not managed by current S3 storage. url={}", url);
+            return;
+        }
+
+        String key = keyOptional.get();
         try {
             DeleteObjectRequest request = DeleteObjectRequest.builder()
                     .bucket(bucket)
@@ -122,12 +129,14 @@ public class S3Storage implements Storage {
         return  normalizedBaseUrl + "/" + key;
     }
 
-    private String extractKeyFromUrl(String url) {
+    private Optional<String> extractKeyFromUrl(String url) {
         String prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+
         if(!url.startsWith(prefix)) {
-            throw new IllegalArgumentException("S3 URL 형식이 올바르지 않습니다.");
+            return Optional.empty();
         }
-        return url.substring(prefix.length());
+
+        return Optional.of(url.substring(prefix.length()));
     }
 
     private String extractExtension(String originalFilename, String contentType) {
