@@ -65,6 +65,8 @@ app:
     header: Authorization
     prefix: Bearer
     clock-skew-seconds: 60
+  redis:
+    key-prefix: ${REDIS_KEY_PREFIX}
   tag-unused:
     enabled: false
     cron: "0 0 3 * * *"
