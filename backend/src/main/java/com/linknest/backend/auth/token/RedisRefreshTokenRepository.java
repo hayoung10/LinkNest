@@ -1,5 +1,6 @@
 package com.linknest.backend.auth.token;
 
+import com.linknest.backend.common.redis.RedisKeyProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -15,25 +16,25 @@ public class RedisRefreshTokenRepository implements RefreshTokenRepository {
 
     private final RedisTemplate<String, RefreshTokenEntity> redisTemplate;
     private final StringRedisTemplate stringRedisTemplate;
-
-    private static final String RT_PREFIX = "rt:"; // 개별 rt
-    private static final String USER_RT_PREFIX = "user-rt:"; // user별 jti set
+    private final RedisKeyProvider redisKeyProvider;
 
     public RedisRefreshTokenRepository(
             @Qualifier("refreshTokenRedisTemplate")
             RedisTemplate<String, RefreshTokenEntity> redisTemplate,
-            StringRedisTemplate stringRedisTemplate
+            StringRedisTemplate stringRedisTemplate,
+            RedisKeyProvider redisKeyProvider
     ) {
         this.redisTemplate = redisTemplate;
         this.stringRedisTemplate = stringRedisTemplate;
+        this.redisKeyProvider = redisKeyProvider;
     }
 
     private String rtKey(String jti) {
-        return RT_PREFIX + jti;
+        return redisKeyProvider.refreshToken(jti);
     }
 
     private String userRtKey(Long userId) {
-        return USER_RT_PREFIX + userId;
+        return redisKeyProvider.userRefreshTokenSet(userId);
     }
 
     @Override

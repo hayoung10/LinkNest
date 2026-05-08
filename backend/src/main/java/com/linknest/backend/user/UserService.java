@@ -4,6 +4,7 @@ import com.linknest.backend.auth.token.TokenService;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.storage.Storage;
+import com.linknest.backend.storage.UploadProperties;
 import com.linknest.backend.user.dto.UserRes;
 import com.linknest.backend.user.dto.UserUpdateReq;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper mapper;
     private final Storage storage;
+    private final UploadProperties uploadProperties;
     private final TokenService tokenService;
 
     public UserRes get(Long id) {
@@ -54,7 +56,7 @@ public class UserService {
         }
 
         // 새 이미지 업로드
-        String newUrl = storage.upload("uploads/profiles", profileImage);
+        String newUrl = storage.upload(uploadProperties.userProfileDir(), profileImage);
         user.setProfileImageUrl(newUrl);
 
         return mapper.toRes(user);

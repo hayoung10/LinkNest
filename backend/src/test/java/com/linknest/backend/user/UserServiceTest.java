@@ -4,6 +4,7 @@ import com.linknest.backend.auth.token.TokenService;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.storage.Storage;
+import com.linknest.backend.storage.UploadProperties;
 import com.linknest.backend.user.domain.AuthProvider;
 import com.linknest.backend.user.dto.UserRes;
 import com.linknest.backend.user.dto.UserUpdateReq;
@@ -40,6 +41,9 @@ class UserServiceTest {
     private Storage storage;
 
     @Mock
+    private UploadProperties uploadProperties;
+
+    @Mock
     private TokenService tokenService;
 
     private UserService userService;
@@ -50,6 +54,7 @@ class UserServiceTest {
                 userRepository,
                 userMapper,
                 storage,
+                uploadProperties,
                 tokenService
         );
     }
@@ -132,6 +137,8 @@ class UserServiceTest {
         @Test
         @DisplayName("새 프로필 이미지를 등록한다")
         void update_profile_image_replaces_profile_image() {
+            String userProfileDir = "uploads/profiles";
+
             User user = user(USER_ID);
             MockMultipartFile file = new MockMultipartFile(
                     "profile",
@@ -147,8 +154,9 @@ class UserServiceTest {
                     true
             );
 
+            when(uploadProperties.userProfileDir()).thenReturn(userProfileDir);
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(storage.upload("uploads/profiles", file)).thenReturn("https://cdn.example.com/new-profile.png");
+            when(storage.upload(userProfileDir, file)).thenReturn("https://cdn.example.com/new-profile.png");
             when(userMapper.toRes(user)).thenReturn(expected);
 
             UserRes result = userService.updateProfileImage(USER_ID, file);
@@ -157,12 +165,14 @@ class UserServiceTest {
             assertThat(user.getProfileImageUrl()).isEqualTo("https://cdn.example.com/new-profile.png");
 
             verify(storage, never()).delete(any());
-            verify(storage).upload("uploads/profiles", file);
+            verify(storage).upload(userProfileDir, file);
         }
 
         @Test
         @DisplayName("기존 프로필 이미지를 정리한 뒤 새 이미지로 교체한다")
         void update_profile_image_removes_previous_image_before_replacing() {
+            String userProfileDir = "uploads/profiles";
+
             User user = user(USER_ID);
             user.setProfileImageUrl("https://cdn.example.com/old-profile.png");
 
@@ -181,8 +191,9 @@ class UserServiceTest {
                     true
             );
 
+            when(uploadProperties.userProfileDir()).thenReturn(userProfileDir);
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(storage.upload("uploads/profiles", file)).thenReturn("https://cdn.example.com/new-profile.png");
+            when(storage.upload(userProfileDir, file)).thenReturn("https://cdn.example.com/new-profile.png");
             when(userMapper.toRes(user)).thenReturn(expected);
 
             UserRes result = userService.updateProfileImage(USER_ID, file);
@@ -191,12 +202,14 @@ class UserServiceTest {
             assertThat(user.getProfileImageUrl()).isEqualTo("https://cdn.example.com/new-profile.png");
 
             verify(storage).delete("https://cdn.example.com/old-profile.png");
-            verify(storage).upload("uploads/profiles", file);
+            verify(storage).upload(userProfileDir, file);
         }
 
         @Test
         @DisplayName("기존 이미지 정리에 실패해도 새 이미지로 교체한다")
         void update_profile_image_replaces_image_even_if_cleanup_fails() {
+            String userProfileDir = "uploads/profiles";
+
             User user = user(USER_ID);
             user.setProfileImageUrl("https://cdn.example.com/old-profile.png");
 
@@ -215,10 +228,11 @@ class UserServiceTest {
                     true
             );
 
+            when(uploadProperties.userProfileDir()).thenReturn(userProfileDir);
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             doThrow(new RuntimeException("delete failed"))
                     .when(storage).delete("https://cdn.example.com/old-profile.png");
-            when(storage.upload("uploads/profiles", file)).thenReturn("https://cdn.example.com/new-profile.png");
+            when(storage.upload(userProfileDir, file)).thenReturn("https://cdn.example.com/new-profile.png");
             when(userMapper.toRes(user)).thenReturn(expected);
 
             UserRes result = userService.updateProfileImage(USER_ID, file);
@@ -227,7 +241,7 @@ class UserServiceTest {
             assertThat(user.getProfileImageUrl()).isEqualTo("https://cdn.example.com/new-profile.png");
 
             verify(storage).delete("https://cdn.example.com/old-profile.png");
-            verify(storage).upload("uploads/profiles", file);
+            verify(storage).upload(userProfileDir, file);
         }
 
         @Test
