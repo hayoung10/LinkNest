@@ -1,6 +1,7 @@
 package com.linknest.backend;
 
 import com.linknest.backend.common.redis.RedisKeyProperties;
+import com.linknest.backend.storage.UploadProperties;
 import com.linknest.backend.tag.unused.UnusedTagProperties;
 import com.linknest.backend.trash.purge.TrashProperties;
 import org.springframework.boot.SpringApplication;
@@ -13,7 +14,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableConfigurationProperties({
 		UnusedTagProperties.class,
 		TrashProperties.class,
-		RedisKeyProperties.class
+		RedisKeyProperties.class,
+		UploadProperties.class
 })
 public class BackendApplication {
 
