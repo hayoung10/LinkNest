@@ -1,0 +1,8 @@
+package com.linknest.backend.common.redis;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "app.redis")
+public record RedisKeyProperties(
+   String keyPrefix
+) {}

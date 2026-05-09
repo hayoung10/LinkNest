@@ -1,6 +1,7 @@
 package com.linknest.backend.user;
 
 import com.linknest.backend.storage.Storage;
+import com.linknest.backend.storage.UploadProperties;
 import com.linknest.backend.user.domain.AuthProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ public class ProviderProfileImageService {
     private static final int MAX_CONTENT_LENGTH = 5 * 1024 * 1024; // 5MB
 
     private final Storage storage;
+    private final UploadProperties uploadProperties;
 
     public String syncProviderProfileImage(
             AuthProvider provider,
@@ -102,7 +104,7 @@ public class ProviderProfileImageService {
     }
 
     private String buildDirectory(AuthProvider provider) {
-        return "uploads/profiles/providers/" + provider.name().toLowerCase(Locale.ROOT);
+        return uploadProperties.providerProfileDir() + provider.name().toLowerCase(Locale.ROOT);
     }
 
     private void deletePreviousProviderImage(

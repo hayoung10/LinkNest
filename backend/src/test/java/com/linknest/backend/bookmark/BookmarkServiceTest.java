@@ -12,6 +12,7 @@ import com.linknest.backend.collection.CollectionService;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.storage.Storage;
+import com.linknest.backend.storage.UploadProperties;
 import com.linknest.backend.tag.Tag;
 import com.linknest.backend.tag.TagService;
 import com.linknest.backend.user.User;
@@ -71,6 +72,9 @@ class BookmarkServiceTest {
     private Storage storage;
 
     @Mock
+    private UploadProperties uploadProperties;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     private BookmarkService bookmarkService;
@@ -89,6 +93,7 @@ class BookmarkServiceTest {
                 collectionService,
                 bookmarkMapper,
                 storage,
+                uploadProperties,
                 eventPublisher
         );
     }
@@ -408,6 +413,8 @@ class BookmarkServiceTest {
         @Test
         @DisplayName("기존 커버를 삭제하고 새 커버 업로드 후 CUSTOM 모드로 변경한다")
         void upload_cover_deletes_old_cover_and_sets_custom_mode() {
+            String bookmarkCoverDir = "uploads/bookmark-covers";
+
             Long bookmarkId = 100L;
             Bookmark bookmark = bookmark(bookmarkId, user(USER_ID), collectionRef(), "https://example.com");
             bookmark.setCustomImageUrl("https://old-cover.com");
@@ -418,8 +425,9 @@ class BookmarkServiceTest {
 
             BookmarkRes expected = bookmarkRes(bookmarkId, 10L, "https://example.com", ImageMode.CUSTOM, null);
 
+            when(uploadProperties.bookmarkCoverDir()).thenReturn(bookmarkCoverDir);
             when(bookmarkRepository.findByIdAndUserId(bookmarkId, USER_ID)).thenReturn(Optional.of(bookmark));
-            when(storage.upload("uploads/bookmark-covers", file)).thenReturn("https://new-cover.com");
+            when(storage.upload(bookmarkCoverDir, file)).thenReturn("https://new-cover.com");
             when(bookmarkMapper.toRes(bookmark)).thenReturn(expected);
 
             BookmarkRes result = bookmarkService.uploadCover(USER_ID, bookmarkId, file);
@@ -430,7 +438,7 @@ class BookmarkServiceTest {
             assertThat(bookmark.getAutoImageStatus()).isNull();
 
             verify(storage).delete("https://old-cover.com");
-            verify(storage).upload("uploads/bookmark-covers", file);
+            verify(storage).upload(bookmarkCoverDir, file);
         }
     }
 

@@ -13,6 +13,7 @@ import com.linknest.backend.common.dto.SliceResponse;
 import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.storage.Storage;
+import com.linknest.backend.storage.UploadProperties;
 import com.linknest.backend.tag.Tag;
 import com.linknest.backend.tag.TagService;
 import com.linknest.backend.user.UserRepository;
@@ -52,6 +53,7 @@ public class BookmarkService {
 
     private final BookmarkMapper mapper;
     private final Storage storage;
+    private final UploadProperties uploadProperties;
     private final ApplicationEventPublisher eventPublisher;
 
     // ---------- 생성 ----------
@@ -229,7 +231,7 @@ public class BookmarkService {
         }
 
         // 새 커버 업로드
-        String newImgUrl = storage.upload("uploads/bookmark-covers", coverImage);
+        String newImgUrl = storage.upload(uploadProperties.bookmarkCoverDir(), coverImage);
         bookmark.setCustomImageUrl(newImgUrl);
         bookmark.setImageMode(ImageMode.CUSTOM);
         bookmark.setAutoImageStatus(null);

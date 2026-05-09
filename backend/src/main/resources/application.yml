@@ -65,6 +65,8 @@ app:
     header: Authorization
     prefix: Bearer
     clock-skew-seconds: 60
+  redis:
+    key-prefix: ${REDIS_KEY_PREFIX}
   tag-unused:
     enabled: false
     cron: "0 0 3 * * *"
@@ -77,6 +79,12 @@ app:
     zone: "Asia/Seoul"
     batch-size: 300
     ttl-days: 15
+
+storage:
+  upload-dir:
+    user-profile-dir: ${STORAGE_USER_PROFILE_DIR}
+    provider-profile-dir: ${STORAGE_PROVIDER_PROFILE_DIR}
+    bookmark-cover-dir: ${STORAGE_BOOKMARK_COVER_DIR}
 
 management:
   endpoints:
