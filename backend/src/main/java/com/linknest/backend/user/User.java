@@ -51,9 +51,11 @@ public class User {
     private Role role; // ROLE_USER, ROLE_ADMIN
 
     @OneToMany(mappedBy = "user")
+    @Builder.Default
     private List<Bookmark> bookmarks = new ArrayList<>();
 
     @OneToMany(mappedBy = "user")
+    @Builder.Default
     private List<Collection> collections = new ArrayList<>();
 
     @CreatedDate

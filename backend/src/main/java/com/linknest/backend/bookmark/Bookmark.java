@@ -58,6 +58,7 @@ public class Bookmark {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "image_mode", length = 10, nullable = false)
+    @Builder.Default
     private ImageMode imageMode = ImageMode.AUTO;
 
     @Enumerated(EnumType.STRING)
@@ -65,6 +66,7 @@ public class Bookmark {
     private AutoImageStatus autoImageStatus;
 
     @Column(name = "is_favorite", nullable = false)
+    @Builder.Default
     private boolean isFavorite = false;
 
     @OneToMany(mappedBy = "bookmark", cascade = CascadeType.PERSIST, orphanRemoval = true)

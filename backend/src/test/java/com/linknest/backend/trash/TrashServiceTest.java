@@ -154,7 +154,7 @@ public class TrashServiceTest {
 
             assertThat(result.items()).hasSize(1);
 
-            TrashItemRes enrichedCollection = result.items().get(0);
+            TrashItemRes enrichedCollection = result.items().getFirst();
 
             assertThat(enrichedCollection.type()).isEqualTo(TrashType.COLLECTION);
             assertThat(enrichedCollection.childCount()).isEqualTo(2L);
@@ -173,7 +173,7 @@ public class TrashServiceTest {
             SliceResponse<TrashItemRes> result = trashService.list(USER_ID, TrashType.BOOKMARK, 0, 10);
 
             assertThat(result.items()).hasSize(1);
-            assertThat(result.items().get(0).type()).isEqualTo(TrashType.BOOKMARK);
+            assertThat(result.items().getFirst().type()).isEqualTo(TrashType.BOOKMARK);
 
             verify(trashRepository, never()).countDeletedChildCollections(any(), any());
             verify(trashRepository, never()).countDeletedBookmarksInCollections(any(), any());
