@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.util.Locale;
 
@@ -42,7 +43,7 @@ public class ProviderProfileImageService {
         HttpURLConnection connection = null;
 
         try {
-            URL url = new URL(sourceImageUrl);
+            URL url = URI.create(sourceImageUrl).toURL();
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
