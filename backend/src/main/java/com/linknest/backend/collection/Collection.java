@@ -46,7 +46,6 @@ public class Collection {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
-    @NotFound(action = NotFoundAction.IGNORE)
     private Collection parent;
 
     @OneToMany(mappedBy = "parent")
