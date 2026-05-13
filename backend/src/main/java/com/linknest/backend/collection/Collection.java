@@ -50,12 +50,15 @@ public class Collection {
     private Collection parent;
 
     @OneToMany(mappedBy = "parent")
+    @Builder.Default
     private List<Collection> children = new ArrayList<>();
 
     @OneToMany(mappedBy = "collection")
+    @Builder.Default
     private List<Bookmark> bookmarks = new ArrayList<>();
 
     @Column(name = "sort_order", nullable = false)
+    @Builder.Default
     private int sortOrder = 0;
 
     @CreatedDate
