@@ -30,7 +30,6 @@ public class BookmarkTag {
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tag_id", nullable = false)
-    @NotFound(action = NotFoundAction.IGNORE)
     private Tag tag;
 
     @CreatedDate
