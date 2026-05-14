@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.*;
@@ -62,6 +63,7 @@ public class BookmarkService {
         Collection collection = requireOwnedCollection(userId, req.collectionId());
 
         Bookmark bookmark = mapper.toEntity(req);
+        bookmark.setUrl(normalizeUrl(bookmark.getUrl()));
         bookmark.setUser(userRepository.getReferenceById(userId));
         bookmark.setCollection(collection);
 
@@ -103,10 +105,7 @@ public class BookmarkService {
         final String beforeUrl = bookmark.getUrl();
 
         mapper.updateFromDto(req, bookmark);
-
-        if(bookmark.getUrl() == null || bookmark.getUrl().isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_BOOKMARK_URL);
-        }
+        bookmark.setUrl(normalizeUrl(bookmark.getUrl()));
 
         boolean urlChanged = !Objects.equals(beforeUrl, bookmark.getUrl());
 
@@ -542,5 +541,26 @@ public class BookmarkService {
     private void detachTagsIfNeeded(Set<Long> tagIds, Instant now) {
         if(tagIds == null || tagIds.isEmpty()) return;
         tagService.onTagsDetached(tagIds, now);
+    }
+
+    private String normalizeUrl(String url) {
+        if(url == null || url.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_BOOKMARK_URL);
+        }
+
+        url = url.trim();
+
+        String lower = url.toLowerCase();
+        if(!lower.startsWith("http://") && !lower.startsWith("https://")) {
+            url = "https://" + url;
+        }
+
+        try {
+            URI.create(url).toURL();
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.INVALID_BOOKMARK_URL);
+        }
+
+        return  url;
     }
 }
