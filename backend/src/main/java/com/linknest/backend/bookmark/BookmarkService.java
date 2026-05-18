@@ -556,7 +556,7 @@ public class BookmarkService {
         }
 
         try {
-            URI.create(url).toURL();
+            new URI(url).toURL();
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.INVALID_BOOKMARK_URL);
         }
