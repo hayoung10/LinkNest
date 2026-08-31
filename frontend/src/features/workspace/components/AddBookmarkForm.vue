@@ -106,7 +106,7 @@
           v-model="form.url"
           type="url"
           class="w-full rounded-md px-3 py-2 text-sm bg-muted/40 border border-border/60 focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring/60 placeholder:text-muted-foreground/70"
-          placeholder="https://example.com"
+          placeholder="example.com"
           :aria-invalid="form.url ? !isUrlValid : false"
         />
 
@@ -228,10 +228,12 @@ const urlId = `add-bm-url-${uid}`;
 const descId = `add-bm-desc-${uid}`;
 
 const isUrlValid = computed(() => {
-  const v = (form.value.url ?? "").trim();
-  if (!v) return false;
+  const normalized = normalizeUrl(form.value.url);
+
+  if (!normalized) return false;
+
   try {
-    new URL(v);
+    new URL(normalized);
     return true;
   } catch {
     return false;
@@ -244,6 +246,19 @@ const canSave = computed(
 const normalize = (s?: string | null) => {
   const v = (s ?? "").trim();
   return v ? v : null;
+};
+
+const normalizeUrl = (url?: string | null) => {
+  const v = (url ?? "").trim();
+
+  if (!v) return "";
+
+  const lower = v.toLowerCase();
+  if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+    return `https://${v}`;
+  }
+
+  return v;
 };
 
 // 핸들러
@@ -269,7 +284,7 @@ function handleSubmit() {
 
   emit("submit", {
     title: normalize(form.value.title),
-    url: form.value.url.trim(),
+    url: normalizeUrl(form.value.url),
     description: normalize(form.value.description),
     emoji: form.value.emoji,
     imageMode: form.value.imageMode,

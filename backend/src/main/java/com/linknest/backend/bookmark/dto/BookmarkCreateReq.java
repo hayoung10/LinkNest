@@ -14,7 +14,6 @@ public record BookmarkCreateReq(
 
         @NotBlank(message = "url을 입력하세요.")
         @Size(min = 2, max = 2048)
-        @URL(message = "올바른 URL 형식이 아닙니다.")
         String url,
 
         @Size(max = 255)
