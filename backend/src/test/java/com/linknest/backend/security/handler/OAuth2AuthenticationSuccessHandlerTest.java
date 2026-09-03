@@ -1,8 +1,7 @@
 package com.linknest.backend.security.handler;
 
-import com.linknest.backend.auth.token.TokenService;
+import com.linknest.backend.auth.web.AuthService;
 import com.linknest.backend.common.exception.BusinessException;
-import com.linknest.backend.config.props.JwtProperties;
 import com.linknest.backend.user.User;
 import com.linknest.backend.user.UserRepository;
 import com.linknest.backend.user.domain.AuthProvider;
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.ResponseCookie;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -23,7 +23,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,10 +34,7 @@ import static org.mockito.BDDMockito.then;
 @ExtendWith(MockitoExtension.class)
 class OAuth2AuthenticationSuccessHandlerTest {
     @Mock
-    private TokenService tokenService;
-
-    @Mock
-    private JwtProperties jwtProperties;
+    private AuthService authService;
 
     @Mock
     private UserRepository userRepository;
@@ -80,17 +76,20 @@ class OAuth2AuthenticationSuccessHandlerTest {
                 .build();
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        given(tokenService.issueTokens(userId, username, List.of(User.Role.ROLE_USER.name())))
-                .willReturn(Map.of(
-                        "accessToken", "new-access-token",
-                        "refreshToken", refreshToken
-                ));
-        given(jwtProperties.getRefreshExpDays()).willReturn(7);
+
+        ResponseCookie rtCookie = ResponseCookie.from("refresh_token", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .path("/")
+                .build();
+
+        given(authService.login(user)).willReturn(rtCookie);
 
         successHandler.onAuthenticationSuccess(request, response, authentication);
 
         then(userRepository).should().findById(userId);
-        then(tokenService).should().issueTokens(userId, username, List.of(User.Role.ROLE_USER.name()));
+        then(authService).should().login(user);
 
         String setCookie = response.getHeader("Set-Cookie");
         assertThat(setCookie).contains("refresh_token=" + refreshToken);
@@ -135,14 +134,19 @@ class OAuth2AuthenticationSuccessHandlerTest {
                 .build();
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
-        given(tokenService.issueTokens(userId, username, List.of(User.Role.ROLE_USER.name())))
-                .willReturn(Map.of(
-                        "accessToken", "new-access-token",
-                        "refreshToken", "new-refresh-token"
-                ));
-        given(jwtProperties.getRefreshExpDays()).willReturn(7);
+
+        ResponseCookie rtCookie = ResponseCookie.from("refresh_token", "new-refresh-token")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .path("/")
+                .build();
+
+        given(authService.login(user)).willReturn(rtCookie);
 
         successHandler.onAuthenticationSuccess(request, response, authentication);
+
+        then(authService).should().login(user);
 
         assertThat(response.getRedirectedUrl()).isEqualTo("http://localhost:5173/redirect?state=/workspace");
     }
