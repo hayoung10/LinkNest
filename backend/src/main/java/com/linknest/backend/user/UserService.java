@@ -5,6 +5,7 @@ import com.linknest.backend.common.exception.BusinessException;
 import com.linknest.backend.common.exception.ErrorCode;
 import com.linknest.backend.storage.Storage;
 import com.linknest.backend.storage.UploadProperties;
+import com.linknest.backend.user.domain.AuthProvider;
 import com.linknest.backend.user.dto.UserRes;
 import com.linknest.backend.user.dto.UserUpdateReq;
 import lombok.RequiredArgsConstructor;
@@ -83,6 +84,11 @@ public class UserService {
     @Transactional
     public void delete(Long userId) {
         User user = findVerifiedUser(userId);
+
+        // 테스트 계정 삭제 방지
+        if(user.getProvider() == AuthProvider.TEST) {
+            throw new BusinessException(ErrorCode.TEST_ACCOUNT_CANNOT_BE_DELETED);
+        }
 
         // 모든 RT 삭제
         tokenService.revokeAllTokens(userId);
