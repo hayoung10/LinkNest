@@ -18,7 +18,8 @@ export type ApiError = {
 };
 
 export type Role = "ROLE_USER" | "ROLE_ADMIN";
-export type Provider = "GOOGLE" | "KAKAO";
+export type Provider = "GOOGLE" | "KAKAO" | "TEST";
+export type OAuthProvider = "google" | "kakao";
 
 export interface User {
   id: ID;
