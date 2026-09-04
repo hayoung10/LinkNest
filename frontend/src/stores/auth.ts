@@ -1,10 +1,8 @@
 import { defineStore } from "pinia";
 import http, { unwrap } from "@/api/http";
-import type { User } from "@/types/common";
+import type { User, OAuthProvider } from "@/types/common";
 import * as UserApi from "@/api/users";
 import { toHttpError } from "@/api/errors";
-
-type OAuthProvider = "google" | "kakao";
 
 type TokenRefreshRes = {
   accessToken: string;
@@ -48,6 +46,14 @@ export const useAuthStore = defineStore("auth", {
       window.location.href = `${backendBaseUrl}/oauth2/authorization/${provider}?state=${encodeURIComponent(
         state,
       )}`;
+    },
+
+    /** 테스트 계정 로그인 */
+    async testLogin() {
+      await unwrap<void>(http.post("/auth/test-login"));
+
+      await this.refresh();
+      await this.fetchProfile(true);
     },
 
     /** AT/RT 재발급 */
