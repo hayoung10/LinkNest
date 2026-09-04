@@ -399,6 +399,25 @@ class UserServiceTest {
             verify(storage, never()).delete(any());
             verify(userRepository, never()).delete(any());
         }
+
+        @Test
+        @DisplayName("테스트 계정은 삭제할 수 없다")
+        void delete_throw_when_user_is_test_account() {
+            User user = user(USER_ID);
+            user.setProvider(AuthProvider.TEST);
+            user.setProviderId("test");
+
+            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> userService.delete(USER_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                            .isEqualTo(ErrorCode.TEST_ACCOUNT_CANNOT_BE_DELETED));
+
+            verify(tokenService, never()).revokeAllTokens(any());
+            verify(storage, never()).delete(any());
+            verify(userRepository, never()).delete(any());
+        }
     }
 
     private User user(Long id) {
