@@ -134,14 +134,14 @@
       </form>
     </div>
 
-    <!-- 카드 2: 연동된 계정 -->
+    <!-- 카드 2: 로그인 계정 -->
     <section
       class="rounded-2xl border border-zinc-200 bg-white px-6 py-5 shadow-sm"
     >
       <div class="space-y-1">
-        <h3 class="text-base font-semibold text-zinc-900">연동된 계정</h3>
+        <h3 class="text-base font-semibold text-zinc-900">로그인 계정</h3>
         <p class="text-sm text-zinc-500">
-          소셜 로그인 계정 연동 상태를 확인합니다.
+          현재 로그인에 사용 중인 계정 정보를 확인합니다.
         </p>
       </div>
 
@@ -174,7 +174,7 @@
 
         <span
           class="inline-flex items-center rounded-full bg-emerald-100 px-4 py-2 text-xs font-medium text-emerald-700"
-          >연동됨</span
+          >{{ provider === "TEST" ? "테스트 계정" : "연동됨" }}</span
         >
       </div>
     </section>
@@ -225,6 +225,8 @@ const providerLabel = computed(() => {
       return "Google";
     case "KAKAO":
       return "카카오";
+    case "TEST":
+      return "테스트 계정";
     default:
       return "이메일";
   }
@@ -234,6 +236,11 @@ const providerIconBgClass = computed(() => {
   if (provider.value === "KAKAO") {
     return "bg-[#F2DD4C] text-gray-900";
   }
+
+  if (provider.value === "TEST") {
+    return "bg-indigo-100 text-indigo-700";
+  }
+
   return "bg-zinc-100 text-zinc-700";
 });
 

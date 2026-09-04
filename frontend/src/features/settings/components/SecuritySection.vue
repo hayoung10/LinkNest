@@ -7,13 +7,14 @@
       <header class="space-y-1">
         <h2 class="text-lg font-semibold text-zinc-900">로그인 보안</h2>
         <p class="text-sm text-zinc-500">
-          LinkNest는 소셜 로그인을 사용하며 별도의 비밀번호를 저장하지 않습니다.
+          LinkNest는 소셜 로그인과 테스트 계정 로그인을 지원하며 별도의
+          비밀번호를 저장하지 않습니다.
         </p>
       </header>
 
       <div class="space-y-3">
         <div class="space-y-1">
-          <p class="text-sm font-medium text-zinc-800">소셜 로그인</p>
+          <p class="text-sm font-medium text-zinc-800">로그인 방식</p>
           <div class="flex flex-wrap gap-2">
             <div
               class="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-700"
@@ -35,7 +36,7 @@
                   />
                 </svg>
               </span>
-              <span>{{ providerLabel }} 계정</span>
+              <span>{{ providerLabel }}</span>
             </div>
           </div>
         </div>
@@ -95,7 +96,8 @@
               모든 기기에서 로그아웃
             </p>
             <p class="text-xs text-zinc-500">
-              사용 중인 모든 기기에서 로그인 상태를 해제합니다.
+              사용 중인 모든 기기에서 로그아웃됩니다.<br />
+              다른 기기의 로그아웃은 잠시 후 적용될 수 있습니다.
             </p>
           </div>
           <button
@@ -114,12 +116,18 @@
     <div class="rounded-2xl border border-red-200 bg-red-50 p-6 space-y-4">
       <header class="space-y-1">
         <h3 class="text-base font-semibold text-red-700">위험 구역</h3>
-        <p class="text-sm text-red-500">
+
+        <p v-if="isTestAccount" class="text-sm text-red-500">
+          테스트 계정은 서비스 체험을 위해 계정 삭제를 사용할 수 없습니다.
+        </p>
+
+        <p v-else class="text-sm text-red-500">
           계정을 삭제하면 모든 데이터가 영구적으로 삭제됩니다.
         </p>
       </header>
 
       <button
+        v-if="!isTestAccount"
         type="button"
         class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed"
         @click="onDeleteAccount"
@@ -150,6 +158,7 @@ const preferences = usePreferencesStore();
 const { keepSignedIn, loaded } = storeToRefs(preferences);
 
 const provider = computed<Provider | null>(() => auth.user?.provider ?? null);
+const isTestAccount = computed(() => provider.value === "TEST");
 
 const providerLabel = computed(() => {
   if (!provider.value) return "이메일";
@@ -158,12 +167,18 @@ const providerLabel = computed(() => {
       return "Google";
     case "KAKAO":
       return "카카오";
+    case "TEST":
+      return "테스트 계정";
     default:
       return "이메일";
   }
 });
 
 const passwordGuideText = computed(() => {
+  if (provider.value === "TEST") {
+    return "테스트 계정은 비밀번호를 사용하지 않습니다.";
+  }
+
   if (!provider.value) {
     return "비밀번호와 보안 설정은 LinkNest 계정 설정에서 관리할 수 있습니다.";
   }
