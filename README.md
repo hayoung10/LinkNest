@@ -14,6 +14,10 @@ LinkNest는 웹에서 발견한 유용한 정보를 북마크, 컬렉션, 태그
 - 2025.09 ~ 2026.04 (실 개발 기간 약 6개월)
 - 2026.04 ~ 현재 (기능 확장 및 리팩토링)
 
+### 배포 링크
+
+[LinkNest 바로가기](https://linknest.io.kr)
+
 ### 기술 스택
 
 #### FRONT
@@ -31,9 +35,14 @@ LinkNest는 웹에서 발견한 유용한 정보를 북마크, 컬렉션, 태그
 ### 시스템 아키텍처
 
 ![아키텍처 다이어그램](docs/images/architecture.png)
-
 GitHub Actions를 활용하여 PR에서는 빌드 및 테스트를 수행하고,
 develop 병합 시 스테이징 환경에, 버전 태그 생성 시 프로덕션 환경에 배포합니다.
+
+### ERD
+
+<p>
+    <img src="docs/images/erd.png" width="60%">
+</p>
 
 <br>
 
@@ -44,6 +53,10 @@ develop 병합 시 스테이징 환경에, 버전 태그 생성 시 프로덕션
 Google, Kakao 소셜 로그인을 지원하며 테스트 계정을 통해 별도의 소셜 로그인 없이 서비스 기능을 확인할 수 있습니다.<br>
 ![로그인 화면](docs/images/login.png)
 
+---
+
+<br>
+
 ### 📁 컬렉션 관리
 
 컬렉션을 생성하여 북마크를 주제별로 관리할 수 있습니다.<br>
@@ -51,9 +64,13 @@ Google, Kakao 소셜 로그인을 지원하며 테스트 계정을 통해 별도
 ![컬렉션 화면](docs/images/collection-overview.png)
 
 <p>
-    <img src="docs/images/collection-reorder.gif" width="45%">
-    <img src="docs/images/collection-hierarchy.gif" width="45%">
+    <img src="docs/images/collection-reorder.gif" width="32%">
+    <img src="docs/images/collection-hierarchy.gif" width="32%">
 </p>
+
+---
+
+<br>
 
 ### 🔖 북마크 관리
 
@@ -66,6 +83,10 @@ Google, Kakao 소셜 로그인을 지원하며 테스트 계정을 통해 별도
     <img src="docs/images/bookmark-edit.png" width="45%">
 </p>
 
+---
+
+<br>
+
 ### 🏷️ 태그 관리
 
 북마크에 태그를 지정하여 다양한 기준으로 분류할 수 있습니다.<br>
@@ -73,15 +94,27 @@ Google, Kakao 소셜 로그인을 지원하며 테스트 계정을 통해 별도
 ![태그 관리 화면 1](docs/images/tag-management-1.png)
 ![태그 관리 화면 2](docs/images/tag-management-2.png)
 
+---
+
+<br>
+
 ### 🔍 북마크 검색
 
 북마크 목록에서 제목, URL, 태그를 기준으로 북마크를 검색할 수 있습니다.<br>
 ![북마크 검색 화면](docs/images/bookmark-search.png)
 
+---
+
+<br>
+
 ### 🗑️ 휴지통
 
 삭제한 북마크를 휴지통에서 확인하고 선택적으로 복구하거나 영구 삭제할 수 있습니다.<br>
 ![휴지통 화면](docs/images/trash-selected.png)
+
+---
+
+<br>
 
 ### ⚙️ 설정
 
