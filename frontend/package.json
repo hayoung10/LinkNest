@@ -27,7 +27,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@types/axios": "^0.14.4",
-    "@types/node": "^25.7.0",
+    "@types/node": "^26.6.4",
     "@vitejs/plugin-vue": "^6.0.9",
     "autoprefixer": "^10.6.1",
     "postcss": "^8.5.28",
