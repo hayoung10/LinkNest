@@ -126,8 +126,8 @@
     <footer class="mt-auto border-t border-border px-3 py-3">
       <UserMenu
         @open-settings="$emit('open-settings')"
-        @open-tag-management="() => router.push({ name: 'tags' })"
-        @open-trash="() => router.push({ name: 'trash' })"
+        @open-tag-management="goToTags"
+        @open-trash="goToTrash"
         @logout="$emit('logout')"
       />
     </footer>
@@ -214,7 +214,7 @@ import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
 import LogoIcon from "@/components/icons/LogoIcon.vue";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import StarIcon from "@/components/icons/StarIcon.vue";
-import { getErrorMessage, isHttpError } from "@/api/errors";
+import { getErrorMessage } from "@/api/errors";
 
 defineOptions({ inheritAttrs: false });
 
@@ -229,7 +229,18 @@ const emit = defineEmits<{
   (e: "open-all", id: ID): void;
   (e: "open-settings"): void;
   (e: "logout"): void;
+  (e: "close-sidebar"): void;
 }>();
+
+const goToTags = () => {
+  router.push({ name: "tags" });
+  emit("close-sidebar");
+};
+
+const goToTrash = () => {
+  router.push({ name: "trash" });
+  emit("close-sidebar");
+};
 
 const workspace = useWorkspaceStore();
 const {
@@ -271,11 +282,13 @@ const rootIds = computed<ID[]>(() =>
 
 function handleSelectCollection(node: CollectionNodeModel) {
   workspace.selectCollection(node.id);
+  emit("close-sidebar");
 }
 
 function handleSelectFavorites() {
   if (isLoading.value.bookmarks) return;
   workspace.selectFavorites();
+  emit("close-sidebar");
 }
 
 function onClickAddRoot() {

@@ -1,5 +1,15 @@
 <template>
   <main class="flex-1 flex flex-col bg-background overflow-hidden min-h-0">
+    <!-- 모바일 사이드바 메뉴 -->
+    <button
+      type="button"
+      class="md:hidden mb-2 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      aria-label="사이드바 열기"
+      @click="emit('open-sidebar')"
+    >
+      <MenuIcon :size="20" />
+    </button>
+
     <div
       class="flex-1 flex flex-col w-full max-w-4xl mx-auto p-8 animate-fadeIn min-h-0"
     >
@@ -291,6 +301,7 @@ import type { Bookmark, ID } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
 import StarIcon from "@/components/icons/StarIcon.vue";
+import MenuIcon from "@/components/icons/MenuIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
@@ -308,6 +319,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "select-bookmark", id: ID): void;
+  (e: "open-sidebar"): void;
 }>();
 
 const workspace = useWorkspaceStore();
