@@ -1,14 +1,20 @@
 <template>
   <main class="flex-1 flex flex-col bg-background overflow-hidden min-h-0">
     <!-- 모바일 사이드바 메뉴 -->
-    <button
-      type="button"
-      class="md:hidden mb-2 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-      aria-label="사이드바 열기"
-      @click="emit('open-sidebar')"
-    >
-      <MenuIcon :size="20" />
-    </button>
+    <div class="md:hidden mb-2 flex items-center gap-2">
+      <button
+        type="button"
+        class="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-200 hover:text-gray-900"
+        aria-label="사이드바 열기"
+        @click="emit('open-sidebar')"
+      >
+        <MenuIcon :size="20" />
+      </button>
+
+      <p v-if="!hasSelection" class="text-sm text-gray-500">
+        메뉴를 눌러 컬렉션을 선택하세요.
+      </p>
+    </div>
 
     <!-- 컬렉션 미선택 -->
     <div

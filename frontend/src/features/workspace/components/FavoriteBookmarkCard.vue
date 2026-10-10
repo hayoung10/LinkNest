@@ -3,7 +3,7 @@
     <!-- 모바일 사이드바 메뉴 -->
     <button
       type="button"
-      class="md:hidden mb-2 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      class="md:hidden mb-2 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-gray-200 hover:text-gray-900 transition-colors"
       aria-label="사이드바 열기"
       @click="emit('open-sidebar')"
     >
