@@ -137,7 +137,7 @@
   <teleport to="#modals">
     <div
       v-if="showAddCollectionDialog"
-      class="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4"
+      class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
       @click.self="closeAddCollectionDialog"
       @keydown.esc="closeAddCollectionDialog"
     >
