@@ -2,7 +2,7 @@
   <section class="space-y-6">
     <!-- 카드 1: 로그인 보안 -->
     <div
-      class="rounded-2xl border border-zinc-200 bg-white px-6 py-5 space-y-6"
+      class="rounded-2xl border border-zinc-200 bg-white px-4 py-4 space-y-5 sm:px-6 sm:py-5 sm:space-y-6"
     >
       <header class="space-y-1">
         <h2 class="text-lg font-semibold text-zinc-900">로그인 보안</h2>
@@ -48,7 +48,9 @@
     </div>
 
     <!-- 카드 2: 로그인 상태 / 세션 관리 -->
-    <div class="rounded-2xl border border-zinc-200 bg-white p-6 space-y-4">
+    <div
+      class="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 space-y-4"
+    >
       <header class="space-y-1">
         <h3 class="text-base font-semibold text-zinc-900">로그인 상태</h3>
         <p class="text-sm text-zinc-500">
@@ -60,7 +62,7 @@
       <div class="space-y-4">
         <!-- 로그인 상태 유지 토글 -->
         <label class="flex items-start justify-between gap-3">
-          <div>
+          <div class="min-w-0">
             <p class="text-sm font-medium text-zinc-900">
               이 브라우저에서 로그인 상태 유지
             </p>
@@ -70,7 +72,7 @@
           </div>
           <button
             type="button"
-            class="relative inline-flex h-6 w-11 items-center rounded-full transition disabled:opacity-60 disabled:cursor-not-allowed"
+            class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:opacity-60 disabled:cursor-not-allowed"
             :class="keepSignedIn ? 'bg-zinc-900' : 'bg-zinc-300'"
             @click="onToggleKeepSignedIn"
             :disabled="
@@ -89,9 +91,9 @@
 
         <!-- 모든 기기에서 로그아웃 -->
         <div
-          class="flex items-start justify-between gap-3 rounded-xl bg-zinc-50 px-4 py-3"
+          class="flex flex-col items-start gap-3 rounded-xl bg-zinc-50 px-3 py-3 sm:flex-row sm:justify-between sm:px-4"
         >
-          <div>
+          <div class="min-w-0">
             <p class="text-sm font-medium text-zinc-900">
               모든 기기에서 로그아웃
             </p>
@@ -102,7 +104,7 @@
           </div>
           <button
             type="button"
-            class="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-60 disabled:cursor-not-allowed"
+            class="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-60 disabled:cursor-not-allowed"
             @click="onLogoutAllDevices"
             :disabled="isProcessingAllSessions || isDeletingAccount"
           >
@@ -113,7 +115,9 @@
     </div>
 
     <!-- 카드 3: 위험 구역 -->
-    <div class="rounded-2xl border border-red-200 bg-red-50 p-6 space-y-4">
+    <div
+      class="rounded-2xl border border-red-200 bg-red-50 p-4 sm:p-6 space-y-4"
+    >
       <header class="space-y-1">
         <h3 class="text-base font-semibold text-red-700">위험 구역</h3>
 
