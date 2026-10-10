@@ -44,7 +44,9 @@
     </header>
 
     <!-- 본문 -->
-    <div class="flex-1 overflow-auto px-5 py-4 space-y-6">
+    <div
+      class="flex-1 overflow-auto px-4 py-3 sm:px-5 sm:py-4 space-y-5 sm:space-y-6"
+    >
       <!-- 제목 -->
       <div class="space-y-2">
         <div class="flex items-end gap-3">
@@ -88,7 +90,7 @@
               :id="titleId"
               v-model="form.title"
               type="text"
-              class="w-full border-0 border-b border-border/70 bg-transparent px-3 py-2.5 text-xl font-semibold placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/40"
+              class="w-full border-0 border-b border-border/70 bg-transparent px-1 sm:px-3 py-2.5 text-xl font-semibold placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring/40"
               placeholder="(제목 없음)"
             />
           </div>
@@ -111,10 +113,10 @@
         />
 
         <!-- 커버 이미지 토글 -->
-        <div class="flex items-center justify-between mt-2">
+        <div class="flex items-center justify-between mt-2 gap-3">
           <label
             for="auto-cover"
-            class="text-sm text-neutral-500 dark:text-neutral-400 select-none cursor-pointer"
+            class="min-w-0 pr-3 text-sm text-neutral-500 dark:text-neutral-400 select-none cursor-pointer"
           >
             커버 이미지 자동 가져오기
           </label>
@@ -124,7 +126,7 @@
             type="button"
             role="switch"
             :aria-checked="form.imageMode === 'AUTO'"
-            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+            class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors"
             :class="
               form.imageMode === 'AUTO'
                 ? 'bg-neutral-900 dark:bg-neutral-100'
