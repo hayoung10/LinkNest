@@ -29,20 +29,20 @@
       </TagHeader>
 
       <!-- 안내 문구 (bookmarkCount === 0 인 경우) -->
-      <div v-if="(tag?.bookmarkCount ?? 0) === 0" class="px-6 pt-3">
+      <div v-if="(tag?.bookmarkCount ?? 0) === 0" class="px-4 pt-3 sm:px-6">
         <div class="text-xs text-red-600/80 dark:text-red-400/80">
           일정 기간 사용되지 않는 태그는 자동으로 정리될 수 있습니다.
         </div>
       </div>
 
-      <div class="px-6 py-6 space-y-8">
+      <div class="px-4 py-4 space-y-6 sm:px-6 sm:py-6 sm:space-y-8">
         <!-- 기본 정보 -->
         <section>
           <h3 class="text-base font-semibold">기본 정보</h3>
 
-          <div class="mt-4 grid gap-4 lg:grid-cols-2">
+          <div class="mt-3 grid gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-2">
             <!-- 이름 -->
-            <div class="rounded-2xl border border-border bg-card p-5">
+            <div class="rounded-2xl border border-border bg-card p-4 sm:p-5">
               <div class="flex items-center gap-3">
                 <div
                   class="size-10 rounded-xl bg-zinc-300 dark:bg-zinc-600 grid place-items-center"
@@ -64,23 +64,23 @@
             </div>
 
             <!-- 날짜 -->
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid gap-3 sm:grid-cols-2 sm:gap-4">
               <!-- 생성일 -->
-              <div class="rounded-2xl border border-border bg-card p-5">
+              <div class="rounded-2xl border border-border bg-card p-4 sm:p-5">
                 <div class="text-xs text-zinc-500 dark:text-zinc-400">
                   생성일
                 </div>
-                <div class="mt-2 text-sm font-semibold tabular-nums">
+                <div class="mt-1.5 text-sm font-semibold tabular-nums sm:mt-2">
                   {{ createdAtText }}
                 </div>
               </div>
 
               <!-- 수정일 -->
-              <div class="rounded-2xl border border-border bg-card p-5">
+              <div class="rounded-2xl border border-border bg-card p-4 sm:p-5">
                 <div class="text-xs text-zinc-500 dark:text-zinc-400">
                   수정일
                 </div>
-                <div class="mt-2 text-sm font-semibold tabular-nums">
+                <div class="mt-1.5 text-sm font-semibold tabular-nums sm:mt-2">
                   {{ updatedAtText }}
                 </div>
               </div>
@@ -92,29 +92,35 @@
         <section>
           <h3 class="text-base font-semibold">상태</h3>
 
-          <div class="mt-4 rounded-2xl border border-border bg-card p-6">
-            <div class="flex items-start justify-between gap-4">
-              <div>
+          <div
+            class="mt-3 rounded-2xl border border-border bg-card p-4 sm:mt-4 sm:p-6"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
                 <div class="text-sm text-zinc-500 dark:text-zinc-400">
                   사용 중인 북마크
                 </div>
-                <div class="mt-2 text-4xl font-bold tabular-nums">
+                <div
+                  class="mt-1.5 text-3xl font-bold tabular-nums sm:mt-2 sm:text-4xl"
+                >
                   {{ tag?.bookmarkCount ?? 0 }}
                 </div>
               </div>
 
               <div
-                class="size-14 rounded-2xl bg-zinc-300 dark:bg-zinc-600 grid place-items-center"
+                class="grid size-12 shrink-0 place-items-center rounded-2xl bg-zinc-300 dark:bg-zinc-600 sm:size-14"
               >
                 <TagIcon :size="26" :strokeWidth="2" aria-hidden="true" />
               </div>
             </div>
 
-            <div class="mt-6 h-px bg-zinc-200/70 dark:bg-zinc-700/50"></div>
+            <div
+              class="mt-4 h-px bg-zinc-200/70 dark:bg-zinc-700/50 sm:mt-6"
+            ></div>
 
             <!-- 사용률 -->
-            <div class="mt-6">
-              <div class="flex items-center justify-between text-sm">
+            <div class="mt-4 sm:mt-6">
+              <div class="flex items-center justify-between gap-3 text-sm">
                 <span class="text-zinc-500 dark:text-zinc-400">사용률</span>
                 <span class="tabular-nums">{{ usagePercentLabel }}</span>
               </div>
@@ -135,18 +141,18 @@
         <section>
           <h3 class="text-base font-semibold">빠른 작업</h3>
 
-          <div class="mt-4 grid gap-4 md:grid-cols-3">
+          <div class="mt-3 grid gap-3 md:mt-4 md:grid-cols-3 md:gap-4">
             <button
               type="button"
-              class="group rounded-2xl border border-border bg-card p-4 text-center transition-all hover:bg-accent hover:border-zinc-300/70 dark:hover:border-zinc-600/60 hover:shadow-md"
+              class="group rounded-2xl border border-border bg-card p-3 text-center transition-all hover:bg-accent hover:border-zinc-300/70 dark:hover:border-zinc-600/60 hover:shadow-md sm:p-4"
               @click="openRename"
             >
               <div
-                class="mx-auto size-12 rounded-xl bg-blue-100 dark:bg-blue-500/20 grid place-items-center text-xl transition-colors group-hover:bg-blue-200 dark:group-hover:bg-blue-500/30"
+                class="mx-auto size-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 grid place-items-center text-xl transition-colors group-hover:bg-blue-200 dark:group-hover:bg-blue-500/30 sm:size-12"
               >
                 ✏️
               </div>
-              <div class="mt-4 font-semibold">이름 변경</div>
+              <div class="mt-3 font-semibold sm:mt-4">이름 변경</div>
               <div class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                 태그 이름 수정
               </div>
@@ -154,15 +160,15 @@
 
             <button
               type="button"
-              class="group rounded-2xl border border-border bg-card p-4 text-center transition-all hover:bg-accent hover:border-zinc-300/70 dark:hover:border-zinc-600/60 hover:shadow-md"
+              class="group rounded-2xl border border-border bg-card p-3 text-center transition-all hover:bg-accent hover:border-zinc-300/70 dark:hover:border-zinc-600/60 hover:shadow-md sm:p-4"
               @click="openMerge"
             >
               <div
-                class="mx-auto size-12 rounded-xl bg-violet-100 dark:bg-violet-500/20 grid place-items-center text-xl transition-colors group-hover:bg-violet-200 dark:group-hover:bg-violet-500/30"
+                class="mx-auto size-10 rounded-xl bg-violet-100 dark:bg-violet-500/20 grid place-items-center text-xl transition-colors group-hover:bg-violet-200 dark:group-hover:bg-violet-500/30 sm:size-12"
               >
                 ⤴️
               </div>
-              <div class="mt-4 font-semibold">태그 병합</div>
+              <div class="mt-3 font-semibold sm:mt-4">태그 병합</div>
               <div class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                 다른 태그와 병합
               </div>
@@ -170,15 +176,15 @@
 
             <button
               type="button"
-              class="group rounded-2xl border border-border bg-card p-4 text-center transition-all hover:bg-accent hover:border-zinc-300/70 dark:hover:border-zinc-600/60 hover:shadow-md"
+              class="group rounded-2xl border border-border bg-card p-3 text-center transition-all hover:bg-accent hover:border-zinc-300/70 dark:hover:border-zinc-600/60 hover:shadow-md sm:p-4"
               @click="openDelete"
             >
               <div
-                class="mx-auto size-12 rounded-xl bg-red-100 dark:bg-red-500/20 grid place-items-center text-xl transition-colors group-hover:bg-red-200 dark:group-hover:bg-red-500/30"
+                class="mx-auto size-10 rounded-xl bg-red-100 dark:bg-red-500/20 grid place-items-center text-xl transition-colors group-hover:bg-red-200 dark:group-hover:bg-red-500/30 sm:size-12"
               >
                 🗑️
               </div>
-              <div class="mt-4 font-semibold">태그 삭제</div>
+              <div class="mt-3 font-semibold sm:mt-4">태그 삭제</div>
               <div class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                 영구적으로 삭제
               </div>
@@ -188,13 +194,13 @@
 
         <!-- 사용 중인 북마크 -->
         <section>
-          <div class="flex items-center justify-between gap-4">
-            <h3 class="text-base font-semibold">사용 중인 북마크</h3>
+          <div class="flex items-center justify-between gap-2 sm:gap-4">
+            <h3 class="min-w-0 text-base font-semibold">사용 중인 북마크</h3>
 
             <button
               v-if="hasMore"
               type="button"
-              class="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-border text-sm hover:bg-accent hover:border-zinc-300/70 dark:hover:border-zinc-600/60 hover:shadow-md transition-all"
+              class="inline-flex shrink-0 items-center gap-1 px-2 py-1.5 rounded-md border border-border text-xs hover:bg-accent hover:border-zinc-300/70 dark:hover:border-zinc-600/60 hover:shadow-md transition-all sm:gap-2 sm:px-2 sm:px-3 sm:text-sm"
               @click="onClickOpenAll"
             >
               모두 보기 ({{ tag?.bookmarkCount ?? 0 }})

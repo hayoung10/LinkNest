@@ -18,7 +18,7 @@
         @back="$emit('back')"
       />
 
-      <div class="px-6 py-6 flex-1 min-h-0 overflow-hidden">
+      <div class="flex-1 min-h-0 overflow-hidden p-3 sm:p-5 md:p-8">
         <div class="w-full max-w-4xl mx-auto flex flex-col min-h-0 h-full">
           <!-- 상태 분기 -->
           <BaseError
@@ -57,7 +57,7 @@
 
             <div ref="listWrapRef" class="flex-1 min-h-0 overflow-y-auto pr-1">
               <div
-                class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr"
+                class="grid gap-4 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4"
                 aria-label="태그 북마크 카드 목록"
               >
                 <article
@@ -95,7 +95,7 @@
                       :class="[
                         isChecked(b.id)
                           ? 'opacity-100 pointer-events-auto'
-                          : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto',
+                          : 'opacity-100 pointer-events-auto md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto md:group-focus-within:opacity-100 md:group-focus-within:pointer-events-auto',
                         'transition-opacity',
                       ]"
                       @click.stop
@@ -132,7 +132,7 @@
 
                     <!-- 메뉴 -->
                     <div
-                      class="absolute top-2 right-2 z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-opacity"
+                      class="absolute top-2 right-2 z-20 opacity-100 pointer-events-auto md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto md:group-focus-within:opacity-100 md:group-focus-within:pointer-events-auto"
                     >
                       <TaggedBookmarkMoreMenu
                         v-if="props.tagId != null"

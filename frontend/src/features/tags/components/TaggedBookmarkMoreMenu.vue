@@ -35,7 +35,7 @@
           :disabled="isTagMutating"
           @click="handleDetach"
         >
-          태그에서 제거
+          태그 해제
         </button>
 
         <button
@@ -65,7 +65,10 @@
           @submit.prevent="handleReplace"
         >
           <header class="mb-4">
-            <h3 id="tag-merge" class="text-[17px] font-semibold leading-6">
+            <h3
+              id="tag-replace-one"
+              class="text-[17px] font-semibold leading-6"
+            >
               태그 교체
             </h3>
             <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
