@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-6 py-10 text-center"
+    class="flex flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-8 text-center sm:px-6 sm:py-10"
   >
     <!-- Icon -->
     <div
