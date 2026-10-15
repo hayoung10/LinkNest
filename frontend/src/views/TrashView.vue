@@ -17,9 +17,11 @@
     <main class="flex-1 min-h-0 overflow-hidden">
       <section class="h-full min-h-0 flex flex-col">
         <!-- 상단 탭 + 비우기 -->
-        <div class="px-6 py-4 border-b border-border flex items-center gap-3">
+        <div
+          class="flex flex-col gap-3 border-b border-border px-3 py-3 sm:flex-row sm:items-center sm:gap-3 sm:px-5 sm:py-4 md:px-6"
+        >
           <div
-            class="inline-flex rounded-xl bg-zinc-100/70 dark:bg-zinc-800/50 p-1"
+            class="inline-flex w-full rounded-xl bg-zinc-100/70 dark:bg-zinc-800/50 p-1 sm:w-auto"
           >
             <button
               type="button"
@@ -55,12 +57,12 @@
             </button>
           </div>
 
-          <div class="flex-1" />
+          <div class="hidden flex-1 sm:block" />
 
           <!-- 비우기 -->
           <button
             type="button"
-            class="inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors disabled:opacity-50 bg-red-50 text-red-700 border border-red-300 hover:bg-red-100 dark:bg-red-950/30 dark:border-red-900/40 dark:text-red-300 dark:hover:bg-red-950/50"
+            class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50 sm:w-auto sm:py-1"
             :disabled="trash.isMutating.empty || isLoadingTrash"
             @click="onEmpty"
           >
@@ -86,7 +88,7 @@
           />
 
           <!-- 카드 그리드 + 선택 툴바 -->
-          <div v-else class="p-6 space-y-4">
+          <div v-else class="space-y-4 p-3 sm:p-5 md:p-6">
             <div
               v-if="selectedCount > 0"
               class="sticky top-0 z-20 bg-background/95 backdrop-blur pb-3"
@@ -103,10 +105,7 @@
             </div>
 
             <div
-              class="grid gap-4"
-              style="
-                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-              "
+              class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-3 sm:gap-4"
             >
               <article
                 v-for="item in trash.items"
@@ -145,11 +144,11 @@
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2 min-w-0">
                       <span
-                        class="text-xs px-2 py-0.5 rounded-md border"
+                        class="shrink-0 rounded-md border px-2 py-0.5 text-xs"
                         :class="typeBadgeClass(item.type)"
                         >{{ typeLabel(item.type) }}</span
                       >
-                      <h3 class="font-semibold truncate">
+                      <h3 class="min-w-0 flex-1 truncate font-semibold">
                         {{ item.title?.trim() ? item.title : "(제목 없음)" }}
                       </h3>
                     </div>
@@ -208,10 +207,10 @@
                   </div>
                 </div>
 
-                <div class="px-4 pb-4 flex items-center gap-2 mt-auto">
+                <div class="mt-auto flex gap-2 px-4 pb-4">
                   <button
                     type="button"
-                    class="flex-1 inline-flex justify-center items-center gap-2 px-3 py-2 rounded-md border border-border text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
+                    class="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-md border border-border px-2 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50"
                     :disabled="trash.isMutating.restore"
                     @click="onRestore(item.type, item.id)"
                   >
@@ -220,7 +219,7 @@
 
                   <button
                     type="button"
-                    class="flex-1 inline-flex justify-center items-center gap-2 px-3 py-2 rounded-md border border-border text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
+                    class="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-md border border-border px-2 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50"
                     :disabled="trash.isMutating.delete"
                     @click="onDelete(item.type, item.id)"
                   >
@@ -266,21 +265,25 @@
         </div>
 
         <footer
-          class="mt-3 text-xs text-neutral-500 dark:text-neutral-400 text-center select-none"
+          class="shrink-0 px-4 pt-2 pb-3 text-center text-xs text-neutral-500 dark:text-neutral-400 select-none"
         >
           {{ trash.items.length }}개 항목{{ trash.hasNext ? "+" : "" }}
         </footer>
 
         <!-- 자동 삭제 안내 -->
-        <div class="px-6 pb-6">
+        <div class="shrink-0 px-3 pb-4 sm:px-5 sm:pb-5 md:px-6">
           <div
-            class="rounded-xl border border-border border-amber-300 bg-amber-50 px-5 py-4 text-sm"
+            class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 text-sm dark:border-amber-900/50 dark:bg-amber-950/20 sm:px-5"
           >
             <div class="flex items-start gap-3">
               <div class="mt-0.5 text-amber-600 text-lg">⚠️</div>
               <div>
-                <p class="font-semibold text-amber-800">자동 삭제 안내</p>
-                <p class="mt-1 text-amber-700 text-sm leading-relaxed">
+                <p class="font-semibold text-amber-800 dark:text-amber-300">
+                  자동 삭제 안내
+                </p>
+                <p
+                  class="mt-1 text-sm leading-relaxed text-amber-700 dark:text-amber-200"
+                >
                   항목은 최대 15일 동안 보관되며, 이후 순차적으로 영구
                   삭제됩니다.
                 </p>
