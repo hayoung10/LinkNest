@@ -125,6 +125,7 @@
     <!-- 하단 유저 메뉴 -->
     <footer class="mt-auto border-t border-border px-3 py-3">
       <UserMenu
+        :always-show-user-info="true"
         @open-settings="$emit('open-settings')"
         @open-tag-management="goToTags"
         @open-trash="goToTrash"
