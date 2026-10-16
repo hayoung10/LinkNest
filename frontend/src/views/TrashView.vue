@@ -18,14 +18,14 @@
       <section class="h-full min-h-0 flex flex-col">
         <!-- 상단 탭 + 비우기 -->
         <div
-          class="flex flex-col gap-3 border-b border-border px-3 py-3 sm:flex-row sm:items-center sm:gap-3 sm:px-5 sm:py-4 md:px-6"
+          class="flex flex-col gap-2 border-b border-border px-3 py-2 sm:flex-row sm:items-center sm:gap-3 sm:px-5 sm:py-4 md:px-6"
         >
           <div
-            class="inline-flex w-full rounded-xl bg-zinc-100/70 dark:bg-zinc-800/50 p-1 sm:w-auto"
+            class="inline-flex w-full rounded-xl bg-zinc-100/70 p-1 dark:bg-zinc-800/50 sm:w-auto"
           >
             <button
               type="button"
-              class="px-3 py-2 text-sm rounded-lg transition-colors"
+              class="rounded-lg px-2.5 py-1.5 text-xs transition-colors sm:px-3 sm:py-2 sm:text-sm"
               :class="tabClass(null)"
               @click="setType(null)"
             >
@@ -33,7 +33,7 @@
             </button>
             <button
               type="button"
-              class="px-3 py-2 text-sm rounded-lg transition-colors"
+              class="rounded-lg px-2.5 py-1.5 text-xs transition-colors sm:px-3 sm:py-2 sm:text-sm"
               :class="tabClass('COLLECTION')"
               @click="setType('COLLECTION')"
             >
@@ -41,7 +41,7 @@
             </button>
             <button
               type="button"
-              class="px-3 py-2 text-sm rounded-lg transition-colors"
+              class="rounded-lg px-2.5 py-1.5 text-xs transition-colors sm:px-3 sm:py-2 sm:text-sm"
               :class="tabClass('BOOKMARK')"
               @click="setType('BOOKMARK')"
             >
@@ -49,7 +49,7 @@
             </button>
             <button
               type="button"
-              class="px-3 py-2 text-sm rounded-lg transition-colors"
+              class="rounded-lg px-2.5 py-1.5 text-xs transition-colors sm:px-3 sm:py-2 sm:text-sm"
               :class="tabClass('TAG')"
               @click="setType('TAG')"
             >
@@ -62,7 +62,7 @@
           <!-- 비우기 -->
           <button
             type="button"
-            class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50 sm:w-auto sm:py-1"
+            class="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-2.5 py-1.5 text-xs text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50 sm:w-auto sm:gap-2 sm:px-3 sm:py-1 sm:text-sm"
             :disabled="trash.isMutating.empty || isLoadingTrash"
             @click="onEmpty"
           >
@@ -91,7 +91,7 @@
           <div v-else class="space-y-4 p-3 sm:p-5 md:p-6">
             <div
               v-if="selectedCount > 0"
-              class="sticky top-0 z-20 bg-background/95 backdrop-blur pb-3"
+              class="sticky top-0 z-20 -mx-3 mb-3 bg-background px-3 pb-2 pt-1"
             >
               <TrashSelectionToolbar
                 :selected-count="selectedCount"
@@ -271,18 +271,18 @@
         </footer>
 
         <!-- 자동 삭제 안내 -->
-        <div class="shrink-0 px-3 pb-4 sm:px-5 sm:pb-5 md:px-6">
+        <div class="shrink-0 px-3 pb-2 sm:px-5 sm:pb-5 md:px-6">
           <div
-            class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 text-sm dark:border-amber-900/50 dark:bg-amber-950/20 sm:px-5"
+            class="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-xs dark:border-amber-900/50 dark:bg-amber-950/20 sm:px-5 sm:py-4 sm:text-sm"
           >
-            <div class="flex items-start gap-3">
-              <div class="mt-0.5 text-amber-600 text-lg">⚠️</div>
-              <div>
+            <div class="flex items-start gap-2 sm:gap-3">
+              <div class="mt-0.5 text-amber-600 text-base sm:text-lg">⚠️</div>
+              <div class="min-w-0">
                 <p class="font-semibold text-amber-800 dark:text-amber-300">
                   자동 삭제 안내
                 </p>
                 <p
-                  class="mt-1 text-sm leading-relaxed text-amber-700 dark:text-amber-200"
+                  class="mt-0.5 text-xs leading-snug text-amber-700 dark:text-amber-200 sm:mt-1 sm:text-sm sm:leading-relaxed"
                 >
                   항목은 최대 15일 동안 보관되며, 이후 순차적으로 영구
                   삭제됩니다.
