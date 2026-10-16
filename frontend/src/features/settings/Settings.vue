@@ -1,7 +1,7 @@
 <template>
-  <div class="h-full w-full px-6 py-6 flex flex-col">
+  <div class="flex h-full w-full flex-col px-3 py-4 sm:px-6 sm:py-6">
     <!-- 헤더 -->
-    <header class="flex items-start gap-4 mb-6">
+    <header class="mb-5 flex items-start gap-3 sm:mb-6 sm:gap-4">
       <!-- 좌: 패널 닫기 -->
       <button
         type="button"
@@ -23,15 +23,15 @@
 
     <!-- 탭 버튼 영역 -->
     <div
-      class="w-full rounded-full bg-zinc-100 border-2 border-zinc-100 px-4 py-2 mb-3"
+      class="mb-3 w-full rounded-full border-2 border-zinc-100 bg-zinc-100 px-1.5 py-1.5 sm:px-4 sm:py-2"
     >
       <!-- 탭 바 -->
-      <nav class="flex items-center gap-3">
+      <nav class="flex w-full items-center gap-1 sm:gap-3">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           type="button"
-          class="px-4 py-2 rounded-full text-sm font-medium transition-all"
+          class="min-w-0 flex-1 whitespace-nowrap rounded-full px-2 py-2 text-sm font-medium transition-all sm:px-4"
           :class="
             activeId === tab.id
               ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow'

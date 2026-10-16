@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen w-full bg-background flex flex-col">
+  <div class="flex h-dvh w-full flex-col bg-background">
     <!-- 상단 헤더 -->
     <PageHeader
       title="태그 관리"
@@ -11,15 +11,41 @@
       @open-trash="onOpenTrash"
       @open-settings="onOpenSettings"
       @logout="onLogout"
-    />
+    >
+      <template #title-leading>
+        <button
+          type="button"
+          class="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-200 hover:text-gray-900 md:hidden"
+          aria-label="태그 사이드바 열기"
+          @click="isSidebarOpen = true"
+        >
+          <MenuIcon :size="20" />
+        </button>
+      </template>
+    </PageHeader>
 
     <!-- 본문 -->
-    <main class="flex-1 min-h-0 flex">
-      <!-- 좌측: 태그 사이드바 -->
+    <main
+      class="relative flex min-w-0 flex-1 flex-col overflow-hidden md:flex-row"
+    >
+      <!-- 배경 -->
+      <button
+        v-if="isSidebarOpen"
+        type="button"
+        class="fixed inset-0 z-40 bg-black/40 md:hidden"
+        aria-label="사이드바 닫기"
+        @click="isSidebarOpen = false"
+      />
+
+      <!-- 좌측: 태그 사이드바 (데스크톱 고정 / 모바일 드로어) -->
       <TagSidebar
-        class="w-72 xl:w-80 border-r border-border"
+        class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] shrink-0 border-r border-border bg-background transition-transform duration-200 ease-in-out md:relative md:inset-auto md:z-auto md:translate-x-0 md:transition-none"
+        :class="
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        "
         :selected-tag-id="selectedTagId"
         @select-tag="onSelectTag"
+        @close-sidebar="isSidebarOpen = false"
       />
 
       <!-- 우측: 콘텐츠 -->
@@ -99,6 +125,7 @@ import { useTagsStore } from "@/stores/tags";
 import { useTaggedBookmarksStore } from "@/stores/taggedBookmarks";
 import PageHeader from "@/components/layout/PageHeader.vue";
 import { useTabActivationRefresh } from "@/composables/useTabActivationRefresh";
+import MenuIcon from "@/components/icons/MenuIcon.vue";
 
 type Mode = "dashboard" | "bookmarks";
 
@@ -117,6 +144,8 @@ const selectedTagId = ref<ID | null>(null);
 const mode = ref<Mode>("dashboard");
 const isSettingsOpen = ref(false);
 
+const isSidebarOpen = ref(false);
+
 const focusBookmarkId = ref<ID | null>(null);
 const selectedBookmarkId = ref<ID | null>(null);
 
@@ -128,6 +157,7 @@ function onSelectTag(id: ID) {
   selectedTagId.value = id;
   mode.value = "dashboard";
   isSettingsOpen.value = false;
+  isSidebarOpen.value = false;
 
   focusBookmarkId.value = null;
   selectedBookmarkId.value = null;

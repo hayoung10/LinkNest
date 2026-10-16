@@ -1,6 +1,22 @@
 <template>
   <main class="flex-1 flex flex-col bg-background overflow-hidden min-h-0">
-    <!-- 선택 없음 -->
+    <!-- 모바일 사이드바 메뉴 -->
+    <div class="md:hidden mb-2 flex items-center gap-2">
+      <button
+        type="button"
+        class="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-200 hover:text-gray-900"
+        aria-label="사이드바 열기"
+        @click="emit('open-sidebar')"
+      >
+        <MenuIcon :size="20" />
+      </button>
+
+      <p v-if="!hasSelection" class="text-sm text-gray-500">
+        메뉴를 눌러 컬렉션을 선택하세요.
+      </p>
+    </div>
+
+    <!-- 컬렉션 미선택 -->
     <div
       v-if="!hasSelection"
       class="h-full min-h-[60vh] grid place-items-center text-muted/70 py-16"
@@ -29,7 +45,7 @@
       </div>
     </div>
 
-    <!-- 컬렉션 선택됨 -->
+    <!-- 컬렉션 선택 -->
     <div
       v-else
       class="flex-1 flex flex-col w-full max-w-4xl mx-auto p-8 animate-fadeIn min-h-0"
@@ -282,6 +298,7 @@ import type { Bookmark, CollectionNode, ID } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
 import StarIcon from "@/components/icons/StarIcon.vue";
+import MenuIcon from "@/components/icons/MenuIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
@@ -307,6 +324,7 @@ const emit = defineEmits<{
   (e: "select-bookmark", id: ID): void;
   (e: "focus-done", id: ID): void;
   (e: "clear-focus"): void;
+  (e: "open-sidebar"): void;
 }>();
 
 const workspace = useWorkspaceStore();

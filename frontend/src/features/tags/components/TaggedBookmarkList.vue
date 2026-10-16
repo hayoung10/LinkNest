@@ -18,7 +18,9 @@
         @back="$emit('back')"
       />
 
-      <div class="px-6 py-6 flex-1 min-h-0 overflow-hidden">
+      <div
+        class="px-3 py-3 flex-1 min-h-0 overflow-hidden sm:px-5 sm:py-5 md:px-8 md:py-8"
+      >
         <div class="w-full max-w-4xl mx-auto flex flex-col min-h-0 h-full">
           <!-- 상태 분기 -->
           <BaseError
@@ -60,7 +62,7 @@
                 <template v-for="b in items" :key="b.id">
                   <li
                     :ref="(el) => setItemRef(b.id, el)"
-                    class="group px-2 py-3 rounded-md cursor-pointer select-none transition-colors"
+                    class="group px-1 py-2 rounded-md cursor-pointer select-none transition-colors sm:px-2 sm:py-3"
                     :class="[
                       isChecked(b.id)
                         ? 'bg-blue-50 ring-1 ring-blue-300'
@@ -71,22 +73,24 @@
                     @click="onSelect(b)"
                   >
                     <div
-                      type="button"
                       class="w-full text-left"
-                      @click="toggleChecked(b.id)"
-                      @keydown.enter.prevent="toggleChecked(b.id)"
-                      @keydown.space.prevent="toggleChecked(b.id)"
                       :title="displayTitle(b)"
+                      @click="toggleChecked(b.id)"
                     >
-                      <div class="flex items-stretch gap-3 px-3">
-                        <!-- 체크박스 -->
-                        <div class="shrink-0 pt-2">
+                      <div
+                        class="flex items-stretch gap-2 px-1 sm:gap-3 sm:px-3"
+                      >
+                        <!-- 왼쪽: 체크박스 + 즐겨찾기 -->
+                        <div
+                          class="flex shrink-0 flex-col items-center gap-1 pt-1"
+                        >
+                          <!-- 체크박스: 모바일에서는 항상 표시 -->
                           <div
-                            class="size-5"
+                            class="flex size-7 items-center justify-center sm:size-5"
                             :class="[
                               isChecked(b.id)
                                 ? 'opacity-100 pointer-events-auto'
-                                : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto',
+                                : 'opacity-100 pointer-events-auto md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto md:group-focus-within:opacity-100 md:group-focus-within:pointer-events-auto',
                               'transition-opacity',
                             ]"
                           >
@@ -100,13 +104,11 @@
                               "
                             />
                           </div>
-                        </div>
 
-                        <!-- favorite -->
-                        <div class="shrink-0 pt-2">
+                          <!-- 즐겨찾기 -->
                           <button
                             type="button"
-                            class="shrink-0 inline-flex items-center justify-center size-8 rounded-md hover:bg-zinc-100/70 dark:hover:bg-zinc-800/60 transition-colors disabled:opacity-50"
+                            class="inline-flex shrink-0 items-center justify-center size-7 rounded-md hover:bg-zinc-100/70 dark:hover:bg-zinc-800/60 transition-colors disabled:opacity-50"
                             :disabled="isMutatingFor(b.id)"
                             :aria-label="
                               b.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'
@@ -127,7 +129,7 @@
 
                         <!-- 왼쪽: cover -->
                         <span
-                          class="shrink-0 h-14 w-14 rounded-xl overflow-hidden border bg-zinc-200/70 dark:bg-zinc-800/70"
+                          class="shrink-0 h-11 w-11 rounded-xl overflow-hidden border bg-zinc-200/70 dark:bg-zinc-800/70 md:h-14 md:w-14"
                           :class="[
                             isActive(b)
                               ? 'border-blue-400/70'
@@ -163,7 +165,9 @@
 
                         <!-- 오른쪽: content -->
                         <div class="min-w-0 flex-1 py-0.5">
-                          <div class="flex items-center gap-2">
+                          <div
+                            class="flex min-w-0 items-center gap-1.5 sm:gap-2"
+                          >
                             <!-- emoji -->
                             <span
                               class="shrink-0 inline-flex items-center justify-center size-5 rounded"
@@ -209,7 +213,7 @@
 
                               <!-- 메뉴 -->
                               <div
-                                class="opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-opacity"
+                                class="opacity-100 pointer-events-auto transition-opacity md:opacity-0 md:pointer-events-none md:group-hover:opacity-100 md:group-hover:pointer-events-auto md:group-focus-within:opacity-100 md:group-focus-within:pointer-events-auto"
                               >
                                 <TaggedBookmarkMoreMenu
                                   v-if="props.tagId != null"
@@ -245,35 +249,42 @@
                           </div>
 
                           <div
-                            class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2"
+                            class="mt-1 flex min-w-0 flex-col gap-1 text-xs text-neutral-500 dark:text-neutral-400 md:flex-row md:items-center md:gap-2"
                           >
                             <!-- 컬렉션 (이모지 + 이름) -->
                             <span
-                              class="shrink-0 inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                              class="inline-flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground"
                               :title="collectionLabel(b)"
                             >
                               <span aria-hidden="true">{{
                                 collectionEmoji(b)
                               }}</span>
-                              <span class="truncate">{{
+                              <span class="min-w-0 truncate">{{
                                 collectionName(b)
                               }}</span>
                             </span>
-                            <span aria-hidden="true" class="shrink-0">·</span>
 
-                            <!-- 도메인 -->
-                            <span class="min-w-0 truncate">{{
-                              domain(b.url)
-                            }}</span>
-                            <span aria-hidden="true" class="shrink-0">·</span>
+                            <!-- 도메인 + 수정일 -->
+                            <div class="flex min-w-0 items-center gap-2">
+                              <span
+                                aria-hidden="true"
+                                class="hidden shrink-0 md:inline"
+                                >·</span
+                              >
 
-                            <!-- 수정일 -->
-                            <time
-                              class="shrink-0"
-                              :datetime="b.updatedAt || ''"
-                            >
-                              {{ formatDate(b.updatedAt) }}
-                            </time>
+                              <span class="min-w-0 flex-1 truncate">{{
+                                domain(b.url)
+                              }}</span>
+
+                              <span aria-hidden="true" class="shrink-0">·</span>
+
+                              <time
+                                class="shrink-0"
+                                :datetime="b.updatedAt || ''"
+                              >
+                                {{ formatDate(b.updatedAt) }}
+                              </time>
+                            </div>
                           </div>
                         </div>
                       </div>

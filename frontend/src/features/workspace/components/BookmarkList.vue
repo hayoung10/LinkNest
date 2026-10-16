@@ -1,6 +1,22 @@
 <template>
   <main class="flex-1 flex flex-col bg-background overflow-hidden min-h-0">
-    <!-- 선택 없음 -->
+    <!-- 모바일 사이드바 메뉴 -->
+    <div class="md:hidden mb-2 flex items-center gap-2">
+      <button
+        type="button"
+        class="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-200 hover:text-gray-900"
+        aria-label="사이드바 열기"
+        @click="emit('open-sidebar')"
+      >
+        <MenuIcon :size="20" />
+      </button>
+
+      <p v-if="!hasSelection" class="text-sm text-gray-500">
+        메뉴를 눌러 컬렉션을 선택하세요.
+      </p>
+    </div>
+
+    <!-- 컬렉션 미선택 -->
     <div
       v-if="!hasSelection"
       class="h-full min-h-[60vh] grid place-items-center text-muted/70 py-16"
@@ -29,10 +45,10 @@
       </div>
     </div>
 
-    <!-- 컬렉션 선택됨 -->
+    <!-- 컬렉션 선택 -->
     <div
       v-else
-      class="flex-1 flex flex-col w-full max-w-4xl mx-auto p-8 animate-fadeIn min-h-0"
+      class="flex-1 flex flex-col w-full max-w-4xl mx-auto p-3 sm:p-5 md:p-8 animate-fadeIn min-h-0"
     >
       <!-- 헤더 -->
       <BookmarkHeader
@@ -77,7 +93,7 @@
               v-for="b in bookmarks"
               :key="b.id"
               :ref="(el) => setItemRef(b.id, el)"
-              class="px-2 py-3 rounded-md cursor-pointer select-none transition-colors"
+              class="px-1 py-2 sm:px-2 sm:py-3 rounded-md cursor-pointer select-none transition-colors"
               :class="
                 isActive(b)
                   ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 ring-1 ring-blue-300'
@@ -92,12 +108,12 @@
                 @click="onSelect(b)"
                 :title="displayTitle(b)"
               >
-                <div class="flex items-stretch gap-3 px-3">
+                <div class="flex items-stretch gap-2 px-1 sm:gap-3 sm:px-3">
                   <!-- favorite -->
                   <div class="shrink-0 pt-2">
                     <button
                       type="button"
-                      class="shrink-0 inline-flex items-center justify-center size-8 rounded-md bg-white border border-zinc-300 shadow-sm hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-600 dark:hover:bg-zinc-800 transition-colors"
+                      class="shrink-0 inline-flex items-center justify-center size-7 md:size-8 rounded-md bg-white border border-zinc-300 shadow-sm hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-600 dark:hover:bg-zinc-800 transition-colors"
                       :disabled="isMutatingFor(b.id)"
                       :aria-label="
                         b.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'
@@ -118,7 +134,7 @@
 
                   <!-- 왼쪽: cover -->
                   <span
-                    class="shrink-0 h-14 w-14 rounded-xl overflow-hidden border bg-zinc-200/70 dark:bg-zinc-800/70"
+                    class="shrink-0 h-11 w-11 md:h-14 md:w-14 rounded-xl overflow-hidden border bg-zinc-200/70 dark:bg-zinc-800/70"
                     :class="[
                       isActive(b)
                         ? 'border-blue-400/70 ring-2 ring-blue-300/60 dark:ring-blue-800/50'
@@ -225,17 +241,17 @@
                     </div>
 
                     <div
-                      class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2"
+                      class="mt-1 min-w-0 text-xs text-neutral-500 dark:text-neutral-400 flex flex-col md:flex-row md:items-center gap-1 md:gap-2"
                     >
-                      <span class="truncate"
+                      <span class="min-w-0 truncate"
                         ><template v-for="(c, i) in domainChunks(b)" :key="i">
                           <span :class="c.isHit ? highlightClass : ''">{{
                             c.text
                           }}</span>
                         </template></span
                       >
-                      <span aria-hidden="true">·</span>
-                      <time :datetime="b.updatedAt || ''">
+                      <span aria-hidden="true" class="hidden md:inline">·</span>
+                      <time class="shrink-0" :datetime="b.updatedAt || ''">
                         {{ formatDate(b.updatedAt) }}
                       </time>
                     </div>
@@ -297,6 +313,7 @@ import type { Bookmark, CollectionNode, ID } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
 import StarIcon from "@/components/icons/StarIcon.vue";
+import MenuIcon from "@/components/icons/MenuIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
@@ -322,6 +339,7 @@ const emit = defineEmits<{
   (e: "select-bookmark", id: ID): void;
   (e: "focus-done", id: ID): void;
   (e: "clear-focus"): void;
+  (e: "open-sidebar"): void;
 }>();
 
 const workspace = useWorkspaceStore();

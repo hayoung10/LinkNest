@@ -126,7 +126,7 @@
         <div class="absolute inset-0" @click="closeEmojiPicker(false)" />
         <div
           :style="emojiPickerStyle"
-          class="absolute w-[360px] rounded-xl border border-border bg-card shadow-lg p-2"
+          class="absolute w-[min(360px,calc(100vw-2rem))] rounded-xl border border-border bg-card shadow-lg p-2"
           @click.stop
         >
           <EmojiPicker @select="onEmojiSelected" />

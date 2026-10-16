@@ -91,7 +91,9 @@
           <span class="truncate">{{ collectionName }}</span>
         </p>
 
-        <div class="flex items-end justify-between gap-3">
+        <div
+          class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3"
+        >
           <!-- 좌: 이모지 + 제목 -->
           <div class="min-w-0 flex flex-1 items-center gap-3">
             <!-- 이모지 + popover -->
@@ -169,7 +171,7 @@
           <!-- 우: (보기 모드) 최근 수정일 -->
           <p
             v-if="!isEditing"
-            class="mb-2 mr-1 shrink-0 text-xs text-muted-foreground leading-none"
+            class="ml-1 shrink-0 self-end text-right text-xs text-muted-foreground leading-none sm:mb-2 sm:mr-1"
           >
             {{ updatedAtText }}
           </p>
@@ -185,12 +187,14 @@
     </header>
 
     <!-- 본문 -->
-    <div class="flex-1 overflow-auto px-5 py-4 space-y-6">
+    <div
+      class="flex-1 overflow-auto px-3 py-3 sm:px-5 sm:py-4 space-y-5 sm:space-y-6"
+    >
       <!-- 커버 이미지 -->
       <section
         class="rounded-2xl border border-border/60 bg-zinc-50/60 dark:bg-zinc-900/20 p-5 relative"
       >
-        <div class="flex items-start gap-4">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
           <!-- 좌: 미리보기 -->
           <div
             class="shrink-0"
@@ -237,7 +241,9 @@
                 isEditing ? 'opacity-70 grayscale-[0.25] saturate-50' : ''
               "
             >
-              <div class="flex items-center justify-between gap-3">
+              <div
+                class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <p
                   class="text-sm font-semibold text-zinc-700 dark:text-zinc-200"
                 >
@@ -349,7 +355,7 @@
       <div class="space-y-5">
         <!-- 링크 -->
         <section
-          class="rounded-2xl border border-border/60 bg-background p-5 border-l-4 border-l-blue-500/60"
+          class="rounded-2xl border border-border/60 bg-background p-4 sm:p-5 border-l-4 border-l-blue-500/60"
         >
           <label
             class="block text-sm font-semibold tracking-wide text-zinc-500 dark:text-zinc-400"
@@ -408,7 +414,9 @@
         </section>
 
         <!-- 태그 -->
-        <section class="rounded-2xl border border-border/60 bg-background p-5">
+        <section
+          class="rounded-2xl border border-border/60 bg-background p-4 sm:p-5"
+        >
           <label
             class="block text-sm font-semibold tracking-wide text-zinc-500 dark:text-zinc-400"
             >태그</label
@@ -444,7 +452,9 @@
         </section>
 
         <!-- 설명 -->
-        <section class="rounded-2xl border border-border/60 bg-background p-5">
+        <section
+          class="rounded-2xl border border-border/60 bg-background p-4 sm:p-5"
+        >
           <label
             class="block text-sm font-semibold tracking-wide text-zinc-500 dark:text-zinc-400"
             >설명</label
@@ -476,7 +486,7 @@
         </section>
 
         <!-- 삭제 버튼 -->
-        <div class="pt-1 flex justify-end">
+        <div v-if="!isEditing" class="pt-1 flex justify-end">
           <button
             type="button"
             :disabled="isBookmarkMutating"
@@ -498,7 +508,7 @@
         @keydown.esc="showDeleteDialog = false"
       >
         <div
-          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-6"
+          class="w-full max-w-md rounded-2xl border border-zinc-200/70 dark:border-zinc-700/60 bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 shadow-[0_10px_40px_rgba(0,0,0,.12)] backdrop-blur-sm p-4 sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-labelledby="bookmark-delete-title"
