@@ -126,3 +126,24 @@ Google, Kakao 소셜 로그인을 지원하며 테스트 계정을 통해 별도
     <img src="docs/images/settings-security.png" width="32%">
     <img src="docs/images/settings-preferences.png" width="32%">
 </p>
+
+---
+
+<br>
+
+## 반응형 UI
+
+데스크톱과 모바일 환경 모두에서 LinkNest를 이용할 수 있습니다.
+
+<p>
+    <img src="docs/images/workspace-desktop.png" width="80%">
+</p>
+
+<p>
+    <img src="docs/images/workspace-mobile.png" width="32%">
+    <img src="docs/images/trash-mobile.png" width="32%">
+</p>
+
+<p>
+    <img src="docs/images/mobile-sidebar.gif" width="32%">
+</p>
