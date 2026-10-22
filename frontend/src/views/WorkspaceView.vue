@@ -2,7 +2,7 @@
   <div class="h-screen w-full bg-background flex">
     <!-- 좌측: 사이드바 -->
     <WorkspaceSidebar
-      class="w-64 border-r border-border"
+      class="hidden md:flex w-64 border-r border-border"
       :on-add-collection="onAddCollection"
       :on-rename-collection="onRenameCollection"
       @update-emoji="onUpdateCollectionEmoji"
@@ -11,6 +11,29 @@
       @open-settings="onOpenSettings"
       @logout="onLogout"
     />
+
+    <div v-if="isSidebarOpen" class="fixed inset-0 z-50 md:hidden">
+      <!-- 배경 -->
+      <button
+        type="button"
+        class="absolute inset-0 bg-black/40"
+        aria-label="사이드바 닫기"
+        @click="isSidebarOpen = false"
+      />
+
+      <!-- 모바일 사이드바 -->
+      <WorkspaceSidebar
+        class="relative z-10 h-full w-72 max-w-[85vw] bg-background shadow-xl"
+        :on-add-collection="onAddCollection"
+        :on-rename-collection="onRenameCollection"
+        @update-emoji="onUpdateCollectionEmoji"
+        @delete-collection="onDeleteCollection"
+        @open-all="onOpenAllBookmarks"
+        @open-settings="onOpenSettings"
+        @logout="onLogout"
+        @close-sidebar="isSidebarOpen = false"
+      />
+    </div>
 
     <!-- 우측: 메인 콘텐츠 -->
     <section class="relative flex-1 flex flex-col overflow-hidden min-h-0">
@@ -21,12 +44,14 @@
           :key="'fav-list'"
           :selected-bookmark-id="selectedBookmarkId"
           @select-bookmark="onSelectBookmark"
+          @open-sidebar="isSidebarOpen = true"
         />
         <FavoriteBookmarkCard
           v-else
           :key="'fav-card'"
           :selected-bookmark-id="selectedBookmarkId"
           @select-bookmark="onSelectBookmark"
+          @open-sidebar="isSidebarOpen = true"
         />
       </template>
 
@@ -41,6 +66,7 @@
           @select-bookmark="onSelectBookmark"
           @focus-done="onFocusDone"
           @clear-focus="focusBookmarkId = null"
+          @open-sidebar="isSidebarOpen = true"
         />
 
         <BookmarkCard
@@ -53,6 +79,7 @@
           @select-bookmark="onSelectBookmark"
           @focus-done="onFocusDone"
           @clear-focus="focusBookmarkId = null"
+          @open-sidebar="isSidebarOpen = true"
         />
       </template>
 
@@ -174,6 +201,8 @@ const {
   collectionById,
 } = storeToRefs(workspace);
 const { defaultLayout, defaultBookmarkSort } = storeToRefs(preferences);
+
+const isSidebarOpen = ref(false);
 
 const selectedCollection = computed<CollectionNode | null>(() => {
   const sid = selectedCollectionId.value;

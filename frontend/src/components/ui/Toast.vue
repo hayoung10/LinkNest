@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="toasts.length"
-    class="fixed left-1/2 -translate-x-1/2 top-4 z-[9999] flex w-[360px] max-w-[calc(100vw-2rem)] flex-col gap-2"
+    class="fixed left-1/2 -translate-x-1/2 top-4 z-[9999] flex w-[calc(100vw-2rem)] max-w-[360px] flex-col gap-2"
     role="status"
     aria-live="polite"
     aria-relevant="additions"

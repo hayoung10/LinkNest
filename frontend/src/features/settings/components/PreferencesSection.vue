@@ -2,7 +2,7 @@
   <section class="space-y-6">
     <!-- 카드 1: 보기 설정 -->
     <div
-      class="rounded-2xl border border-zinc-200 bg-white px-6 py-5 space-y-6"
+      class="rounded-2xl border border-zinc-200 bg-white px-4 py-4 space-y-5 sm:px-6 sm:py-5 sm:space-y-6"
     >
       <header class="space-y-1">
         <h2 class="text-lg font-semibold text-zinc-900">보기 설정</h2>
@@ -67,7 +67,9 @@
     </div>
 
     <!-- 카드 2: 동작 설정 -->
-    <div class="rounded-2xl border border-zinc-200 bg-white p-6 space-y-4">
+    <div
+      class="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 space-y-4"
+    >
       <header class="space-y-1">
         <h3 class="text-base font-semibold text-zinc-900">동작 설정</h3>
         <p class="text-sm text-zinc-500">
@@ -88,7 +90,7 @@
 
         <button
           type="button"
-          class="relative inline-flex h-6 w-11 items-center rounded-full transition"
+          class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition"
           :class="openInNewTab ? 'bg-zinc-900' : 'bg-zinc-300'"
           @click="updateOpenInNewTab"
           :disabled="!loaded || isSaving"

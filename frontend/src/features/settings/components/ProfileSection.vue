@@ -2,7 +2,7 @@
   <section class="space-y-6">
     <!-- 카드 1: 프로필/이름/이메일 -->
     <div
-      class="rounded-2xl border border-zinc-200 bg-white px-6 py-5 space-y-6"
+      class="rounded-2xl border border-zinc-200 bg-white px-4 py-4 space-y-5 sm:px-6 sm:py-5 sm:space-y-6"
     >
       <!-- 제목 -->
       <header class="space-y-1">
@@ -11,7 +11,9 @@
       </header>
 
       <!-- 아바타 + 버튼 -->
-      <div class="flex items-center gap-6">
+      <div
+        class="flex flex-col items-start sm:flex-row sm:items-center gap-4 sm:gap-6"
+      >
         <!-- 아바타 / 프로필 이미지 -->
         <div class="relative">
           <div
@@ -36,7 +38,7 @@
 
         <!-- 사진 변경 / 삭제 버튼 -->
         <div class="space-y-2">
-          <div class="flex items-center gap-4">
+          <div class="flex flex-wrap items-center gap-3 sm:gap-4">
             <button
               type="button"
               class="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50"
@@ -93,11 +95,11 @@
             <input
               v-model="editableName"
               type="text"
-              class="flex-1 rounded-xl border border-transparent bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outlnie-none ring-1 ring-zinc-200 focus:border-indigo-500 focus:ring-indigo-500"
+              class="min-w-0 flex-1 rounded-xl border border-transparent bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outlnie-none ring-1 ring-zinc-200 focus:border-indigo-500 focus:ring-indigo-500"
             />
             <button
               type="submit"
-              class="inline-flex items-center justify-center rounded-xl bg-zinc-950 px-5 text-sm font-smibold text-white hover:bg-zinc-900"
+              class="inline-flex shrink-0 items-center justify-center rounded-xl bg-zinc-950 px-5 text-sm font-smibold text-white hover:bg-zinc-900"
               :disabled="!isNameChanged || isSavingName"
             >
               저장
@@ -146,9 +148,11 @@
       </div>
 
       <div
-        class="mt-4 flex items-center justify-between gap-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 sm:px-5 sm:py-4"
+        class="mt-4 flex flex-col items-start gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5 sm:py-4"
       >
-        <div class="flex items-center gap-3">
+        <div
+          class="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3"
+        >
           <div
             :class="[
               'flex h-11 w-11 items-center justify-center rounded-full',
@@ -164,16 +168,18 @@
               />
             </svg>
           </div>
-          <div class="space-y-0.5">
+          <div class="min-w-0 space-y-0.5">
             <p class="text-sm font-medium text-zinc-900">
               {{ providerLabel }} 로그인
             </p>
-            <p class="text-xs text-zinc-500">{{ email }} · 계정 이메일</p>
+            <p class="break-all text-xs text-zinc-500">
+              {{ email }}
+            </p>
           </div>
         </div>
 
         <span
-          class="inline-flex items-center rounded-full bg-emerald-100 px-4 py-2 text-xs font-medium text-emerald-700"
+          class="inline-flex shrink-0 self-start items-center rounded-full bg-emerald-100 px-3 py-2 text-xs font-medium text-emerald-700"
           >{{ provider === "TEST" ? "테스트 계정" : "연동됨" }}</span
         >
       </div>

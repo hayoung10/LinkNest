@@ -3,14 +3,14 @@
     <!-- 트리거 -->
     <button
       ref="triggerEl"
-      class="flex items-center gap-3 w-full px-2 py-2 rounded-md hover:bg-accent transition-colors"
+      class="flex w-full min-w-0 shrink-0 items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-accent md:gap-3"
       :aria-expanded="menuOpen"
       aria-haspopup="menu"
       @click.stop="toggleMenu"
     >
       <!-- 아바타 -->
       <div
-        class="size-8 shrink-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white grid place-items-center overflow-hidden"
+        class="size-8 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white grid place-items-center"
       >
         <img
           v-if="user?.profileImageUrl && !avatarLoadFailed"
@@ -23,11 +23,14 @@
       </div>
 
       <!-- 이름 + 이메일 -->
-      <span class="flex flex-col items-start min-w-0 flex-1">
-        <span class="text-sm font-medium truncate w-full">{{
+      <span
+        class="min-w-0 flex-1 flex-col items-start"
+        :class="props.alwaysShowUserInfo ? 'flex' : 'hidden sm:flex'"
+      >
+        <span class="w-full truncate text-sm font-medium">{{
           user?.name
         }}</span>
-        <span class="text-xs text-muted-foreground truncate w-full">{{
+        <span class="w-full truncate text-xs text-muted-foreground">{{
           user?.email
         }}</span>
       </span>
@@ -36,7 +39,7 @@
       <ChevronIcon
         :size="16"
         :direction="menuOpen ? 'up' : 'down'"
-        class="text-muted-foreground"
+        class="shrink-0 text-muted-foreground"
         aria-hidden="true"
       />
     </button>
@@ -151,8 +154,9 @@ const props = withDefaults(
   defineProps<{
     showTagManagement?: boolean;
     showTrash?: boolean;
+    alwaysShowUserInfo?: boolean;
   }>(),
-  { showTagManagement: true, showTrash: true },
+  { showTagManagement: true, showTrash: true, alwaysShowUserInfo: false },
 );
 
 const emit = defineEmits<{

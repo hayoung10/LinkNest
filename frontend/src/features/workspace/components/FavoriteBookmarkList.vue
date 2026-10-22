@@ -1,7 +1,17 @@
 <template>
   <main class="flex-1 flex flex-col bg-background overflow-hidden min-h-0">
+    <!-- 모바일 사이드바 메뉴 -->
+    <button
+      type="button"
+      class="md:hidden mb-2 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-gray-200 hover:text-gray-900 transition-colors"
+      aria-label="사이드바 열기"
+      @click="emit('open-sidebar')"
+    >
+      <MenuIcon :size="20" />
+    </button>
+
     <div
-      class="flex-1 flex flex-col w-full max-w-4xl mx-auto p-8 animate-fadeIn min-h-0"
+      class="flex-1 flex flex-col w-full max-w-4xl mx-auto p-3 sm:p-5 md:p-8 animate-fadeIn min-h-0"
     >
       <!-- 헤더 -->
       <BookmarkHeader
@@ -55,7 +65,7 @@
           <ul class="mt-0" role="list" aria-label="즐겨찾기 리스트 목록">
             <template v-for="b in bookmarks" :key="b.id">
               <li
-                class="px-2 py-3 rounded-md cursor-pointer select-none transition-colors"
+                class="px-1 py-2 sm:px-2 sm:py-3 rounded-md cursor-pointer select-none transition-colors"
                 :class="
                   isActive(b)
                     ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 ring-1 ring-blue-300'
@@ -68,12 +78,12 @@
                   @click="onSelect(b)"
                   :title="displayTitle(b)"
                 >
-                  <div class="flex items-stretch gap-3 px-3">
+                  <div class="flex items-stretch gap-2 px-1 sm:gap-3 sm:px-3">
                     <!-- favorite -->
                     <div class="shrink-0 pt-2">
                       <button
                         type="button"
-                        class="shrink-0 inline-flex items-center justify-center size-8 rounded-md bg-white border border-zinc-300 shadow-sm hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-600 dark:hover:bg-zinc-800 transition-colors"
+                        class="shrink-0 inline-flex items-center justify-center size-7 md:size-8 rounded-md bg-white border border-zinc-300 shadow-sm hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-600 dark:hover:bg-zinc-800 transition-colors"
                         :disabled="isMutatingFor(b.id)"
                         :aria-label="
                           b.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'
@@ -94,7 +104,7 @@
 
                     <!-- 왼쪽: cover -->
                     <span
-                      class="shrink-0 h-14 w-14 rounded-xl overflow-hidden border bg-zinc-200/70 dark:bg-zinc-800/70"
+                      class="shrink-0 h-11 w-11 md:h-14 md:w-14 rounded-xl overflow-hidden border bg-zinc-200/70 dark:bg-zinc-800/70"
                       :class="[
                         isActive(b)
                           ? 'border-blue-400/70 ring-2 ring-blue-300/60 dark:ring-blue-800/50'
@@ -201,11 +211,11 @@
                       </div>
 
                       <div
-                        class="mt-1 text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-2 min-w-0"
+                        class="mt-1 min-w-0 text-xs text-neutral-500 dark:text-neutral-400 flex flex-col md:flex-row md:items-center gap-1 md:gap-2"
                       >
                         <!-- 컬렉션 (이모지 + 이름) -->
                         <span
-                          class="shrink-0 inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                          class="min-w-0 max-w-full md:max-w-48 inline-flex items-center gap-1 text-[11px] text-muted-foreground"
                           :title="collectionLabel(b)"
                         >
                           <span aria-hidden="true">{{
@@ -215,7 +225,11 @@
                             collectionName(b)
                           }}</span>
                         </span>
-                        <span aria-hidden="true" class="shrink-0">·</span>
+                        <span
+                          aria-hidden="true"
+                          class="hidden md:inline shrink-0"
+                          >·</span
+                        >
 
                         <!-- 도메인 -->
                         <span class="min-w-0 truncate"
@@ -225,7 +239,11 @@
                             }}</span>
                           </template></span
                         >
-                        <span aria-hidden="true" class="shrink-0">·</span>
+                        <span
+                          aria-hidden="true"
+                          class="hidden md:inline shrink-0"
+                          >·</span
+                        >
 
                         <!-- 수정일 -->
                         <time class="shrink-0" :datetime="b.updatedAt || ''">
@@ -291,6 +309,7 @@ import type { Bookmark, ID } from "@/types/common";
 import ExternalLinkIcon from "@/components/icons/ExternalLinkIcon.vue";
 import BookmarkIcon from "@/components/icons/BookmarkIcon.vue";
 import StarIcon from "@/components/icons/StarIcon.vue";
+import MenuIcon from "@/components/icons/MenuIcon.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { storeToRefs } from "pinia";
 import { BaseEmpty, BaseError, BaseLoading } from "@/components/ui";
@@ -308,6 +327,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "select-bookmark", id: ID): void;
+  (e: "open-sidebar"): void;
 }>();
 
 const workspace = useWorkspaceStore();

@@ -2,19 +2,31 @@
   <aside
     id="tag-sidebar"
     v-bind="$attrs"
-    class="relative border-r border-border flex flex-col bg-card text-card-foreground"
+    class="border-r border-border flex flex-col bg-background text-foreground"
   >
     <!-- 상단 영역 -->
     <header
-      class="flex items-center justify-between px-4 h-14 border-b border-border"
+      class="flex h-14 shrink-0 items-center gap-2 border-b border-border px-3"
     >
-      <div class="min-w-0">
+      <!-- 모바일 사이드바 닫기 -->
+      <button
+        type="button"
+        class="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-200 hover:text-gray-900 md:hidden"
+        aria-label="사이드바 닫기"
+        @click="emit('close-sidebar')"
+      >
+        <span aria-hidden="true" class="text-xl leading-none">
+          <CloseIcon :size="20" />
+        </span>
+      </button>
+
+      <div class="min-w-0 flex-1">
         <div class="text-sm font-semibold truncate">태그</div>
       </div>
 
       <button
         type="button"
-        class="inline-flex items-center justify-center size-7 rounded-md border border-border transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-border transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="새 태그 만들기"
         title="새 태그"
         :disabled="isLoading || hasError"
@@ -159,7 +171,7 @@
     <teleport to="#modals">
       <div
         v-if="showAddDialog"
-        class="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4"
+        class="fixed inset-0 z-[130] bg-black/40 grid place-items-center p-4"
         @click.self="showAddDialog = false"
         @keydown.esc="showAddDialog = false"
       >
@@ -232,13 +244,17 @@ import { useTagsStore } from "@/stores/tags";
 import { useToastStore } from "@/stores/toast";
 import PlusIcon from "@/components/icons/PlusIcon.vue";
 import ChevronIcon from "@/components/icons/ChevronIcon.vue";
+import CloseIcon from "@/components/icons/CloseIcon.vue";
 import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
 import { getErrorMessage } from "@/api/errors";
 
 defineOptions({ name: "TagSidebar" });
 
 const props = defineProps<{ selectedTagId: ID | null }>();
-const emit = defineEmits<{ (e: "select-tag", id: ID): void }>();
+const emit = defineEmits<{
+  (e: "select-tag", id: ID): void;
+  (e: "close-sidebar"): void;
+}>();
 
 const tagsStore = useTagsStore();
 const toast = useToastStore();

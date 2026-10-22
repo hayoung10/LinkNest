@@ -2,13 +2,13 @@
   <header
     class="sticky top-0 z-10 bg-background/90 backdrop-blur border-b border-border"
   >
-    <div class="px-6 h-20 flex items-center gap-4">
+    <div class="flex h-16 items-center gap-2 px-4 sm:h-20 sm:gap-4 sm:px-6">
       <!-- 왼쪽: back or icon -->
-      <div class="shrink-0 flex items-center gap-3">
+      <div class="flex shrink-0 items-center gap-2 sm:gap-3">
         <button
           v-if="showBack"
           type="button"
-          class="inline-flex items-center gap-2 px-3 py-2 rounded-md transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          class="inline-flex items-center gap-1 px-2 py-1.5 rounded-md transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 sm:gap-2 sm:px-3 sm:py-2"
           @click="$emit('back')"
         >
           <span aria-hidden="true">←</span>
@@ -22,10 +22,14 @@
       <div class="min-w-0 flex-1">
         <Transition name="taghead" mode="out-in">
           <div :key="variant" class="min-w-0">
-            <h2 class="text-2xl font-bold leading-7 truncate">{{ title }}</h2>
+            <h2
+              class="truncate text-xl font-bold leading-6 s:text-2xl sm:leading-7"
+            >
+              {{ title }}
+            </h2>
             <p
               v-if="subtitle"
-              class="mt-1 text-sm text-zinc-500 dark:text-zinc-400 truncate"
+              class="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400 sm:mt-1 sm:text-sm"
             >
               {{ subtitle }}
             </p>
@@ -34,7 +38,9 @@
       </div>
 
       <!-- 오른쪽 -->
-      <div class="shrink-0 flex items-center gap-2"><slot name="right" /></div>
+      <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+        <slot name="right" />
+      </div>
     </div>
   </header>
 </template>
