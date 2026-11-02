@@ -115,7 +115,7 @@
         <!-- … 메뉴 버튼 -->
         <div
           v-if="!isEditing"
-          class="w-8 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          class="w-8 flex justify-center opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity"
           @click.stop
         >
           <CollectionMenu
