@@ -37,14 +37,27 @@ onMounted(async () => {
     if (!auth.restored) {
       await auth.restore();
     }
-
-    if (auth.isLoggedIn) {
-      await preferences.load();
-    }
   } finally {
     ready.value = true; // 복원 성공/실패와 무관하게 화면은 진행
   }
 });
+
+watch(
+  () => auth.isLoggedIn,
+  async (isLoggedIn) => {
+    if (!isLoggedIn) {
+      preferences.$reset();
+      return;
+    }
+
+    try {
+      await preferences.load();
+    } catch {
+      toast.error("환경 설정 정보를 불러오지 못했습니다.");
+    }
+  },
+  { immediate: true },
+);
 
 type ToastState = { toast?: { type: ToastType; message: string } };
 
