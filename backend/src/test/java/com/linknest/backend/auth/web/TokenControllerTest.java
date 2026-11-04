@@ -1,9 +1,10 @@
 package com.linknest.backend.auth.web;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -12,6 +13,7 @@ import com.linknest.backend.auth.token.TokenService;
 import com.linknest.backend.config.props.JwtProperties;
 import com.linknest.backend.storage.StorageProperties;
 import com.linknest.backend.userpreferences.UserPreferencesService;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -92,7 +94,7 @@ class TokenControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().exists(HttpHeaders.SET_COOKIE))
                 .andExpect(header().string(HttpHeaders.SET_COOKIE,
-                        org.hamcrest.Matchers.containsString(RT_COOKIE + "=" + newRefreshToken)))
+                        containsString(RT_COOKIE + "=" + newRefreshToken)))
                 .andExpect(jsonPath("$.message").value("액세스 토큰 재발급"))
                 .andExpect(jsonPath("$.data.accessToken").value(newAccessToken))
                 .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
@@ -119,9 +121,12 @@ class TokenControllerTest {
                         .cookie(new Cookie(RT_COOKIE, refreshToken))
                 )
                 .andExpect(status().isOk())
-                .andExpect(header().exists(HttpHeaders.SET_COOKIE))
                 .andExpect(header().string(HttpHeaders.SET_COOKIE,
-                        org.hamcrest.Matchers.containsString(RT_COOKIE + "=")))
+                        allOf(
+                                containsString(RT_COOKIE + "="),
+                                containsString("Max-Age=0")
+                        )
+                ))
                 .andExpect(jsonPath("$.message").value("로그아웃 완료"));
 
         then(tokenService).should().revokeToken(eq(refreshToken));
@@ -132,9 +137,47 @@ class TokenControllerTest {
     void logout_success_without_cookie() throws Exception {
         mockMvc.perform(post(API_PREFIX + "/auth/logout"))
                 .andExpect(status().isOk())
-                .andExpect(header().exists(HttpHeaders.SET_COOKIE))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE,
+                        allOf(
+                                containsString(RT_COOKIE + "="),
+                                containsString("Max-Age=0")
+                        )
+                ))
                 .andExpect(jsonPath("$.message").value("로그아웃 완료"));
 
         then(tokenService).should(never()).revokeToken(anyString());
+    }
+
+    @Test
+    @DisplayName("logout 성공 - 만료된 refresh_token이어도 삭제 쿠키를 내려준다")
+    void logout_success_with_expired_refresh_token() throws Exception {
+        String expiredRefreshToken = "expired-refresh-token";
+
+        // 만료된 JWT 검증 시 발생하는 예외 재현
+        ExpiredJwtException expiredException = new ExpiredJwtException(
+                null,
+                null,
+                "Refresh token expired"
+        );
+
+        willThrow(expiredException)
+                .given(tokenService)
+                .revokeToken(expiredRefreshToken);
+
+        mockMvc.perform(
+                post(API_PREFIX + "/auth/logout")
+                        .cookie(new Cookie(RT_COOKIE, expiredRefreshToken))
+                )
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        HttpHeaders.SET_COOKIE,
+                        allOf(
+                                containsString(RT_COOKIE + "="),
+                                containsString("Max-Age=0")
+                        )
+                ))
+                .andExpect(jsonPath("$.message").value("로그아웃 완료"));
+
+        then(tokenService).should().revokeToken(eq(expiredRefreshToken));
     }
 }
