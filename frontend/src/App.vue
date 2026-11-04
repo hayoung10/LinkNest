@@ -17,12 +17,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, watch } from "vue";
 import { RouterView, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { ToastType, useToastStore } from "@/stores/toast";
 import { usePreferencesStore } from "@/stores/preferences";
 import Toast from "@/components/ui/Toast.vue";
+import router from "./router";
 
 const route = useRoute();
 
@@ -30,17 +31,7 @@ const toast = useToastStore();
 const auth = useAuthStore();
 const preferences = usePreferencesStore();
 
-const ready = ref(false);
-
-onMounted(async () => {
-  try {
-    if (!auth.restored) {
-      await auth.restore();
-    }
-  } finally {
-    ready.value = true; // 복원 성공/실패와 무관하게 화면은 진행
-  }
-});
+const ready = computed(() => auth.restored);
 
 watch(
   () => auth.isLoggedIn,
@@ -57,6 +48,18 @@ watch(
     }
   },
   { immediate: true },
+);
+
+watch(
+  () => auth.isLoggedIn,
+  (isLoggedIn, wasLoggedIn) => {
+    if (wasLoggedIn && !isLoggedIn && route.meta.requiresAuth) {
+      void router.replace({
+        name: "login",
+        query: { redirect: route.fullPath },
+      });
+    }
+  },
 );
 
 type ToastState = { toast?: { type: ToastType; message: string } };

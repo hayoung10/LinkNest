@@ -16,6 +16,7 @@ export const useAuthStore = defineStore("auth", {
     user: null as User | null,
     restored: false, // 앱 부팅/새로고침 시 복원 여부
     _refreshPromise: null as Promise<void> | null,
+    _logoutPromise: null as Promise<void> | null,
   }),
   getters: {
     isLoggedIn: (s) => !!s.accessToken,
@@ -75,18 +76,28 @@ export const useAuthStore = defineStore("auth", {
 
     /** 로그아웃 */
     async logout() {
-      try {
-        await unwrap<void>(http.post("/auth/logout"));
-      } catch (e) {
-        const err = toHttpError(e);
-        console.warn("logout request failed", {
-          message: err.message,
-          status: err.status,
-          type: err.type,
-        });
-      } finally {
-        this.clearSession();
+      if (this._logoutPromise) {
+        return this._logoutPromise;
       }
+
+      this._logoutPromise = (async () => {
+        try {
+          await unwrap<void>(http.post("/auth/logout"));
+        } catch (e) {
+          const err = toHttpError(e);
+          console.warn("logout request failed", {
+            message: err.message,
+            status: err.status,
+            type: err.type,
+          });
+        } finally {
+          this.clearSession();
+        }
+      })().finally(() => {
+        this._logoutPromise = null;
+      });
+
+      return this._logoutPromise;
     },
 
     /** 모든 기기에서 로그아웃 */
@@ -108,7 +119,19 @@ export const useAuthStore = defineStore("auth", {
     /** 앱 부팅/새로고침 시 세션 복원 */
     async restore() {
       try {
-        await this.refresh();
+        try {
+          await this.refresh();
+        } catch (e) {
+          const err = toHttpError(e);
+
+          if (err.status === 401) {
+            await this.logout();
+          } else {
+            this.clearSession();
+          }
+          return;
+        }
+
         await this.fetchProfile();
       } catch {
         this.clearSession();
