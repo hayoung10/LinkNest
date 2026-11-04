@@ -44,10 +44,12 @@ http.interceptors.response.use(
     const auth = useAuthStore();
     const original = error.config as AxiosRequestConfig & { _retry?: boolean };
 
-    // /auth/refresh 요청이 401로 실패할 때, 무한 재시도 방지
-    const isRefreshCall =
-      typeof original?.url === "string" &&
-      original.url.includes("/auth/refresh");
+    // 요청이 401로 실패할 때, 무한 재시도 방지
+    const url = original?.url?.split("?")[0];
+
+    const isAuthCall =
+      typeof url === "string" &&
+      ["/auth/refresh", "/auth/logout", "/auth/test-login"].includes(url);
 
     // 1. Timeout 처리
     if (error.code === "ECONNABORTED") {
@@ -80,13 +82,45 @@ http.interceptors.response.use(
     }
 
     // 4. 401 처리 (RT 재발급)
-    if (error.response?.status === 401 && !original._retry && !isRefreshCall) {
+    if (error.response?.status === 401 && !original._retry && !isAuthCall) {
       original._retry = true;
+
       try {
-        await auth.refresh();
-        return http(original); // 원래 요청 재시도
+        const requestToken = original.headers?.Authorization;
+        const currentToken = auth.accessToken
+          ? `Bearer ${auth.accessToken}`
+          : null;
+
+        // 다른 요청이 이미 AT를 갱신한 경우 refresh 생략
+        if (!currentToken || requestToken === currentToken) {
+          try {
+            await auth.refresh();
+          } catch (e) {
+            await auth.logout();
+            return Promise.reject(e);
+          }
+        }
+
+        // 현재 AT가 없으면 인증된 재시도를 수행하지 않음
+        if (!auth.accessToken) {
+          return Promise.reject(error);
+        }
+
+        // 최신 AT를 원래 요청의 Authorization 헤더에 반영
+        original.headers = {
+          ...original.headers,
+          Authorization: `Bearer ${auth.accessToken}`,
+        };
+
+        // 갱신된 AT로 원래 요청 재시도
+        return http(original);
       } catch (e) {
         await auth.logout();
+
+        if (window.location.pathname !== "/login") {
+          window.location.replace("/login");
+        }
+
         return Promise.reject(e);
       }
     }
