@@ -8,6 +8,7 @@ import com.linknest.backend.common.response.ApiResponse;
 import com.linknest.backend.common.utils.CookieUtils;
 import com.linknest.backend.config.props.JwtProperties;
 import com.linknest.backend.userpreferences.UserPreferencesService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -70,9 +71,13 @@ public class TokenController {
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
-        // 쿠키에서 RT 추출
-        CookieUtils.getCookieValue(request, RT_COOKIE)
-                .ifPresent(tokenService::revokeToken);
+        try {
+            // 쿠키에서 RT 추출
+            CookieUtils.getCookieValue(request, RT_COOKIE)
+                    .ifPresent(tokenService::revokeToken);
+        } catch (JwtException | IllegalArgumentException e) {
+            // 유효하지 않은 RT는 폐기할 수 없으므로 쿠키 삭제만 진행
+        }
 
         // 쿠키 삭제
         ResponseCookie delCookie = CookieUtils.deleteCookie(RT_COOKIE);
