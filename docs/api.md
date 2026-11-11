@@ -35,7 +35,7 @@ Refresh Token은 `HttpOnly` Cookie로 관리합니다.
 
 ```json
 {
-  "timestap": "2026-09-21T10:00:00Z",
+  "timestamp": "2026-09-21T10:00:00Z",
   "status": 400,
   "code": "INVALID_INPUT_VALUE",
   "message": "잘못된 입력입니다.",
@@ -85,7 +85,7 @@ Refresh Token은 `HttpOnly` Cookie로 관리합니다.
 
 | 기능                | Method   | Endpoint                       | 인증 | Request              | Response            |
 | ------------------- | -------- | ------------------------------ | ---- | -------------------- | ------------------- |
-| Goolge 로그인       | `GET`    | `/oauth2/authorization/google` | ❌   | OAuth 인증           | Redirect            |
+| Google 로그인       | `GET`    | `/oauth2/authorization/google` | ❌   | OAuth 인증           | Redirect            |
 | Kakao 로그인        | `GET`    | `/oauth2/authorization/kakao`  | ❌   | OAuth 인증           | Redirect            |
 | 테스트 로그인       | `POST`   | `/auth/test-login`             | ❌   | 없음                 | ApiResponse<Void>   |
 | Access Token 재발급 | `POST`   | `/auth/refresh`                | ❌   | Refresh Token Cookie | `TokenRefreshRes`   |
@@ -125,7 +125,7 @@ RT가 만료되었거나 유효하지 않은 경우에도 로그아웃을 정상
 | 기능               | Method   | Endpoint                  | 인증 | Request          | Response            |
 | ------------------ | -------- | ------------------------- | ---- | ---------------- | ------------------- |
 | 내 정보 조회       | `GET`    | `/users/me`               | ✅   | 없음             | `UserRes`           |
-| 내 정보 수정       | `UPDATE` | `/users/me`               | ✅   | `UserUpdateReq`  | `UserRes`           |
+| 내 정보 수정       | `PATCH`  | `/users/me`               | ✅   | `UserUpdateReq`  | `UserRes`           |
 | 프로필 이미지 수정 | `PATCH`  | `/users/me/profile-image` | ✅   | Multipart `file` | `UserRes`           |
 | 프로필 이미지 삭제 | `DELETE` | `/users/me/profile-image` | ✅   | 없음             | `UserRes`           |
 | 회원 탈퇴          | `DELETE` | `/users/me`               | ✅   | 없음             | `ApiResponse<Void>` |
@@ -180,7 +180,7 @@ RT가 만료되었거나 유효하지 않은 경우에도 로그아웃을 정상
 - `COLLECTION_PARENT_SELF`
 - `COLLECTION_CYCLE_DETECTED`
 - `COLLECTION_MAX_DEPTH_EXCEEDED`
-- `COLLECTIOn_TRASH_RESTORE_FAILED`
+- `COLLECTION_TRASH_RESTORE_FAILED`
 - `COLLECTION_NOT_FOUND`
 
 ---
@@ -318,7 +318,7 @@ RT가 만료되었거나 유효하지 않은 경우에도 로그아웃을 정상
 | `id`            | `Long`    | 컬렉션 ID      |
 | `name`          | `String`  | 컬렉션 이름    |
 | `emoji`         | `String`  | 컬렉션 이모지  |
-| `providerId`    | `Long`    | 상위 컬렉션 ID |
+| `parentId`      | `Long`    | 상위 컬렉션 ID |
 | `sortOrder`     | `int`     | 정렬 순서      |
 | `createdAt`     | `Instant` | 생성 시각      |
 | `updatedAt`     | `Instant` | 수정 시각      |
