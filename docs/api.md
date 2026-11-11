@@ -104,6 +104,18 @@ Refresh Token을 Cookie에서 읽어 Access Token과 Refresh Token을 재발급�
 | `tokenType`   | `String` | `Bearer`                            |
 | `expiresIn`   | `long`   | Access Token 만료까지 남은 시간(초) |
 
+### 로그아웃
+
+로그아웃 시 Refresh Token 쿠키를 확인하고, 유효한 RT가 존재하면 서버에 저장된 토큰을 폐기합니다.
+
+RT가 만료되었거나 유효하지 않은 경우에도 로그아웃을 정상 처리하며, RT 쿠키를 삭제합니다.
+
+- Access Token 없이 로그아웃 요청 가능
+
+- RT 쿠키가 없거나 유효하지 않아도 정상 처리
+
+- 로그아웃 응답 시 Set-Cookie를 통해 RT 쿠키 삭제 (Max-Age=0)
+
 ---
 
 <br>
