@@ -27,13 +27,13 @@
   "devDependencies": {
     "@types/axios": "^0.14.4",
     "@types/node": "^26.6.6",
-    "@vitejs/plugin-vue": "^6.0.10",
+    "@vitejs/plugin-vue": "^6.0.11",
     "autoprefixer": "^10.6.2",
-    "postcss": "^8.5.32",
-    "postcss-selector-parser": "^7.1.6",
+    "postcss": "^8.5.33",
+    "postcss-selector-parser": "^7.2.1",
     "tailwindcss": "^3.4.18",
     "typescript": "^6.0.3",
-    "vite": "^8.3.6",
+    "vite": "^8.3.8",
     "vite-plugin-vue-devtools": "^8.2.1",
     "vue-tsc": "^3.3.14"
   },
