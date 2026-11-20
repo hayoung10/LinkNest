@@ -16,26 +16,24 @@
   },
   "dependencies": {
     "@vue-dnd-kit/core": "^1.7.0",
-    "axios": "^1.21.0",
+    "axios": "^1.21.1",
     "clsx": "^2.1.1",
     "pinia": "^4.1.0",
     "tailwind-merge": "^3.7.0",
     "vue": "^3.5.45",
-    "vue-router": "^5.4.0",
+    "vue-router": "^5.5.1",
     "vue3-emoji-picker": "^1.1.8"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.3",
     "@types/axios": "^0.14.4",
     "@types/node": "^26.6.6",
-    "@vitejs/plugin-vue": "^6.0.10",
+    "@vitejs/plugin-vue": "^6.0.11",
     "autoprefixer": "^10.6.2",
-    "postcss": "^8.5.32",
-    "postcss-selector-parser": "^7.1.6",
+    "postcss": "^8.5.33",
+    "postcss-selector-parser": "^7.2.1",
     "tailwindcss": "^3.4.18",
     "typescript": "^6.0.3",
-    "vite": "^8.3.5",
-    "vite-plugin-vue-devtools": "^8.2.1",
+    "vite": "^8.3.8",
     "vue-tsc": "^3.3.14"
   },
   "overrides": {
